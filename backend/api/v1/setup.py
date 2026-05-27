@@ -219,8 +219,9 @@ def _models_dir() -> Path:
 async def _do_download(task_id: str, url: str, dest: Path) -> None:
     _download_tasks[task_id] = {
         "status": "downloading", "progress": 0,
-        "filename": dest.name, "size_mb": 0, "detail": "",
+        "filename": dest.name, "size_mb": 0, "downloaded_mb": 0.0, "detail": "",
     }
+    tmp: Path | None = None
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
         tmp = dest.with_suffix(".tmp")
@@ -228,18 +229,28 @@ async def _do_download(task_id: str, url: str, dest: Path) -> None:
             async with client.stream("GET", url) as r:
                 r.raise_for_status()
                 total = int(r.headers.get("content-length", 0))
-                _download_tasks[task_id]["size_mb"] = round(total / 1024**2, 1)
+                total_mb = round(total / 1024**2, 1)
+                _download_tasks[task_id]["size_mb"] = total_mb
                 received = 0
                 with open(tmp, "wb") as f:
                     async for chunk in r.aiter_bytes(chunk_size=65536):
                         f.write(chunk)
                         received += len(chunk)
+                        received_mb = round(received / 1024**2, 1)
+                        _download_tasks[task_id]["downloaded_mb"] = received_mb
                         if total:
-                            _download_tasks[task_id]["progress"] = int(received / total * 100)
+                            pct = int(received / total * 100)
+                            _download_tasks[task_id]["progress"] = pct
+                            _download_tasks[task_id]["detail"] = (
+                                f"Downloading… {received_mb} / {total_mb} MB"
+                            )
         tmp.replace(dest)
-        _download_tasks[task_id].update({"status": "done", "progress": 100})
+        _download_tasks[task_id].update({
+            "status": "done", "progress": 100,
+            "detail": f"Saved to {dest.name}",
+        })
     except Exception as e:
-        if tmp.exists():
+        if tmp is not None and tmp.exists():
             tmp.unlink(missing_ok=True)
         _download_tasks[task_id].update({"status": "error", "detail": str(e)})
 
@@ -274,7 +285,7 @@ class SystemCheckResponse(BaseModel):
     items: list[CheckItem]; all_required_ok: bool; checked_at: str
 
 class ContainerInfo(BaseModel):
-    name: str; status: str; running: bool; ports: str = ""
+    name: str; image: str = ""; status: str; running: bool; ports: str = ""
 
 class DockerStatusResponse(BaseModel):
     docker_available: bool
@@ -304,7 +315,8 @@ class DownloadStartResponse(BaseModel):
 
 class DownloadProgressResponse(BaseModel):
     task_id: str; status: str  # downloading | done | error
-    progress: int; filename: str; size_mb: float; detail: str = ""
+    progress: int; filename: str; size_mb: float
+    downloaded_mb: float = 0.0; detail: str = ""
 
 class LabelStudioTestRequest(BaseModel):
     url: str; api_key: str = ""
@@ -319,7 +331,7 @@ class LabelStudioAccountRequest(BaseModel):
 
 class LabelStudioAccountResponse(BaseModel):
     ok: bool; token: str = ""; user_id: int = 0
-    already_exists: bool = False; detail: str = ""
+    already_existed: bool = False; detail: str = ""
 
 class LabelStudioProjectRequest(BaseModel):
     url: str; api_key: str; project_name: str = "CTIP — Trichome Detection"
@@ -513,20 +525,35 @@ async def docker_status() -> DockerStatusResponse:
 
     containers: list[ContainerInfo] = []
     if ok_dk:
+        compose_file = str(REPO_ROOT / "docker" / "docker-compose.yml")
         ok_ps, ps_out = await asyncio.to_thread(
             _run,
-            ["docker", "compose", "--profile", "annotation",
-             "-f", "docker/docker-compose.yml", "ps", "--format", "json"],
+            [
+                "docker", "compose",
+                "--project-directory", str(REPO_ROOT / "docker"),
+                "-f", compose_file,
+                "--profile", "annotation",
+                "ps", "--format", "json",
+            ],
         )
         if ok_ps and ps_out.strip():
             for line in ps_out.strip().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
                 try:
                     c = json.loads(line)
+                    pub = c.get("Publishers") or []
+                    port_str = ", ".join(
+                        str(p.get("PublishedPort", "")) for p in pub
+                        if p.get("PublishedPort")
+                    )
                     containers.append(ContainerInfo(
                         name=c.get("Name", ""),
+                        image=c.get("Image", ""),
                         status=c.get("Status", ""),
                         running="running" in c.get("Status", "").lower(),
-                        ports=c.get("Publishers", [{}])[0].get("PublishedPort", "") if c.get("Publishers") else "",
+                        ports=port_str,
                     ))
                 except Exception:
                     pass
@@ -558,14 +585,16 @@ async def docker_start_annotation(body: DockerStartRequest) -> DockerStartRespon
             detail="Docker not accessible. Add your user to the docker group first.",
         )
     profile = body.profile
+    compose_file = str(REPO_ROOT / "docker" / "docker-compose.yml")
     cmd = [
         "docker", "compose",
-        "-f", "docker/docker-compose.yml",
+        "--project-directory", str(REPO_ROOT / "docker"),
+        "-f", compose_file,
         "--profile", profile,
         "up", "-d", "--remove-orphans",
     ]
-    ok, out = await asyncio.to_thread(_run, cmd, timeout=120)
-    return DockerStartResponse(ok=ok, output=out[:2000], detail="" if ok else out[:500])
+    ok, out = await asyncio.to_thread(_run, cmd, timeout=180)
+    return DockerStartResponse(ok=ok, output=out[:3000], detail=out[:500] if not ok else "")
 
 
 # ── Model endpoints ───────────────────────────────────────────────────────────
@@ -692,7 +721,7 @@ async def create_label_studio_account(body: LabelStudioAccountRequest) -> LabelS
                     text = r.text.lower()
                     if "already" in text or "exist" in text or "unique" in text:
                         return LabelStudioAccountResponse(
-                            ok=True, already_exists=True,
+                            ok=True, already_existed=True,
                             detail="Account already exists — use your existing credentials.")
 
             # Try form-based signup (older LS)
