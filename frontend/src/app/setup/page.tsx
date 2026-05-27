@@ -3,17 +3,19 @@
 /**
  * CTIP Full Installer & Setup Wizard
  *
- * 9-step OS-style first-run assistant:
+ * 11-step OS-style first-run assistant:
  *   0  Welcome
  *   1  System Check      — live dependency + service check with log
  *   2  Network           — domain / nginx port
  *   3  Hardware          — CUDA / VRAM
  *   4  Storage           — data directories
- *   5  Label Studio      — full LS setup: test + create project
- *   6  Services          — MLflow, W&B
- *   7  Security          — secret key, API token
- *   8  Review            — summary
- *   9  Verification      — post-save health check with live log
+ *   5  Docker            — container status, group membership, start annotation stack
+ *   6  ML Models         — download YOLO11 + SAM2 weights with progress bars
+ *   7  Label Studio      — full LS setup: account creation + test + create project
+ *   8  Services          — MLflow, W&B
+ *   9  Security          — secret key, API token
+ *   10 Review            — summary
+ *   11 Verification      — post-save health check with live log
  */
 
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
@@ -23,7 +25,9 @@ import {
   CheckCircle2, ChevronRight, ChevronLeft, Loader2,
   AlertTriangle, Info, Eye, EyeOff, ExternalLink,
   RotateCcw, Terminal, RefreshCw, Tags, Activity,
-  XCircle, CheckCircle, Clock,
+  XCircle, CheckCircle, Clock, Container, Download,
+  Server, PackageCheck, Play, Square, ArrowDownToLine,
+  UserPlus, KeyRound,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -51,6 +55,36 @@ interface VerificationItem {
   name: string; url: string; ok: boolean;
   status_code: number; latency_ms: number; detail: string;
 }
+interface ModelInfo {
+  id: string;
+  filename: string;
+  size_mb: number;
+  required: boolean;
+  url: string;
+  present?: boolean;
+  file_size_mb?: number;
+}
+interface DownloadTask {
+  status: string;
+  progress: number;
+  filename: string;
+  size_mb: number;
+  detail: string;
+  downloaded_mb?: number;
+}
+interface ContainerInfo {
+  name: string;
+  image: string;
+  status: string;
+  ports: string;
+  running: boolean;
+}
+interface DockerStatus {
+  docker_available: boolean;
+  in_docker_group: boolean;
+  fix_command: string;
+  containers: ContainerInfo[];
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -60,6 +94,8 @@ const STEPS = [
   { id: 'network',      label: 'Network',        icon: Globe },
   { id: 'hardware',     label: 'Hardware',       icon: Cpu },
   { id: 'storage',      label: 'Storage',        icon: HardDrive },
+  { id: 'docker',       label: 'Docker',         icon: Container },
+  { id: 'models',       label: 'ML Models',      icon: Download },
   { id: 'labelstudio',  label: 'Label Studio',   icon: Tags },
   { id: 'services',     label: 'Services',       icon: Plug },
   { id: 'security',     label: 'Security',       icon: ShieldCheck },
@@ -207,10 +243,36 @@ function WarnBox({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SuccessBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-md p-3 text-xs"
+      style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e' }}>
+      <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{children}</span>
+    </div>
+  );
+}
+
+function ErrorBox({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 rounded-md p-3 text-xs"
+      style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+      <XCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{children}</span>
+    </div>
+  );
+}
+
 function StatusDot({ ok, pending }: { ok?: boolean; pending?: boolean }) {
   if (pending) return <Loader2 className="w-3.5 h-3.5 text-text-muted animate-spin shrink-0" />;
   if (ok) return <CheckCircle className="w-3.5 h-3.5 text-status-success shrink-0" />;
   return <XCircle className="w-3.5 h-3.5 text-status-error shrink-0" />;
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary border-b border-border pb-2">
+      {children}
+    </p>
+  );
 }
 
 // ── Step: Welcome ─────────────────────────────────────────────────────────────
@@ -229,13 +291,17 @@ function StepWelcome() {
         <p className="text-text-muted text-sm">Cannabis Trichome Intelligence Platform — Full Installer</p>
       </div>
       <p className="text-text-secondary text-sm leading-relaxed">
-        This installer checks your system, configures all services, sets up Label Studio
-        with a ready-to-use annotation project, and verifies every subsystem before you start.
+        This installer checks your system, downloads ML models, configures all services,
+        sets up Label Studio with a ready-to-use annotation project, and verifies every
+        subsystem before you start.
       </p>
       <div className="grid grid-cols-3 gap-3 text-left">
         {[
-          { icon: Activity, label: 'System Check', desc: 'All dependencies' },
-          { icon: Tags,     label: 'Label Studio', desc: 'Full LS setup' },
+          { icon: Activity,     label: 'System Check', desc: 'All dependencies' },
+          { icon: Download,     label: 'ML Models',    desc: 'YOLO11 + SAM2' },
+          { icon: Tags,         label: 'Label Studio', desc: 'Full LS setup' },
+          { icon: Container,    label: 'Docker',       desc: 'Container stack' },
+          { icon: ShieldCheck,  label: 'Security',     desc: 'Keys & tokens' },
           { icon: CheckCircle2, label: 'Verification', desc: 'Live health check' },
         ].map(({ icon: Icon, label, desc }) => (
           <div key={label} className="flex flex-col gap-2 rounded-lg p-3"
@@ -345,11 +411,7 @@ function StepSystemCheck() {
         </WarnBox>
       )}
       {ran && allOk === true && (
-        <div className="flex items-center gap-2 rounded-md p-3 text-xs"
-          style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e' }}>
-          <CheckCircle className="w-4 h-4 shrink-0" />
-          All required dependencies present — system ready.
-        </div>
+        <SuccessBox>All required dependencies present — system ready.</SuccessBox>
       )}
     </div>
   );
@@ -467,16 +529,455 @@ function StepStorage({ state, set, errors }: {
   );
 }
 
+// ── Step: Docker ──────────────────────────────────────────────────────────────
+
+function StepDocker() {
+  const [status, setStatus] = useState<DockerStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [startLog, setStartLog] = useState<string>('');
+  const [startOk, setStartOk] = useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const loadStatus = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/setup/docker/status');
+      setStatus(res.data as DockerStatus);
+    } catch {
+      setStatus(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadStatus(); }, []);
+
+  const startAnnotation = async () => {
+    setStarting(true);
+    setStartLog('');
+    setStartOk(null);
+    try {
+      const res = await api.post('/setup/docker/start-annotation');
+      setStartLog(res.data.detail ?? '');
+      setStartOk(res.data.ok ?? false);
+      // Reload status after a short delay
+      setTimeout(() => loadStatus(), 2000);
+    } catch (e: unknown) {
+      setStartLog(e instanceof Error ? e.message : 'Failed to start containers');
+      setStartOk(false);
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const copyFixCommand = () => {
+    if (status?.fix_command) {
+      navigator.clipboard.writeText(status.fix_command).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const runningContainers = status?.containers.filter(c => c.running) ?? [];
+  const stoppedContainers = status?.containers.filter(c => !c.running) ?? [];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-text-primary">Docker</h2>
+          <p className="text-sm text-text-muted mt-1">
+            Label Studio and CVAT run as Docker containers. This step starts the annotation stack.
+          </p>
+        </div>
+        <button onClick={loadStatus} disabled={loading}
+          className="btn-secondary text-xs flex items-center gap-1.5">
+          <RefreshCw className={['w-3.5 h-3.5', loading ? 'animate-spin' : ''].join(' ')} />
+          Refresh
+        </button>
+      </div>
+
+      {loading && !status && (
+        <div className="flex items-center gap-3 py-8 justify-center text-text-muted">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+          <span className="text-sm">Checking Docker…</span>
+        </div>
+      )}
+
+      {status && (
+        <>
+          {/* Docker availability */}
+          <div className="space-y-2">
+            <SectionHeader>Docker Status</SectionHeader>
+            <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #21262d' }}>
+              <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border text-sm">
+                <StatusDot ok={status.docker_available} />
+                <span className="text-text-primary">Docker Engine</span>
+                <span className="ml-auto text-xs text-text-muted font-mono">
+                  {status.docker_available ? 'running' : 'not available'}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2.5 text-sm"
+                style={{ background: !status.in_docker_group ? 'rgba(234,179,8,0.04)' : undefined }}>
+                <StatusDot ok={status.in_docker_group} />
+                <span className="text-text-primary">User in docker group</span>
+                <span className="ml-auto text-xs text-text-muted font-mono">
+                  {status.in_docker_group ? 'yes' : 'needs fix'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Fix command if not in group */}
+          {!status.in_docker_group && status.fix_command && (
+            <div className="space-y-2">
+              <WarnBox>
+                Your user is not in the <strong>docker</strong> group. Run the command below, then log out and back in
+                (or run <code>newgrp docker</code> in your terminal) to apply the change.
+              </WarnBox>
+              <div className="flex items-center gap-2 rounded-md px-3 py-2.5"
+                style={{ background: '#0d1117', border: '1px solid rgba(234,179,8,0.3)' }}>
+                <code className="flex-1 text-xs font-mono text-yellow-400 break-all">{status.fix_command}</code>
+                <button onClick={copyFixCommand}
+                  className="shrink-0 text-xs text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded border border-border">
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Container list */}
+          {status.containers.length > 0 && (
+            <div className="space-y-2">
+              <SectionHeader>Containers</SectionHeader>
+              <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #21262d' }}>
+                {status.containers.map(c => (
+                  <div key={c.name} className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0 text-xs">
+                    <div className={['w-2 h-2 rounded-full shrink-0',
+                      c.running ? 'bg-status-success' : 'bg-border'].join(' ')} />
+                    <span className="font-mono text-text-secondary truncate flex-1">{c.name}</span>
+                    <span className="text-text-muted hidden sm:block truncate max-w-[120px]">{c.image}</span>
+                    <span className={['ml-auto px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0',
+                      c.running
+                        ? 'text-status-success bg-[rgba(34,197,94,0.1)] border border-[rgba(34,197,94,0.2)]'
+                        : 'text-text-muted bg-panel border border-border'].join(' ')}>
+                      {c.running ? 'running' : 'stopped'}
+                    </span>
+                    {c.ports && (
+                      <span className="text-text-muted font-mono text-[10px] ml-2 shrink-0">{c.ports}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Start annotation stack */}
+          <div className="space-y-3">
+            <SectionHeader>Annotation Stack</SectionHeader>
+            <InfoBox>
+              Starts Label Studio (:3005) and CVAT (:3006) via{' '}
+              <code>docker compose --profile annotation up -d</code>
+            </InfoBox>
+            <button
+              onClick={startAnnotation}
+              disabled={starting || !status.docker_available}
+              className="btn-primary w-full">
+              {starting
+                ? <><Loader2 className="w-4 h-4 animate-spin" />Starting containers…</>
+                : runningContainers.length > 0
+                ? <><RefreshCw className="w-4 h-4" />Restart Annotation Stack</>
+                : <><Play className="w-4 h-4" />Start Annotation Stack</>}
+            </button>
+            {!status.docker_available && (
+              <p className="text-xs text-text-muted text-center">Docker must be available to start containers.</p>
+            )}
+            {startLog && (
+              <div className="rounded-md p-3 font-mono text-xs"
+                style={{
+                  background: '#0d1117', border: `1px solid ${startOk ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                  color: startOk ? '#22c55e' : '#f87171',
+                }}>
+                <pre className="whitespace-pre-wrap break-words">{startLog}</pre>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      <InfoBox>
+        You can skip this step if you use Label Studio / CVAT outside Docker.
+        Docker containers are not required for core CTIP functionality.
+      </InfoBox>
+    </div>
+  );
+}
+
+// ── Step: ML Models ───────────────────────────────────────────────────────────
+
+function StepModels() {
+  const [catalog, setCatalog] = useState<ModelInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  // task_id → DownloadTask
+  const [tasks, setTasks] = useState<Record<string, DownloadTask>>({});
+  // model_id → task_id
+  const [modelTasks, setModelTasks] = useState<Record<string, string>>({});
+  const pollRef = useRef<Record<string, ReturnType<typeof setInterval>>>({});
+
+  const loadCatalog = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/setup/models/status');
+      setCatalog(res.data.models as ModelInfo[]);
+    } catch {
+      setCatalog([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCatalog();
+    return () => {
+      // cleanup all polls on unmount
+      Object.values(pollRef.current).forEach(clearInterval);
+    };
+  }, []);
+
+  const pollTask = (taskId: string, modelId: string) => {
+    if (pollRef.current[taskId]) return;
+    pollRef.current[taskId] = setInterval(async () => {
+      try {
+        const res = await api.get(`/setup/models/download/${taskId}`);
+        const t = res.data as DownloadTask;
+        setTasks(prev => ({ ...prev, [taskId]: t }));
+        if (t.status === 'done' || t.status === 'error') {
+          clearInterval(pollRef.current[taskId]);
+          delete pollRef.current[taskId];
+          if (t.status === 'done') {
+            // Refresh catalog to mark model as present
+            await loadCatalog();
+          }
+        }
+      } catch {
+        clearInterval(pollRef.current[taskId]);
+        delete pollRef.current[taskId];
+      }
+    }, 500);
+  };
+
+  const startDownload = async (model: ModelInfo) => {
+    try {
+      const res = await api.post('/setup/models/download', { model_id: model.id });
+      const taskId: string = res.data.task_id;
+      setModelTasks(prev => ({ ...prev, [model.id]: taskId }));
+      setTasks(prev => ({
+        ...prev,
+        [taskId]: { status: 'queued', progress: 0, filename: model.filename, size_mb: model.size_mb, detail: 'Starting…' },
+      }));
+      pollTask(taskId, model.id);
+    } catch (e: unknown) {
+      console.error('Download start failed', e);
+    }
+  };
+
+  const requiredModels = catalog.filter(m => m.required);
+  const optionalModels = catalog.filter(m => !m.required);
+  const allRequiredPresent = requiredModels.every(m => m.present);
+
+  const renderModelRow = (model: ModelInfo) => {
+    const taskId = modelTasks[model.id];
+    const task = taskId ? tasks[taskId] : undefined;
+    const isDownloading = task?.status === 'downloading' || task?.status === 'queued';
+    const isDone = task?.status === 'done' || model.present;
+    const isError = task?.status === 'error';
+
+    return (
+      <div key={model.id} className="rounded-lg p-3 space-y-2"
+        style={{
+          background: '#0d1117',
+          border: `1px solid ${isDone ? 'rgba(34,197,94,0.25)' : isError ? 'rgba(239,68,68,0.2)' : '#21262d'}`,
+        }}>
+        <div className="flex items-center gap-3">
+          {isDone
+            ? <CheckCircle className="w-4 h-4 text-status-success shrink-0" />
+            : isError
+            ? <XCircle className="w-4 h-4 text-status-error shrink-0" />
+            : isDownloading
+            ? <Loader2 className="w-4 h-4 text-accent animate-spin shrink-0" />
+            : <ArrowDownToLine className="w-4 h-4 text-text-muted shrink-0" />}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium text-text-primary font-mono">{model.filename}</span>
+              {model.required && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                  style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa' }}>
+                  required
+                </span>
+              )}
+              {model.present && !task && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium text-status-success"
+                  style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                  present
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-text-muted mt-0.5">
+              {model.id} · {model.size_mb} MB
+              {model.present && model.file_size_mb && (
+                <span className="ml-2 text-status-success">({model.file_size_mb.toFixed(1)} MB on disk)</span>
+              )}
+            </p>
+          </div>
+          {!isDone && !isDownloading && (
+            <button
+              onClick={() => startDownload(model)}
+              className="btn-secondary text-xs shrink-0 flex items-center gap-1.5">
+              <Download className="w-3.5 h-3.5" />
+              Download
+            </button>
+          )}
+          {isDone && model.present && !isDownloading && (
+            <button
+              onClick={() => startDownload(model)}
+              className="text-xs text-text-muted hover:text-text-secondary shrink-0 flex items-center gap-1 transition-colors">
+              <RefreshCw className="w-3 h-3" />
+              Re-download
+            </button>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        {isDownloading && task && (
+          <div className="space-y-1">
+            <div className="h-1.5 rounded-full" style={{ background: '#21262d' }}>
+              <div className="h-1.5 rounded-full bg-accent transition-all duration-300"
+                style={{ width: `${task.progress}%` }} />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-text-muted">
+              <span>{task.detail}</span>
+              <span>{task.progress.toFixed(0)}%{task.downloaded_mb ? ` · ${task.downloaded_mb.toFixed(1)} / ${task.size_mb} MB` : ''}</span>
+            </div>
+          </div>
+        )}
+
+        {isError && task && (
+          <p className="text-xs text-status-error">{task.detail}</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-text-primary">ML Model Weights</h2>
+          <p className="text-sm text-text-muted mt-1">
+            Download YOLO11 and SAM2 weights. Required models must be present before inference.
+          </p>
+        </div>
+        <button onClick={loadCatalog} disabled={loading}
+          className="btn-secondary text-xs flex items-center gap-1.5">
+          <RefreshCw className={['w-3.5 h-3.5', loading ? 'animate-spin' : ''].join(' ')} />
+          Refresh
+        </button>
+      </div>
+
+      {loading && catalog.length === 0 && (
+        <div className="flex items-center gap-3 py-8 justify-center text-text-muted">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+          <span className="text-sm">Loading model catalog…</span>
+        </div>
+      )}
+
+      {catalog.length > 0 && (
+        <>
+          {/* Required */}
+          <div className="space-y-2">
+            <SectionHeader>Required Models</SectionHeader>
+            {requiredModels.map(renderModelRow)}
+          </div>
+
+          {/* Optional */}
+          {optionalModels.length > 0 && (
+            <div className="space-y-2">
+              <SectionHeader>Optional Models</SectionHeader>
+              {optionalModels.map(renderModelRow)}
+            </div>
+          )}
+
+          {/* Download all required shortcut */}
+          {!allRequiredPresent && (
+            <button
+              onClick={() => requiredModels.filter(m => !m.present && !modelTasks[m.id]).forEach(m => startDownload(m))}
+              className="btn-primary w-full">
+              <PackageCheck className="w-4 h-4" />
+              Download All Required Models
+            </button>
+          )}
+
+          {allRequiredPresent && (
+            <SuccessBox>
+              All required models are present. YOLO11s + SAM2-tiny are ready for inference.
+            </SuccessBox>
+          )}
+        </>
+      )}
+
+      <InfoBox>
+        Models are stored in your configured <code>MODELS_DIR</code>. Downloads use GitHub Releases and Meta CDN —
+        ensure internet access is available.
+      </InfoBox>
+    </div>
+  );
+}
+
 // ── Step: Label Studio ────────────────────────────────────────────────────────
 
 function StepLabelStudio({ state, set }: {
   state: WizardState;
   set: (f: keyof WizardState) => (v: string | boolean | number) => void;
 }) {
+  // Account creation
+  const [lsEmail, setLsEmail] = useState('');
+  const [lsPassword, setLsPassword] = useState('');
+  const [creatingAccount, setCreatingAccount] = useState(false);
+  const [accountResult, setAccountResult] = useState<{ ok: boolean; msg: string; token?: string } | null>(null);
+
+  // Connection test
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string; user?: string; projects?: number } | null>(null);
+
+  // Project creation
   const [creating, setCreating] = useState(false);
   const [createResult, setCreateResult] = useState<{ ok: boolean; msg: string; url?: string; id?: number } | null>(null);
+
+  const createAccount = async () => {
+    setCreatingAccount(true);
+    setAccountResult(null);
+    try {
+      const res = await api.post('/setup/label-studio/create-account', {
+        url: state.labelStudioUrl,
+        email: lsEmail,
+        password: lsPassword,
+      });
+      const d = res.data;
+      if (d.ok) {
+        setAccountResult({ ok: true, msg: d.already_existed ? 'Account already exists — token retrieved.' : 'Account created!', token: d.token });
+        if (d.token) {
+          (set('labelStudioKey') as (v: string) => void)(d.token);
+        }
+      } else {
+        setAccountResult({ ok: false, msg: d.detail || 'Account creation failed.' });
+      }
+    } catch (e: unknown) {
+      setAccountResult({ ok: false, msg: e instanceof Error ? e.message : 'Request failed' });
+    } finally {
+      setCreatingAccount(false);
+    }
+  };
 
   const testConnection = async () => {
     setTesting(true);
@@ -535,27 +1036,67 @@ function StepLabelStudio({ state, set }: {
       <div>
         <h2 className="text-xl font-semibold text-text-primary">Label Studio Setup</h2>
         <p className="text-sm text-text-muted mt-1">
-          Configure and test your annotation platform. CTIP will create a ready-to-use trichome detection project.
+          Create an account, configure connection, and set up the trichome annotation project.
         </p>
       </div>
 
       <InfoBox>
-        Label Studio runs on port 3005 (Docker). Start it with:{' '}
-        <code>cd docker && docker compose --profile annotation up -d</code>
+        Label Studio runs on port 3005 (Docker). Start it from the Docker step, or run:{' '}
+        <code>cd docker &amp;&amp; docker compose --profile annotation up -d</code>
       </InfoBox>
 
-      {/* Connection */}
+      {/* Account Creation */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary border-b border-border pb-2">
-          Connection
+        <SectionHeader>
+          <span className="flex items-center gap-2"><UserPlus className="w-3.5 h-3.5 inline" /> Create Account</span>
+        </SectionHeader>
+        <p className="text-xs text-text-muted">
+          Create a new Label Studio account. If an account with this email already exists, the existing token will be retrieved.
         </p>
         <InputField label="URL" value={state.labelStudioUrl}
           onChange={set('labelStudioUrl') as (v: string) => void}
           placeholder="http://localhost:3005" />
+        <div className="grid grid-cols-2 gap-3">
+          <InputField label="Email" value={lsEmail} onChange={setLsEmail}
+            placeholder="admin@ctip.local" type="text" />
+          <InputField label="Password" value={lsPassword} onChange={setLsPassword}
+            placeholder="••••••••" type="password" />
+        </div>
+        <button
+          onClick={createAccount}
+          disabled={creatingAccount || !lsEmail || !lsPassword}
+          className="btn-secondary w-full">
+          {creatingAccount
+            ? <><Loader2 className="w-4 h-4 animate-spin" />Creating account…</>
+            : <><UserPlus className="w-4 h-4" />Create / Get Account</>}
+        </button>
+        {accountResult && (
+          <div className={['flex items-start gap-2 rounded-md p-3 text-xs',
+            accountResult.ok ? 'text-status-success' : 'text-status-error'].join(' ')}
+            style={{
+              background: accountResult.ok ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)',
+              border: `1px solid ${accountResult.ok ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+            }}>
+            {accountResult.ok ? <CheckCircle className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+            <div>
+              <p>{accountResult.msg}</p>
+              {accountResult.ok && accountResult.token && (
+                <p className="text-text-muted mt-0.5">API key auto-filled below ↓</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Connection */}
+      <div className="space-y-3">
+        <SectionHeader>
+          <span className="flex items-center gap-2"><KeyRound className="w-3.5 h-3.5 inline" /> Connection & Auth</span>
+        </SectionHeader>
         <InputField label="API Key" value={state.labelStudioKey}
           onChange={set('labelStudioKey') as (v: string) => void}
           placeholder="••••••••••••••••••••••"
-          hint="Label Studio → Account & Settings → Access Token"
+          hint="Label Studio → Account & Settings → Access Token (auto-filled after account creation)"
           type="password" />
         <button onClick={testConnection} disabled={testing}
           className="btn-secondary w-full">
@@ -579,9 +1120,7 @@ function StepLabelStudio({ state, set }: {
 
       {/* Project setup */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary border-b border-border pb-2">
-          Annotation Project
-        </p>
+        <SectionHeader>Annotation Project</SectionHeader>
         <InputField label="Project Name" value={state.labelStudioProjectName}
           onChange={set('labelStudioProjectName') as (v: string) => void}
           placeholder="CTIP — Trichome Detection" />
@@ -656,7 +1195,7 @@ function StepServices({ state, set, errors }: {
         <p className="text-sm text-text-muted mt-1">Connect MLflow and optionally Weights &amp; Biases.</p>
       </div>
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary border-b border-border pb-2">MLflow</p>
+        <SectionHeader>MLflow</SectionHeader>
         <InputField label="Tracking URI" value={state.mlflowUri}
           onChange={set('mlflowUri') as (v: string) => void}
           placeholder="http://localhost:3004" error={errors.mlflowUri} />
@@ -665,7 +1204,7 @@ function StepServices({ state, set, errors }: {
           placeholder="trichome-detection" />
       </div>
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary border-b border-border pb-2">Weights &amp; Biases (optional)</p>
+        <SectionHeader>Weights &amp; Biases (optional)</SectionHeader>
         <Toggle label="Enable W&B logging" hint="Requires a wandb.ai account" value={state.useWandb} onChange={set('useWandb')} />
         {state.useWandb && (
           <>
@@ -988,36 +1527,36 @@ export default function SetupPage() {
             <p className="text-xs text-text-muted">Full Installer</p>
           </div>
         </div>
-        <nav className="space-y-1">
+        <nav className="space-y-0.5 overflow-y-auto flex-1">
           {STEPS.map((step, idx) => {
             const Icon = step.icon;
             const isActive = idx === currentStep && !isVerificationScreen;
             const isDone = idx < currentStep || isVerificationScreen;
             return (
-              <div key={step.id} className={['flex items-center gap-3 px-3 py-2.5 rounded-md text-sm',
+              <div key={step.id} className={['flex items-center gap-3 px-3 py-2 rounded-md text-sm',
                 isActive ? 'bg-accent/15 text-accent font-medium'
                   : isDone ? 'text-text-secondary' : 'text-text-muted'].join(' ')}>
-                <div className={['w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border',
+                <div className={['w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border',
                   isActive ? 'border-accent bg-accent text-white'
                     : isDone ? 'border-accent bg-accent/20 text-accent'
                     : 'border-border bg-panel text-text-muted'].join(' ')}>
                   {isDone ? '✓' : idx + 1}
                 </div>
-                <span>{step.label}</span>
+                <span className="text-xs">{step.label}</span>
               </div>
             );
           })}
           {/* Verification pseudo-step */}
-          <div className={['flex items-center gap-3 px-3 py-2.5 rounded-md text-sm',
+          <div className={['flex items-center gap-3 px-3 py-2 rounded-md text-sm',
             isVerificationScreen ? 'bg-accent/15 text-accent font-medium' : 'text-text-muted'].join(' ')}>
-            <div className={['w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border',
+            <div className={['w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border',
               isVerificationScreen ? 'border-accent bg-accent text-white' : 'border-border bg-panel text-text-muted'].join(' ')}>
               {isVerificationScreen ? '✓' : STEPS.length + 1}
             </div>
-            <span>Verification</span>
+            <span className="text-xs">Verification</span>
           </div>
         </nav>
-        <div className="mt-auto text-xs text-text-muted leading-relaxed">
+        <div className="mt-6 text-xs text-text-muted leading-relaxed">
           Re-run anytime from sidebar: <span className="text-text-secondary">First-Time Setup</span>
         </div>
       </aside>
@@ -1033,15 +1572,17 @@ export default function SetupPage() {
           <div className="w-full max-w-xl">
 
             <div key={currentStep} className="space-y-8 animate-wizard-step">
-              {currentStep === 0 && <StepWelcome />}
-              {currentStep === 1 && <StepSystemCheck />}
-              {currentStep === 2 && <StepNetwork state={state} set={set} errors={errors} />}
-              {currentStep === 3 && <StepHardware state={state} set={set} errors={errors} />}
-              {currentStep === 4 && <StepStorage state={state} set={set} errors={errors} />}
-              {currentStep === 5 && <StepLabelStudio state={state} set={set} />}
-              {currentStep === 6 && <StepServices state={state} set={set} errors={errors} />}
-              {currentStep === 7 && <StepSecurity state={state} set={set} />}
-              {currentStep === 8 && <StepReview state={state} />}
+              {currentStep === 0  && <StepWelcome />}
+              {currentStep === 1  && <StepSystemCheck />}
+              {currentStep === 2  && <StepNetwork state={state} set={set} errors={errors} />}
+              {currentStep === 3  && <StepHardware state={state} set={set} errors={errors} />}
+              {currentStep === 4  && <StepStorage state={state} set={set} errors={errors} />}
+              {currentStep === 5  && <StepDocker />}
+              {currentStep === 6  && <StepModels />}
+              {currentStep === 7  && <StepLabelStudio state={state} set={set} />}
+              {currentStep === 8  && <StepServices state={state} set={set} errors={errors} />}
+              {currentStep === 9  && <StepSecurity state={state} set={set} />}
+              {currentStep === 10 && <StepReview state={state} />}
               {isVerificationScreen && (
                 <StepVerification onDone={() => router.replace('/')} />
               )}
