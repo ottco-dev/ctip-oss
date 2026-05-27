@@ -15,7 +15,6 @@ import {
   RefreshCw,
   Loader2,
   ChevronDown,
-  Filter,
   Trash2,
   Container,
   Play,
@@ -24,7 +23,13 @@ import {
   ChevronRight,
   FileText,
   Settings,
-  ExternalLink,
+  Bell,
+  BellRing,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Download,
+  PackageOpen,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -54,12 +59,50 @@ interface ContainerSummary {
   compose_service: string | null;
 }
 
+type TaskStatus = "queued" | "running" | "done" | "error";
+
+interface BgTaskStatus {
+  id: string;
+  status: TaskStatus;
+  started_at: number;
+  finished_at: number | null;
+  ok: boolean | null;
+  log: string[];
+  profile: string;
+  elapsed_seconds: number | null;
+}
+
 interface SubsystemStatus {
   name: string;
   label: string;
   icon: React.ElementType;
   endpoint: string;
   color: string;
+}
+
+// ---------------------------------------------------------------------------
+// Notification helper
+// ---------------------------------------------------------------------------
+
+function requestNotifPermission() {
+  if (typeof window === "undefined") return;
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function sendBrowserNotif(title: string, body: string, ok: boolean) {
+  if (typeof window === "undefined") return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  try {
+    new Notification(title, {
+      body,
+      icon: ok ? undefined : undefined,
+      tag: "ctip-compose",
+    });
+  } catch {
+    // ignore — some browsers block non-HTTPS notifications
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +172,51 @@ function LogRow({ entry }: { entry: LogEntry }) {
 }
 
 // ---------------------------------------------------------------------------
+// Toast notification (in-app)
+// ---------------------------------------------------------------------------
+
+interface ToastProps {
+  ok: boolean;
+  msg: string;
+  elapsed: number | null;
+  onClose: () => void;
+}
+
+function ComposeToast({ ok, msg, elapsed, onClose }: ToastProps) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 12_000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-50 flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl max-w-sm"
+      style={{
+        background: ok ? "rgba(22,27,34,0.97)" : "rgba(22,27,34,0.97)",
+        border: `1px solid ${ok ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}`,
+        backdropFilter: "blur(8px)",
+      }}
+    >
+      {ok
+        ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "#4ade80" }} />
+        : <XCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "#ef4444" }} />}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold" style={{ color: ok ? "#4ade80" : "#ef4444" }}>
+          {ok ? "Stack ready" : "Stack failed"}
+        </div>
+        <div className="text-xs mt-0.5" style={{ color: "#8b949e" }}>{msg}</div>
+        {elapsed !== null && (
+          <div className="text-[10px] mt-1 flex items-center gap-1" style={{ color: "#484f58" }}>
+            <Clock className="w-3 h-3" /> {elapsed}s
+          </div>
+        )}
+      </div>
+      <button onClick={onClose} className="text-[#484f58] hover:text-text-muted shrink-0 text-lg leading-none">×</button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // ContainersPanel
 // ---------------------------------------------------------------------------
 
@@ -137,12 +225,26 @@ function ContainersPanel() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [containerLogs, setContainerLogs] = useState<Record<string, string[]>>({});
   const [logStreaming, setLogStreaming] = useState<string | null>(null);
+
+  // SSE compose (legacy — keeps connection open)
   const [composeLog, setComposeLog] = useState<string[]>([]);
   const [composeRunning, setComposeRunning] = useState(false);
   const [composeOk, setComposeOk] = useState<boolean | null>(null);
+
+  // Background task
+  const [bgTaskId, setBgTaskId] = useState<string | null>(null);
+  const [bgTask, setBgTask] = useState<BgTaskStatus | null>(null);
+  const [toast, setToast] = useState<{ ok: boolean; msg: string; elapsed: number | null } | null>(null);
+  const [showBgLog, setShowBgLog] = useState(false);
+  const bgPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bgLogRef = useRef<HTMLPreElement>(null);
+
   const [showEnv, setShowEnv] = useState(false);
   const composeLogRef = useRef<HTMLPreElement>(null);
   const esRef = useRef<EventSource | null>(null);
+
+  // Request notification permission on mount
+  useEffect(() => { requestNotifPermission(); }, []);
 
   const { data: containers = [], isLoading, refetch } = useQuery<ContainerSummary[]>({
     queryKey: ["containers"],
@@ -162,8 +264,90 @@ function ContainersPanel() {
     onSettled: () => { setTimeout(() => refetch(), 1500); },
   });
 
+  // Auto-scroll compose log
   useEffect(() => { if (composeLogRef.current) composeLogRef.current.scrollTop = composeLogRef.current.scrollHeight; }, [composeLog]);
+  // Auto-scroll bg task log
+  useEffect(() => { if (bgLogRef.current) bgLogRef.current.scrollTop = bgLogRef.current.scrollHeight; }, [bgTask?.log]);
+  // Cleanup SSE on unmount
   useEffect(() => () => { esRef.current?.close(); }, []);
+
+  // ── Per-container pull ───────────────────────────────────────────────────
+
+  const [pullingContainer, setPullingContainer] = useState<string | null>(null);
+  const [pullResult, setPullResult] = useState<Record<string, { ok: boolean; msg: string }>>({});
+
+  const pullContainerImage = useCallback(async (name: string) => {
+    setPullingContainer(name);
+    try {
+      const res = await api.post(`/containers/${name}/pull`);
+      setPullResult(prev => ({ ...prev, [name]: { ok: res.data.ok, msg: res.data.detail } }));
+      setTimeout(() => refetch(), 2000);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "pull failed";
+      setPullResult(prev => ({ ...prev, [name]: { ok: false, msg } }));
+    } finally {
+      setPullingContainer(null);
+    }
+  }, [refetch]);
+
+  // ── Background task polling ──────────────────────────────────────────────
+
+  const stopBgPoll = useCallback(() => {
+    if (bgPollRef.current) { clearInterval(bgPollRef.current); bgPollRef.current = null; }
+  }, []);
+
+  const pollTask = useCallback(async (id: string) => {
+    try {
+      const res = await api.get(`/containers/compose/task/${id}`);
+      const task: BgTaskStatus = res.data;
+      setBgTask(task);
+      if (task.status === "done" || task.status === "error") {
+        stopBgPoll();
+        const ok = task.ok === true;
+        const msg = ok
+          ? "Annotation stack is up and running."
+          : `docker compose exited with errors. Check the log for details.`;
+        // Browser notification
+        sendBrowserNotif(ok ? "✅ CTIP — Stack Ready" : "❌ CTIP — Stack Failed", msg, ok);
+        // In-app toast
+        setToast({ ok, msg, elapsed: task.elapsed_seconds });
+        // Refresh container list
+        setTimeout(() => refetch(), 2000);
+      }
+    } catch {
+      // transient error — keep polling
+    }
+  }, [stopBgPoll, refetch]);
+
+  const startBgTask = useCallback(async (profile = "annotation", reinstall = false) => {
+    try {
+      stopBgPoll();
+      setBgTask(null);
+      setBgTaskId(null);
+      setShowBgLog(true);
+      // Request notification permission before starting
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+        await Notification.requestPermission();
+      }
+      const endpoint = reinstall
+        ? `/containers/compose/reinstall/background?profile=${profile}`
+        : `/containers/compose/up/background?profile=${profile}`;
+      const res = await api.post(endpoint);
+      const { task_id } = res.data;
+      setBgTaskId(task_id);
+      // Initial poll immediately
+      await pollTask(task_id);
+      // Then every 3 seconds
+      bgPollRef.current = setInterval(() => pollTask(task_id), 3_000);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? String(err);
+      setToast({ ok: false, msg, elapsed: null });
+    }
+  }, [stopBgPoll, pollTask]);
+
+  useEffect(() => () => stopBgPoll(), [stopBgPoll]);
+
+  // ── SSE compose (keeps connection open) ──────────────────────────────────
 
   const fetchLogs = async (name: string) => {
     const res = await api.get(`/containers/${name}/logs?tail=100`);
@@ -172,7 +356,6 @@ function ContainersPanel() {
 
   const streamLogs = (name: string) => {
     if (logStreaming === name) {
-      // already streaming this one — stop
       setLogStreaming(null);
       return;
     }
@@ -186,40 +369,11 @@ function ContainersPanel() {
     es.onerror = () => { setLogStreaming(null); es.close(); };
   };
 
-  const runCompose = (action: "up" | "down") => {
-    esRef.current?.close();
-    setComposeLog([]);
-    setComposeRunning(true);
-    setComposeOk(null);
-
-    const endpoint = action === "up"
-      ? "/api/v1/containers/compose/up/stream?profile=annotation"
-      : null;
-
-    if (!endpoint) {
-      // down has no stream — just call REST
-      api.post("/containers/compose/down?profile=annotation").then(r => {
-        setComposeOk(r.data.ok);
-        setComposeLog([r.data.detail]);
-        setComposeRunning(false);
-        setTimeout(() => refetch(), 2000);
-      });
-      return;
-    }
-
-    const es = new EventSource(endpoint);
-    esRef.current = es;
-    es.onmessage = (e) => {
-      if ((e.data as string).startsWith('[DONE:')) {
-        setComposeOk((e.data as string).includes('[DONE:OK]'));
-        setComposeRunning(false);
-        es.close(); esRef.current = null;
-        setTimeout(() => refetch(), 2000);
-      } else {
-        setComposeLog(prev => [...prev, e.data]);
-      }
-    };
-    es.onerror = () => { setComposeOk(false); setComposeRunning(false); es.close(); esRef.current = null; };
+  const runComposeDown = () => {
+    api.post("/containers/compose/down?profile=annotation").then(r => {
+      setToast({ ok: r.data.ok, msg: r.data.detail?.slice(0, 200) ?? "done", elapsed: null });
+      setTimeout(() => refetch(), 2000);
+    });
   };
 
   const running = containers.filter(c => c.running);
@@ -228,8 +382,24 @@ function ContainersPanel() {
   const rawEnv: Record<string, string> = composeConfig?.raw_env ?? {};
   const sensitiveKeys = new Set(['LABEL_STUDIO_API_KEY', 'CVAT_PASSWORD', 'POSTGRES_PASSWORD', 'SECRET_KEY']);
 
+  const bgIsActive = bgTask?.status === "queued" || bgTask?.status === "running";
+
+  // Notification permission display
+  const notifGranted = typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted";
+  const notifBlocked = typeof window !== "undefined" && "Notification" in window && Notification.permission === "denied";
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* In-app toast */}
+      {toast && (
+        <ComposeToast
+          ok={toast.ok}
+          msg={toast.msg}
+          elapsed={toast.elapsed}
+          onClose={() => setToast(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid #21262d" }}>
         <div className="flex items-center gap-2">
@@ -246,26 +416,56 @@ function ContainersPanel() {
             </span>
           )}
         </div>
-        <button onClick={() => refetch()} disabled={isLoading}
-          className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-lg transition-colors"
-          style={{ background: "#161b22", border: "1px solid #21262d", color: "#8b949e" }}>
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Notification status indicator */}
+          {notifBlocked && (
+            <span className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded" style={{ color: "#ef4444", background: "rgba(239,68,68,0.08)" }}>
+              <Bell className="w-3 h-3" /> Notifications blocked
+            </span>
+          )}
+          {notifGranted && (
+            <span className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded" style={{ color: "#4ade80", background: "rgba(34,197,94,0.08)" }}>
+              <BellRing className="w-3 h-3" /> Notifications on
+            </span>
+          )}
+          <button onClick={() => refetch()} disabled={isLoading}
+            className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-lg transition-colors"
+            style={{ background: "#161b22", border: "1px solid #21262d", color: "#8b949e" }}>
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {/* Compose actions */}
         <div className="p-4 space-y-3" style={{ borderBottom: "1px solid #21262d" }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#484f58" }}>Annotation Stack</p>
-          <div className="flex gap-2">
-            <button onClick={() => runCompose("up")} disabled={composeRunning}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors flex-1"
-              style={{ background: "rgba(35,134,54,0.15)", border: "1px solid rgba(35,134,54,0.3)", color: "#22c55e" }}>
-              {composeRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-              Start (--profile annotation)
+
+          <div className="flex gap-2 flex-wrap">
+            {/* Background start */}
+            <button onClick={() => startBgTask("annotation")} disabled={bgIsActive}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors flex-1 min-w-0"
+              style={{
+                background: bgIsActive ? "rgba(59,130,246,0.08)" : "rgba(35,134,54,0.15)",
+                border: `1px solid ${bgIsActive ? "rgba(59,130,246,0.3)" : "rgba(35,134,54,0.3)"}`,
+                color: bgIsActive ? "#60a5fa" : "#22c55e",
+              }}>
+              {bgIsActive
+                ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Running…</>
+                : <><BellRing className="w-3.5 h-3.5" /> Start + Notify</>}
             </button>
-            <button onClick={() => runCompose("down")} disabled={composeRunning}
+
+            {/* Reinstall (pull + force-recreate) */}
+            <button onClick={() => startBgTask("annotation", true)} disabled={bgIsActive}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+              style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", color: "#a855f7" }}>
+              <PackageOpen className="w-3.5 h-3.5" />
+              Reinstall all
+            </button>
+
+            {/* Stop all */}
+            <button onClick={runComposeDown}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
               style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>
               <Square className="w-3.5 h-3.5" />
@@ -273,28 +473,61 @@ function ContainersPanel() {
             </button>
           </div>
 
-          {/* Compose live log */}
-          {(composeLog.length > 0 || composeRunning) && (
+          {/* Background task status panel */}
+          {bgTask && (
             <div className="rounded-md overflow-hidden"
-              style={{ border: `1px solid ${composeOk === false ? 'rgba(239,68,68,0.3)' : composeOk === true ? 'rgba(34,197,94,0.3)' : '#21262d'}` }}>
-              <div className="flex items-center gap-2 px-3 py-1.5" style={{ background: "#161b22", borderBottom: "1px solid #21262d" }}>
+              style={{ border: `1px solid ${bgTask.status === "error" ? 'rgba(239,68,68,0.3)' : bgTask.status === "done" ? 'rgba(34,197,94,0.3)' : 'rgba(59,130,246,0.3)'}` }}>
+              {/* Title bar */}
+              <div className="flex items-center gap-2 px-3 py-1.5 cursor-pointer select-none"
+                style={{ background: "#161b22", borderBottom: showBgLog ? "1px solid #21262d" : "none" }}
+                onClick={() => setShowBgLog(v => !v)}>
                 <div className="flex gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-[#ff5f57]" />
                   <div className="w-2 h-2 rounded-full bg-[#febc2e]" />
                   <div className="w-2 h-2 rounded-full bg-[#28c840]" />
                 </div>
-                <span className="text-[10px] font-mono text-text-muted flex-1">docker compose up</span>
-                {composeRunning && <Loader2 className="w-3 h-3 animate-spin text-accent" />}
-                {composeOk === true && <span className="text-[10px] text-status-success">✓ done</span>}
-                {composeOk === false && <span className="text-[10px] text-status-error">✗ failed</span>}
+                <span className="text-[10px] font-mono text-text-muted flex-1">
+                  docker compose up — background
+                  {bgTask.elapsed_seconds !== null && (
+                    <span className="ml-2 opacity-60">{bgTask.elapsed_seconds}s</span>
+                  )}
+                </span>
+                <div className="flex items-center gap-2">
+                  {bgIsActive && <Loader2 className="w-3 h-3 animate-spin text-[#60a5fa]" />}
+                  {bgTask.status === "done" && bgTask.ok && <CheckCircle className="w-3 h-3 text-[#4ade80]" />}
+                  {bgTask.status === "error" && <XCircle className="w-3 h-3 text-[#ef4444]" />}
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+                    style={{
+                      background: bgIsActive ? "rgba(59,130,246,0.12)" : bgTask.ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
+                      color: bgIsActive ? "#60a5fa" : bgTask.ok ? "#4ade80" : "#ef4444",
+                    }}>
+                    {bgTask.status}
+                  </span>
+                  <ChevronRight className={`w-3 h-3 text-text-muted transition-transform ${showBgLog ? 'rotate-90' : ''}`} />
+                </div>
               </div>
-              <pre ref={composeLogRef}
-                className="p-2 font-mono text-[10px] leading-relaxed overflow-y-auto max-h-40 whitespace-pre-wrap break-all"
-                style={{ background: "#0d1117", color: "#8b949e" }}>
-                {composeLog.join('\n')}
-                {composeRunning && <span className="animate-pulse text-accent">▌</span>}
-              </pre>
+
+              {/* Log output */}
+              {showBgLog && (
+                <pre ref={bgLogRef}
+                  className="p-2 font-mono text-[10px] leading-relaxed overflow-y-auto max-h-48 whitespace-pre-wrap break-all"
+                  style={{ background: "#0d1117", color: "#8b949e" }}>
+                  {bgTask.log.length > 0
+                    ? bgTask.log.join('\n')
+                    : bgIsActive
+                      ? "Waiting for output…"
+                      : "No output captured."}
+                  {bgIsActive && <span className="animate-pulse text-[#60a5fa]">▌</span>}
+                </pre>
+              )}
             </div>
+          )}
+
+          {/* Notification hint (if not yet granted) */}
+          {!notifGranted && !notifBlocked && (
+            <p className="text-[10px]" style={{ color: "#484f58" }}>
+              💡 Click &ldquo;Start + Notify&rdquo; — you&apos;ll be asked for notification permission so CTIP can alert you when the stack is ready, even if you navigate away.
+            </p>
           )}
         </div>
 
@@ -374,6 +607,22 @@ function ContainersPanel() {
                       className="p-1 rounded hover:bg-panel text-text-muted transition-colors">
                       <RotateCcw className="w-3.5 h-3.5" />
                     </button>
+                    {/* Pull latest image */}
+                    <button
+                      title="Pull latest image & restart"
+                      disabled={pullingContainer === c.name}
+                      onClick={() => pullContainerImage(c.name)}
+                      className={`p-1 rounded transition-colors ${
+                        pullResult[c.name]?.ok === true
+                          ? 'text-status-success'
+                          : pullResult[c.name]?.ok === false
+                            ? 'text-status-error'
+                            : 'text-text-muted hover:bg-panel'
+                      }`}>
+                      {pullingContainer === c.name
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <Download className="w-3.5 h-3.5" />}
+                    </button>
                     {/* Toggle logs */}
                     <button title="Logs"
                       onClick={() => {
@@ -399,6 +648,18 @@ function ContainersPanel() {
                 {/* Expanded log panel */}
                 {isExpanded && (
                   <div style={{ borderTop: "1px solid #21262d" }}>
+                    {/* Pull result banner */}
+                    {pullResult[c.name] && (
+                      <div className="px-3 py-1.5 text-[10px] font-mono flex items-center gap-2"
+                        style={{
+                          background: pullResult[c.name].ok ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)",
+                          borderBottom: "1px solid #21262d",
+                          color: pullResult[c.name].ok ? "#4ade80" : "#ef4444",
+                        }}>
+                        {pullResult[c.name].ok ? <CheckCircle className="w-3 h-3 shrink-0" /> : <XCircle className="w-3 h-3 shrink-0" />}
+                        <span className="truncate">{pullResult[c.name].msg}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between px-3 py-1.5"
                       style={{ background: "#161b22", borderBottom: "1px solid #21262d" }}>
                       <span className="text-[10px] font-mono text-text-muted">
