@@ -13,10 +13,12 @@ from backend.api.v1 import (
     inference,
     labelstudio,
     experiments,  # TDB-008: extracted from inline block
+    setup,
 )
 
 router = APIRouter()
 
+router.include_router(setup.router)
 router.include_router(system.router)
 router.include_router(training.router)
 router.include_router(datasets.router)

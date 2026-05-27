@@ -1,6 +1,6 @@
 # Pending Work
 
-Last updated: 2026-05-26 (807 tests passing; annotation stats + schema enforcer tests complete)
+Last updated: 2026-05-27 (807 tests passing; setup wizard + config API shipped)
 
 ---
 
@@ -53,7 +53,10 @@ Last updated: 2026-05-26 (807 tests passing; annotation stats + schema enforcer 
 - [x] Video player — FrameQualityTimeline SVG chart ✅
 - [x] Frame-level thumbnail serving — `GET /video/thumbnail/{id}/{n}` + frontend img tag ✅ 2026-05-26
 - [x] Calibration analytics page — `analytics/page.tsx` wired to ReliabilityDiagram ✅ 2026-05-26
-- [ ] Frontend TypeScript type-check pass (`npm run type-check`)
+- [x] Frontend TypeScript type-check pass ✅ 2026-05-27 (0 errors)
+- [x] Setup wizard (`/setup`) — OS-style 7-step first-run assistant ✅ 2026-05-27
+- [ ] nginx.conf dynamic `PUBLIC_DOMAIN` env var injection (currently hardcoded `server_name`)
+- [ ] `tests/unit/test_setup_api.py` — pytest unit tests for config API endpoints
 
 ### Inference
 - [ ] TensorRT full implementation (requires NVIDIA TRT SDK — not in venv)
