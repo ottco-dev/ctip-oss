@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { getWikiPage, WIKI_PAGES } from '@/content/wiki/index';
 import { WikiRenderer } from '@/components/wiki/WikiRenderer';
-import { useWikiLang } from '../layout';
+import { useWikiLang } from '@/components/wiki/WikiLangContext';
 
 export default function WikiPage() {
   const { slug } = useParams<{ slug: string }>();

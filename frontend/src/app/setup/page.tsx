@@ -561,13 +561,24 @@ function StepDocker() {
     setStartLog('');
     setStartOk(null);
     try {
-      const res = await api.post('/setup/docker/start-annotation');
+      const res = await api.post('/setup/docker/start-annotation', { profile: 'annotation' });
       setStartLog(res.data.detail ?? '');
       setStartOk(res.data.ok ?? false);
       // Reload status after a short delay
       setTimeout(() => loadStatus(), 2000);
     } catch (e: unknown) {
-      setStartLog(e instanceof Error ? e.message : 'Failed to start containers');
+      const msg =
+        (e as { response?: { data?: { detail?: string | { msg: string }[] } } })
+          ?.response?.data?.detail;
+      const text =
+        Array.isArray(msg)
+          ? msg.map((d) => d.msg).join(', ')
+          : typeof msg === 'string'
+          ? msg
+          : e instanceof Error
+          ? e.message
+          : 'Failed to start containers';
+      setStartLog(text);
       setStartOk(false);
     } finally {
       setStarting(false);
