@@ -455,6 +455,8 @@ export default function SetupPage() {
         mark_setup_complete: true,
       });
       sessionStorage.removeItem(SESSION_KEY);
+      // Tell SetupGuard not to redirect back here
+      sessionStorage.setItem('ctip-setup-checked', '1');
       setDone(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';

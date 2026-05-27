@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { QueryClientProvider } from './providers';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
+import { SetupGuard } from '@/components/layout/SetupGuard';
 import '@/styles/globals.css';
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className="bg-background text-text-primary">
         <QueryClientProvider>
+          <SetupGuard>
           <div className="flex h-screen overflow-hidden">
             {/* Sidebar */}
             <Sidebar />
@@ -31,6 +33,7 @@ export default function RootLayout({
               </main>
             </div>
           </div>
+          </SetupGuard>
         </QueryClientProvider>
       </body>
     </html>
