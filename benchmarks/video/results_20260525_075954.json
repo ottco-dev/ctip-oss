@@ -1,0 +1,81 @@
+{
+  "benchmark": "video_pipeline",
+  "timestamp": "2026-05-25T07:59:54.862050+00:00",
+  "config": {
+    "n": 200,
+    "frame_size": 512,
+    "warmup": 10
+  },
+  "metrics": {
+    "score_frame_fast": {
+      "n": 200,
+      "avg_ms": 2.745,
+      "median_ms": 2.702,
+      "p95_ms": 2.981,
+      "fps": 364.3
+    },
+    "score_frame_composite": {
+      "n": 200,
+      "avg_ms": 11.012,
+      "median_ms": 10.951,
+      "p95_ms": 11.938,
+      "fps": 90.8
+    },
+    "perceptual_hash": {
+      "n": 200,
+      "avg_ms": 0.174,
+      "median_ms": 0.171,
+      "p95_ms": 0.198,
+      "fps": 5740.6
+    },
+    "hamming_distance": {
+      "n": 200,
+      "avg_ms": 0.337,
+      "median_ms": 0.332,
+      "p95_ms": 0.362,
+      "fps": 2967.7
+    },
+    "deduplicate_frames_50": {
+      "n": 200,
+      "avg_ms": 0.05,
+      "median_ms": 0.05,
+      "p95_ms": 0.052,
+      "fps": 19851.9
+    },
+    "estimate_motion": {
+      "n": 200,
+      "avg_ms": 3.156,
+      "median_ms": 3.404,
+      "p95_ms": 3.665,
+      "fps": 316.8
+    },
+    "classify_motion_sequence_20": {
+      "n": 200,
+      "avg_ms": 0.015,
+      "median_ms": 0.015,
+      "p95_ms": 0.016,
+      "fps": 65275.9
+    },
+    "rank_top_n_50->10": {
+      "n": 200,
+      "avg_ms": 0.004,
+      "median_ms": 0.004,
+      "p95_ms": 0.004,
+      "fps": 256640.6
+    },
+    "rank_diverse_n_50->10": {
+      "n": 200,
+      "avg_ms": 0.017,
+      "median_ms": 0.017,
+      "p95_ms": 0.018,
+      "fps": 57954.3
+    },
+    "rank_adaptive_50->10": {
+      "n": 200,
+      "avg_ms": 0.058,
+      "median_ms": 0.058,
+      "p95_ms": 0.06,
+      "fps": 17126.0
+    }
+  }
+}

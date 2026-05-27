@@ -1,0 +1,63 @@
+{
+  "benchmark": "measurement_pipeline",
+  "timestamp": "2026-05-25T07:57:57.070495+00:00",
+  "config": {
+    "n": 50,
+    "warmup": 2
+  },
+  "metrics": {
+    "combine_uncertainties": {
+      "n": 50,
+      "avg_ms": 0.0,
+      "median_ms": 0.0,
+      "p95_ms": 0.001,
+      "fps": 2560032.7
+    },
+    "propagate_linear": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "propagate_area": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "propagate_ratio": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "focus_induced_uncertainty": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "measurer_measure": {
+      "n": 50,
+      "avg_ms": 0.002,
+      "median_ms": 0.001,
+      "p95_ms": 0.002,
+      "fps": 657626.5
+    },
+    "estimate_scale_from_objective": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "pipeline_measure_single": {
+      "n": 50,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 960910.3
+    },
+    "pipeline_measure_batch_10": {
+      "n": 50,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 843511.8
+    }
+  }
+}

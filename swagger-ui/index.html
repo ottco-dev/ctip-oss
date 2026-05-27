@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrichomeLab API — Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #080b10;
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #e6edf3;
+    }
+
+    /* ── Top bar ────────────────────────────────── */
+    .topbar-custom {
+      background: #0d1117;
+      border-bottom: 1px solid #21262d;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    .topbar-logo svg {
+      color: #238636;
+    }
+
+    .topbar-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .badge-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      border-radius: 4px;
+      padding: 3px 8px;
+    }
+
+    .badge-live::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .backend-link {
+      font-size: 12px;
+      color: #8b949e;
+      text-decoration: none;
+    }
+
+    .backend-link:hover { color: #e6edf3; }
+
+    /* ── Swagger UI overrides ───────────────────── */
+    #swagger-ui {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* Hide the default Swagger topbar */
+    .swagger-ui .topbar { display: none !important; }
+
+    /* Main background */
+    .swagger-ui,
+    .swagger-ui .wrapper,
+    .swagger-ui .opblock-tag-section,
+    .swagger-ui section.models,
+    .swagger-ui .scheme-container {
+      background: transparent !important;
+    }
+
+    /* Info block */
+    .swagger-ui .info {
+      margin: 24px 0 8px;
+    }
+
+    .swagger-ui .info .title {
+      color: #e6edf3 !important;
+      font-size: 24px !important;
+      font-weight: 700 !important;
+    }
+
+    .swagger-ui .info .description p,
+    .swagger-ui .info .description {
+      color: #8b949e !important;
+      font-size: 13px !important;
+    }
+
+    .swagger-ui .info .base-url {
+      color: #484f58 !important;
+    }
+
+    /* Operation blocks */
+    .swagger-ui .opblock {
+      background: #0d1117 !important;
+      border: 1px solid #21262d !important;
+      border-radius: 8px !important;
+      margin-bottom: 8px !important;
+      box-shadow: none !important;
+    }
+
+    .swagger-ui .opblock.is-open {
+      border-color: #30363d !important;
+    }
+
+    .swagger-ui .opblock-summary {
+      border-bottom: none !important;
+      padding: 10px 14px !important;
+    }
+
+    .swagger-ui .opblock-summary:hover {
+      background: rgba(255,255,255,0.02) !important;
+      border-radius: 7px !important;
+    }
+
+    .swagger-ui .opblock-summary-path {
+      color: #e6edf3 !important;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+      font-size: 13px !important;
+    }
+
+    .swagger-ui .opblock-summary-description {
+      color: #8b949e !important;
+      font-size: 12px !important;
+    }
+
+    /* HTTP method badges */
+    .swagger-ui .opblock.opblock-get .opblock-summary-method { background: #1e3a5f !important; color: #60a5fa !important; }
+    .swagger-ui .opblock.opblock-post .opblock-summary-method { background: #1a3a24 !important; color: #22c55e !important; }
+    .swagger-ui .opblock.opblock-put .opblock-summary-method { background: #3a2d0a !important; color: #eab308 !important; }
+    .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: #3a0f0f !important; color: #ef4444 !important; }
+    .swagger-ui .opblock.opblock-patch .opblock-summary-method { background: #2d1a3a !important; color: #a78bfa !important; }
+
+    .swagger-ui .opblock .opblock-summary-method {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      border-radius: 4px !important;
+      min-width: 60px !important;
+      padding: 4px 8px !important;
+    }
+
+    /* GET border left */
+    .swagger-ui .opblock.opblock-get { border-left: 3px solid #3b82f6 !important; }
+    .swagger-ui .opblock.opblock-post { border-left: 3px solid #22c55e !important; }
+    .swagger-ui .opblock.opblock-put { border-left: 3px solid #eab308 !important; }
+    .swagger-ui .opblock.opblock-delete { border-left: 3px solid #ef4444 !important; }
+    .swagger-ui .opblock.opblock-patch { border-left: 3px solid #a78bfa !important; }
+
+    /* Opblock body */
+    .swagger-ui .opblock-body {
+      background: #080b10 !important;
+      border-top: 1px solid #21262d !important;
+    }
+
+    .swagger-ui .opblock-section-header {
+      background: #080b10 !important;
+      border-bottom: 1px solid #21262d !important;
+    }
+
+    .swagger-ui .opblock-section-header h4 {
+      color: #8b949e !important;
+      font-size: 11px !important;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Labels and text */
+    .swagger-ui label,
+    .swagger-ui .parameter__name,
+    .swagger-ui table thead tr td,
+    .swagger-ui table thead tr th {
+      color: #8b949e !important;
+      font-size: 12px !important;
+    }
+
+    .swagger-ui .parameter__type {
+      color: #484f58 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+    }
+
+    /* Response section */
+    .swagger-ui .responses-inner {
+      background: transparent !important;
+    }
+
+    .swagger-ui .response-col_status {
+      color: #e6edf3 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 13px !important;
+    }
+
+    .swagger-ui .response-col_description {
+      color: #8b949e !important;
+      font-size: 12px !important;
+    }
+
+    /* Code / JSON */
+    .swagger-ui .microlight,
+    .swagger-ui pre.microlight {
+      background: #161b22 !important;
+      border: 1px solid #21262d !important;
+      border-radius: 6px !important;
+      color: #8b949e !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 12px !important;
+      padding: 12px !important;
+    }
+
+    /* Try it out button */
+    .swagger-ui .btn.try-out__btn {
+      background: transparent !important;
+      border: 1px solid #30363d !important;
+      color: #8b949e !important;
+      border-radius: 4px !important;
+      font-size: 11px !important;
+    }
+
+    .swagger-ui .btn.try-out__btn:hover {
+      border-color: #238636 !important;
+      color: #22c55e !important;
+    }
+
+    /* Execute button */
+    .swagger-ui .btn.execute {
+      background: #238636 !important;
+      border-color: #238636 !important;
+      color: #fff !important;
+      border-radius: 4px !important;
+      font-size: 12px !important;
+      font-weight: 500 !important;
+    }
+
+    .swagger-ui .btn.execute:hover { background: #2ea043 !important; }
+
+    /* Input fields */
+    .swagger-ui input[type=text],
+    .swagger-ui input[type=password],
+    .swagger-ui input[type=email],
+    .swagger-ui textarea,
+    .swagger-ui select {
+      background: #161b22 !important;
+      border: 1px solid #30363d !important;
+      color: #e6edf3 !important;
+      border-radius: 4px !important;
+      font-size: 12px !important;
+    }
+
+    .swagger-ui input[type=text]:focus,
+    .swagger-ui textarea:focus {
+      border-color: #238636 !important;
+      outline: none !important;
+    }
+
+    /* Tag sections */
+    .swagger-ui .opblock-tag {
+      color: #e6edf3 !important;
+      border-bottom: 1px solid #21262d !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      padding: 16px 0 8px !important;
+    }
+
+    .swagger-ui .opblock-tag:hover { background: transparent !important; }
+
+    .swagger-ui .opblock-tag small {
+      color: #484f58 !important;
+      font-size: 12px !important;
+      font-weight: 400 !important;
+    }
+
+    /* Models section */
+    .swagger-ui section.models {
+      border: 1px solid #21262d !important;
+      border-radius: 8px !important;
+      background: #0d1117 !important;
+      margin-top: 24px !important;
+    }
+
+    .swagger-ui section.models h4 {
+      color: #e6edf3 !important;
+    }
+
+    .swagger-ui .model-box {
+      background: #161b22 !important;
+    }
+
+    .swagger-ui .model {
+      color: #8b949e !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 12px !important;
+    }
+
+    .swagger-ui .model .property.primitive {
+      color: #60a5fa !important;
+    }
+
+    /* Response example toggle */
+    .swagger-ui .responses-wrapper,
+    .swagger-ui .response-controls {
+      background: transparent !important;
+    }
+
+    .swagger-ui .copy-to-clipboard {
+      background: #161b22 !important;
+      border: 1px solid #21262d !important;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1117; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+  </style>
+</head>
+<body>
+
+<!-- Custom top bar -->
+<div class="topbar-custom">
+  <div class="topbar-logo">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9.5 14.5 3 21"/><path d="M5.5 12.5A7.5 7.5 0 0 1 13 5"/><path d="M14.5 2.5c0 2.5-2.5 5-2.5 5s-2.5-2.5-2.5-5a2.5 2.5 0 0 1 5 0Z"/>
+      <circle cx="15" cy="12" r="1"/><circle cx="19" cy="9" r="1"/><circle cx="15" cy="16" r="1"/><circle cx="19" cy="13" r="1"/>
+    </svg>
+    TrichomeLab API
+  </div>
+  <div class="topbar-meta">
+    <span class="badge-live">Live</span>
+    <a href="http://localhost:8000/docs" target="_blank" class="backend-link">FastAPI Docs ↗</a>
+    <a href="http://localhost:8000/redoc" target="_blank" class="backend-link">ReDoc ↗</a>
+    <a href="http://localhost:3000" target="_blank" class="backend-link">Frontend ↗</a>
+  </div>
+</div>
+
+<!-- Swagger UI mount point -->
+<div id="swagger-ui"></div>
+
+<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+<script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
+<script>
+  window.onload = function () {
+    const ui = SwaggerUIBundle({
+      url: 'http://localhost:8000/openapi.json',
+      dom_id: '#swagger-ui',
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIStandalonePreset,
+      ],
+      plugins: [
+        SwaggerUIBundle.plugins.DownloadUrl,
+      ],
+      layout: 'StandaloneLayout',
+      deepLinking: true,
+      displayRequestDuration: true,
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 2,
+      docExpansion: 'list',
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tryItOutEnabled: true,
+      requestInterceptor: (request) => {
+        // Ensure requests go to the backend, not this server
+        if (request.url.startsWith('/')) {
+          request.url = 'http://localhost:8000' + request.url;
+        }
+        return request;
+      },
+    });
+    window.ui = ui;
+  };
+</script>
+</body>
+</html>

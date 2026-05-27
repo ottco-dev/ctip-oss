@@ -1,0 +1,239 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Trichome Analysis Platform — Full Stack
+# Hardware: i5-13400F + 16GB RAM + RTX 4060
+#
+# Port layout (all services on 3001-3010):
+#   3001  → nginx reverse proxy  (PUBLIC entry point — ottco.ddns.net)
+#   3002  → FastAPI backend
+#   3003  → Next.js frontend
+#   3004  → MLflow experiment tracking
+#   3005  → Label Studio (annotation stack, profile: annotation)
+#   3006  → CVAT          (annotation stack, profile: annotation)
+#   3007  → PostgreSQL    (annotation stack — DB, not exposed publicly)
+#   3008  → (reserved)
+#   3009  → (reserved)
+#   3010  → (reserved)
+#
+# Public access: http://ottco.ddns.net:3001  (forward port 3001 on router)
+#   /            → frontend
+#   /api/v1/     → backend API
+#   /ws/         → backend WebSocket
+#   /mlflow/     → MLflow UI
+#   /annotation/ → Label Studio
+#   /cvat/       → CVAT
+#
+# Usage:
+#   docker-compose up -d                       # core stack
+#   docker-compose --profile annotation up -d  # + annotation tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── NGINX — reverse proxy & public entry point ────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: trichome-nginx
+    ports:
+      - "3001:80"           # PUBLIC: http://ottco.ddns.net:3001
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - trichome-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  # ── BACKEND (FastAPI) ─────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/dev/Dockerfile.dev
+    image: trichome-backend:dev
+    container_name: trichome-backend
+    ports:
+      - "3002:8000"         # Direct access: http://localhost:3002/api/v1
+    volumes:
+      - ../:/app                           # Hot reload
+      - ../data:/data                      # Dataset storage (local fallback; symlink to /mnt/data for large datasets)
+      - trichome-models:/models            # Shared model cache
+      - trichome-db:/app/data/db           # SQLite database
+    environment:
+      - DATABASE_URL=sqlite:////app/data/db/trichome.db
+      - CUDA_VISIBLE_DEVICES=0
+      - TORCH_HOME=/models/torch_cache
+      - HF_HOME=/models/huggingface_cache
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development
+      - CORS_ORIGINS=["http://ottco.ddns.net:3001","http://ottco.ddns.net","http://localhost:3001","http://localhost:3003","http://127.0.0.1:3003"]
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    networks:
+      - trichome-net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── FRONTEND (Next.js) ────────────────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    container_name: trichome-frontend
+    working_dir: /app
+    ports:
+      - "3003:3000"         # Direct access: http://localhost:3003
+    volumes:
+      - ../frontend:/app
+    environment:
+      # When accessed via nginx proxy on ottco.ddns.net all API calls go through /api/v1
+      - NEXT_PUBLIC_API_URL=http://ottco.ddns.net:3001/api/v1
+      - NEXT_PUBLIC_WS_URL=ws://ottco.ddns.net:3001/ws
+      # Fallback for direct local access (without nginx)
+      - NEXT_PUBLIC_API_URL_LOCAL=http://localhost:3002/api/v1
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - backend
+    networks:
+      - trichome-net
+    restart: unless-stopped
+
+  # ── MLFLOW (Experiment Tracking) ──────────────────────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    container_name: trichome-mlflow
+    ports:
+      - "3004:5000"         # Direct: http://localhost:3004 | Via proxy: /mlflow/
+    volumes:
+      - trichome-mlflow:/mlflow
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    networks:
+      - trichome-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── CVAT (Annotation Tool — profile: annotation) ──────────────────────────
+  cvat:
+    image: cvat/server:v2.18.0
+    container_name: trichome-cvat
+    ports:
+      - "3006:8080"         # Direct: http://localhost:3006 | Via proxy: /cvat/
+    volumes:
+      - trichome-cvat-data:/home/django
+    environment:
+      - ALLOWED_HOSTS=*
+      - CVAT_REDIS_HOST=cvat-redis
+      - CVAT_POSTGRES_HOST=cvat-postgres
+    depends_on:
+      - cvat-redis
+      - cvat-postgres
+    networks:
+      - trichome-net
+    restart: unless-stopped
+    profiles:
+      - annotation
+
+  cvat-redis:
+    image: redis:7-alpine
+    container_name: trichome-cvat-redis
+    volumes:
+      - trichome-cvat-redis:/data
+    networks:
+      - trichome-net
+    restart: unless-stopped
+    profiles:
+      - annotation
+
+  cvat-postgres:
+    image: postgres:15-alpine
+    container_name: trichome-cvat-postgres
+    environment:
+      - POSTGRES_DB=cvat
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+    volumes:
+      - trichome-cvat-postgres:/var/lib/postgresql/data
+    networks:
+      - trichome-net
+    restart: unless-stopped
+    profiles:
+      - annotation
+
+  # ── LABEL STUDIO (Annotation — profile: annotation) ───────────────────────
+  label-studio:
+    image: heartexlabs/label-studio:1.13.1
+    container_name: trichome-label-studio
+    ports:
+      - "3005:8080"         # Direct: http://localhost:3005 | Via proxy: /annotation/
+    volumes:
+      - trichome-label-studio:/label-studio/data
+    environment:
+      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
+      - LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/data
+      - LABEL_STUDIO_HOST=http://ottco.ddns.net:3001/annotation
+    networks:
+      - trichome-net
+    restart: unless-stopped
+    profiles:
+      - annotation
+
+
+# ── VOLUMES ──────────────────────────────────────────────────────────────────
+volumes:
+  trichome-models:
+    name: trichome-models
+    # Named volume by default. To bind-mount a large external model store:
+    #   driver_opts:
+    #     type: none
+    #     o: bind
+    #     device: /mnt/models
+  trichome-db:
+    name: trichome-db
+  trichome-mlflow:
+    name: trichome-mlflow
+  trichome-cvat-data:
+    name: trichome-cvat-data
+  trichome-cvat-redis:
+    name: trichome-cvat-redis
+  trichome-cvat-postgres:
+    name: trichome-cvat-postgres
+  trichome-label-studio:
+    name: trichome-label-studio
+  nginx-logs:
+    name: trichome-nginx-logs
+
+
+# ── NETWORK ───────────────────────────────────────────────────────────────────
+networks:
+  trichome-net:
+    name: trichome-net
+    driver: bridge

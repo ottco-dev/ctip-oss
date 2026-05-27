@@ -1,0 +1,183 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.inference.yml — Inference-only stack for Trichome Analysis
+#
+# Purpose:
+#   Lightweight production-inference deployment without annotation/training tools.
+#   Suitable for a dedicated inference node or a smaller VPS.
+#
+# Hardware target: RTX 4060 8 GB  •  i5-13400F  •  16 GB RAM
+#
+# Services:
+#   inference-api   → FastAPI backend (inference only, port 3002, GPU)
+#   inference-nginx → nginx reverse proxy (port 3001, PUBLIC entry)
+#   mlflow          → MLflow read-only model registry (port 3004)
+#
+# Port layout (matches main docker-compose.yml namespace):
+#   3001 → nginx   (http://ottco.ddns.net:3001)
+#   3002 → FastAPI (:8000 inside container)
+#   3004 → MLflow  (:5000 inside container)
+#
+# Usage:
+#   cd docker
+#   # First build base image:
+#   docker build -f base/Dockerfile.base -t trichome-base:latest ..
+#   # Then start the inference stack:
+#   docker compose -f docker-compose.inference.yml up -d
+#
+# Model volumes:
+#   Mount pre-trained weights at /models  (read-only)
+#   docker volume create trichome-models
+#   # or bind-mount: -v /mnt/models/trichome:/models:ro
+#
+# Environment:
+#   Copy .env.example to .env and set:
+#     API_TOKEN=<your-token>          # strongly recommended for production
+#     CUDA_VISIBLE_DEVICES=0
+#     MLFLOW_TRACKING_URI=http://mlflow:5000
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+
+  # ── FASTAPI INFERENCE SERVER ───────────────────────────────────────────────
+  inference-api:
+    build:
+      context: ..
+      dockerfile: docker/inference/Dockerfile.inference
+      args:
+        BASE_IMAGE: trichome-base:latest
+    image: trichome-inference:latest
+    container_name: trichome-inference-api
+    ports:
+      - "3002:8001"                   # Direct: http://localhost:3002
+    env_file:
+      - ../.env
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=production
+      # Model paths — override per deployment
+      - YOLO_WEIGHTS_PATH=${YOLO_WEIGHTS_PATH:-/models/yolo}
+      - SAM2_WEIGHTS_PATH=${SAM2_WEIGHTS_PATH:-/models/sam2}
+      - ONNX_WEIGHTS_PATH=${ONNX_WEIGHTS_PATH:-/models/onnx}
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      # CORS — allow only local or proxy origins in inference mode
+      - CORS_ORIGINS=["http://ottco.ddns.net:3001","http://localhost:3001","http://localhost:3002"]
+    volumes:
+      # Model weights — bind or named volume (read-only in production)
+      - trichome-models:/models:ro
+      # ONNX cache
+      - trichome-onnx-cache:/root/.cache/onnxruntime
+      # Result storage
+      - trichome-inference-results:/app/results
+    networks:
+      - inference-net
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+        limits:
+          memory: 8G                  # leave headroom for VRAM spill-over
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s              # model loading can be slow
+    restart: unless-stopped
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      stack: 67108864
+
+  # ── NGINX — reverse proxy ─────────────────────────────────────────────────
+  inference-nginx:
+    image: nginx:1.27-alpine
+    container_name: trichome-inference-nginx
+    ports:
+      - "3001:80"                     # PUBLIC: http://ottco.ddns.net:3001
+    volumes:
+      - ./nginx/nginx.inference.conf:/etc/nginx/nginx.conf:ro
+      - nginx-inference-logs:/var/log/nginx
+    depends_on:
+      inference-api:
+        condition: service_healthy
+    networks:
+      - inference-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  # ── MLFLOW — model registry (read-only consumer) ──────────────────────────
+  # In production: point MLFLOW_TRACKING_URI to your central MLflow server.
+  # This service provides a local read-only view of registered models.
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    container_name: trichome-inference-mlflow
+    ports:
+      - "3004:5000"                   # Direct: http://localhost:3004
+    volumes:
+      - trichome-mlflow:/mlflow:ro   # read-only: inference node never writes runs
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+      --serve-artifacts
+    networks:
+      - inference-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    # MLflow in read-only mode — guard against accidental writes
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
+
+
+# ── VOLUMES ───────────────────────────────────────────────────────────────────
+volumes:
+  trichome-models:
+    # Shared with main stack — named volume, or override with:
+    #   external: true
+    # if the main stack already created it.
+    name: trichome-models
+    external: true               # Re-use model weights from main stack
+
+  trichome-mlflow:
+    name: trichome-mlflow
+    external: true               # Read from the main MLflow artifact store
+
+  trichome-onnx-cache:
+    name: trichome-onnx-cache
+
+  trichome-inference-results:
+    name: trichome-inference-results
+
+  nginx-inference-logs:
+    name: trichome-nginx-inference-logs
+
+
+# ── NETWORK ───────────────────────────────────────────────────────────────────
+networks:
+  inference-net:
+    name: trichome-inference-net
+    driver: bridge

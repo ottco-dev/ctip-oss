@@ -1,0 +1,81 @@
+# Base image: Python 3.12 + CUDA 12.1 + common ML system libraries
+# Build target for all trichome analysis services
+
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+LABEL maintainer="trichome-analysis"
+LABEL description="Base image: Python 3.12 + CUDA 12.1 + system libs"
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# ── SYSTEM PACKAGES ─────────────────────────────────────────────
+RUN apt-get update && apt-get install -y \
+    # Python
+    python3.12 \
+    python3.12-dev \
+    python3.12-venv \
+    python3-pip \
+    # Build tools
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    curl \
+    wget \
+    # OpenCV system dependencies
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgl1-mesa-glx \
+    libglib2.0-dev \
+    # Image/video processing
+    libopencv-dev \
+    ffmpeg \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    # Microscopy image support
+    libtiff5-dev \
+    libjpeg-dev \
+    libpng-dev \
+    # PDF generation
+    libcairo2-dev \
+    # HDF5 (for data storage)
+    libhdf5-dev \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# ── PYTHON SETUP ─────────────────────────────────────────────────
+# Use python3.12 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1 \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+
+# Install pip and uv
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python \
+    && pip install --no-cache-dir uv
+
+# ── WORKING DIRECTORY ────────────────────────────────────────────
+WORKDIR /app
+
+# ── CUDA ENVIRONMENT ─────────────────────────────────────────────
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH="${CUDA_HOME}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+# ── TORCH CACHE ──────────────────────────────────────────────────
+# Pre-download common models to /models volume
+ENV TORCH_HOME=/models/torch_cache
+ENV HF_HOME=/models/huggingface_cache
+ENV ULTRALYTICS_DIR=/models/ultralytics
+
+RUN mkdir -p /models/torch_cache /models/huggingface_cache /models/ultralytics
+
+# ── HEALTHCHECK ──────────────────────────────────────────────────
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'" || exit 1

@@ -1,0 +1,81 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.training — Training image for Trichome Analysis System
+#
+# Extends: docker/base/Dockerfile.base
+# Purpose: Full training stack with PyTorch + Ultralytics + MLflow
+#
+# Optimized for: RTX 4060 (CUDA 12.1, 8 GB VRAM)
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG BASE_IMAGE=trichome-base:latest
+FROM ${BASE_IMAGE}
+
+# Training-specific system packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # For WandB and MLflow UI
+    curl \
+    # For dataset visualization
+    imagemagick \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install training dependencies
+COPY pyproject.toml README.md /app/
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    # Core training stack
+    "torch>=2.3.0" \
+    torchvision \
+    torchaudio \
+    --extra-index-url https://download.pytorch.org/whl/cu121
+
+RUN pip install --no-cache-dir \
+    # Ultralytics YOLO11
+    "ultralytics>=8.2.0" \
+    # MLflow experiment tracking
+    "mlflow>=2.13.0" \
+    # Albumentations for augmentation
+    "albumentations>=1.4.0" \
+    # Segmentation model training
+    "timm>=1.0.0" \
+    # Active learning utilities
+    "scipy>=1.13.0" \
+    # Focal loss + segmentation losses
+    "segmentation-models-pytorch>=0.3.3" \
+    # Data utilities
+    "pandas>=2.2.0" \
+    "pyarrow>=16.0.0" \
+    # Optuna for hyperparameter search (optional)
+    "optuna>=3.6.0"
+
+# Copy full source
+COPY . /app/
+
+# Install package in development mode
+RUN pip install --no-cache-dir -e ".[training]" 2>/dev/null || pip install --no-cache-dir -e . 2>/dev/null || true
+
+# Create training output directories
+RUN mkdir -p \
+    /app/runs/detect \
+    /app/runs/segment \
+    /app/checkpoints \
+    /data/datasets \
+    /models/torch_cache \
+    /models/huggingface_cache
+
+# Environment
+ENV TORCH_HOME=/models/torch_cache
+ENV HF_HOME=/models/huggingface_cache
+ENV PYTHONPATH=/app
+ENV ULTRALYTICS_SETTINGS_FOLDER=/app/.ultralytics
+
+# MLflow tracking URI — override at runtime
+ENV MLFLOW_TRACKING_URI=http://mlflow:5000
+
+# Verify CUDA + torch in training image
+HEALTHCHECK --interval=60s --timeout=15s --start-period=30s --retries=3 \
+    CMD python -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'; \
+    from ultralytics import YOLO; print('Training image OK')"
+
+ENTRYPOINT ["python"]
+CMD ["-m", "training.application.training_orchestrator", "--help"]

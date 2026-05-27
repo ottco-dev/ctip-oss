@@ -1,0 +1,71 @@
+
+> trichome-analysis-frontend@0.1.0 dev
+> next dev --port 3000
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1076ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.8s (1928 modules)
+(node:41161) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET / 200 in 3021ms
+ ✓ Compiled in 205ms (926 modules)
+ ✓ Compiled in 165ms (926 modules)
+ ✓ Compiled in 182ms (926 modules)
+ ✓ Compiled in 55ms (912 modules)
+ ✓ Compiled in 163ms (926 modules)
+ ✓ Compiled /morphology in 411ms (1422 modules)
+ GET /morphology 200 in 510ms
+ ✓ Compiled in 186ms (939 modules)
+ ✓ Compiled in 132ms (939 modules)
+ ✓ Compiled in 108ms (939 modules)
+ ✓ Compiled in 112ms (939 modules)
+ ✓ Compiled in 109ms (939 modules)
+ ✓ Compiled in 181ms (939 modules)
+ ✓ Compiled in 164ms (939 modules)
+ ✓ Compiled in 171ms (939 modules)
+ ✓ Compiled in 117ms (939 modules)
+ ✓ Compiled in 110ms (939 modules)
+ ✓ Compiled / in 109ms (1002 modules)
+ GET / 200 in 235ms
+ ✓ Compiled in 173ms (939 modules)
+ ✓ Compiled in 162ms (939 modules)
+ ✓ Compiled in 118ms (939 modules)
+ ✓ Compiled in 110ms (939 modules)
+ ✓ Compiled in 54ms (925 modules)
+ ✓ Compiled in 141ms (939 modules)
+ ✓ Compiled in 139ms (940 modules)
+ ✓ Compiled in 132ms (940 modules)
+ ✓ Compiled in 99ms (940 modules)
+ ✓ Compiled in 133ms (940 modules)
+ ✓ Compiled in 89ms (940 modules)
+ ✓ Compiled in 85ms (940 modules)
+ ✓ Compiled in 104ms (940 modules)
+ ✓ Compiled in 98ms (940 modules)
+ ✓ Compiled / in 492ms (1003 modules)
+ GET / 200 in 710ms
+ ✓ Compiled /processes in 485ms (1960 modules)
+ ✓ Compiled /analytics in 278ms (1959 modules)
+ ✓ Compiled /benchmarks in 285ms (1981 modules)
+ ✓ Compiled /video in 232ms (1995 modules)
+ ○ Compiling /datasets ...
+ ✓ Compiled /datasets in 669ms (2035 modules)
+ ✓ Compiled /experiments in 283ms (2047 modules)
+ ✓ Compiled /system in 231ms (2061 modules)
+ GET / 200 in 119ms
+ ✓ Compiled /labelstudio in 491ms (2057 modules)
+ ✓ Compiled /training in 415ms (2083 modules)
+ ✓ Compiled /annotation in 274ms (2090 modules)
+ ✓ Compiled /system in 116ms (1092 modules)
+ ✓ Compiled /reports in 254ms (2101 modules)
+ ✓ Compiled /benchmarks in 103ms (1098 modules)
+ ✓ Compiled /analytics in 142ms (1105 modules)
+ ✓ Compiled /video in 100ms (1112 modules)
+ ✓ Compiled /models in 241ms (2132 modules)
+ ✓ Compiled /morphology in 121ms (1123 modules)
+ ✓ Compiled /inference in 366ms (2157 modules)
+ GET / 200 in 125ms

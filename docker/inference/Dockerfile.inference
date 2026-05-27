@@ -1,0 +1,71 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.inference — Optimized inference image for Trichome Analysis System
+#
+# Extends: docker/base/Dockerfile.base
+# Purpose: Production inference with ONNX Runtime + optional TensorRT
+#
+# Smaller than training image (no training deps, no MLflow).
+# Optimized for low-latency inference on RTX 4060.
+# ─────────────────────────────────────────────────────────────────────────────
+
+ARG BASE_IMAGE=trichome-base:latest
+FROM ${BASE_IMAGE}
+
+WORKDIR /app
+
+# Install inference dependencies only
+RUN pip install --no-cache-dir \
+    # Minimal PyTorch for YOLO inference (without training extras)
+    "torch>=2.3.0" \
+    torchvision \
+    --extra-index-url https://download.pytorch.org/whl/cu121
+
+RUN pip install --no-cache-dir \
+    # Ultralytics — inference only, no training overhead
+    "ultralytics>=8.2.0" \
+    # ONNX Runtime with GPU support
+    "onnxruntime-gpu>=1.18.0" \
+    # FastAPI server
+    "fastapi>=0.111.0" \
+    "uvicorn[standard]>=0.30.0" \
+    "python-multipart>=0.0.9" \
+    # Image processing
+    "opencv-python-headless>=4.9.0" \
+    "Pillow>=10.3.0" \
+    # Config
+    "pydantic-settings>=2.2.0"
+
+# Copy source (inference-relevant modules only)
+COPY shared/ /app/shared/
+COPY detection/ /app/detection/
+COPY segmentation/ /app/segmentation/
+COPY maturity/ /app/maturity/
+COPY focus/ /app/focus/
+COPY inference/ /app/inference/
+COPY backend/ /app/backend/
+COPY pyproject.toml README.md /app/
+
+RUN pip install --no-cache-dir -e ".[inference]" 2>/dev/null || pip install --no-cache-dir -e . 2>/dev/null || true
+
+# Pre-download default model (YOLO11s)
+# Uncomment for a self-contained inference image:
+# RUN python -c "from ultralytics import YOLO; YOLO('yolo11s.pt')"
+
+# Create directories
+RUN mkdir -p \
+    /app/runs \
+    /models/torch_cache \
+    /models/onnx \
+    /models/tensorrt
+
+ENV TORCH_HOME=/models/torch_cache
+ENV HF_HOME=/models/huggingface_cache
+ENV PYTHONPATH=/app
+
+# Expose FastAPI inference server
+EXPOSE 8001
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:8001/api/v1/inference/status || exit 1
+
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1"]
