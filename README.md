@@ -162,10 +162,11 @@ cd frontend && npm install && cd ..
 
 ```bash
 cp .env.example .env
-nano .env
 ```
 
-Key settings:
+> **Tip:** Use the built-in **Setup Wizard** instead of editing `.env` by hand — it guides you through every setting interactively (see §4.1).
+
+If you prefer manual configuration, the key settings are:
 
 ```env
 DATA_ROOT=/mnt/data/trichome          # or ./data for local dev
@@ -182,7 +183,7 @@ LABEL_STUDIO_API_KEY=your_key_here
 
 ## 4. First Steps After Install
 
-### 4.1 Start in Dev Mode
+### 4.1 Start in Dev Mode & First-Time Setup
 
 ```bash
 # Terminal 1 — Backend API
@@ -193,7 +194,23 @@ uvicorn backend.main:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
-- Dashboard: http://localhost:3000
+Open **http://localhost:3000** — the **Setup Wizard launches automatically** on first start (when no `.env` is configured yet).
+
+The wizard walks you through 7 steps:
+
+| Step | Configures |
+|---|---|
+| 🌐 Network | Public domain vs. localhost-only, nginx port |
+| ⚙️ Hardware | CUDA device, VRAM budget |
+| 💾 Storage | Data root, model dir, outputs dir |
+| 🔌 Services | Label Studio API key, MLflow URI, W&B (optional) |
+| 🔒 Security | Secret key (auto-generator), API auth token |
+| ✅ Review | Summary before saving |
+| 🎉 Done | Writes `.env`, shows Docker restart command |
+
+After finishing, `.env` is written automatically — no manual editing needed.
+Re-run the wizard anytime from the sidebar: **First-Time Setup**.
+
 - API Docs (Swagger): http://localhost:8000/docs
 
 ### 4.2 Verify the System
@@ -1132,10 +1149,12 @@ cd frontend && npm install && cd ..
 ### 3.5 Umgebungskonfiguration
 
 ```bash
-cp .env.example .env && nano .env
+cp .env.example .env
 ```
 
-Wichtige Variablen:
+> **Tipp:** Nutze den integrierten **Einrichtungsassistenten** statt die `.env` manuell zu bearbeiten — er führt dich Schritt für Schritt durch alle Einstellungen (→ §4.1).
+
+Für manuelle Konfiguration die wichtigsten Variablen:
 
 ```env
 DATA_ROOT=/mnt/data/trichome          # oder ./data für lokale Entwicklung
@@ -1152,7 +1171,7 @@ LABEL_STUDIO_API_KEY=dein_schluessel
 
 ## DE 4. Erste Schritte {#de-4}
 
-### 4.1 Dev-Modus starten
+### 4.1 Dev-Modus starten & Ersteinrichtung
 
 ```bash
 # Terminal 1 — Backend-API
@@ -1163,7 +1182,23 @@ uvicorn backend.main:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
-- Dashboard: http://localhost:3000
+**http://localhost:3000** öffnen — der **Einrichtungsassistent startet automatisch** beim ersten Start (solange keine `.env` konfiguriert ist).
+
+Der Assistent führt durch 7 Schritte:
+
+| Schritt | Konfiguriert |
+|---|---|
+| 🌐 Netzwerk | Öffentliche Domain vs. nur localhost, nginx-Port |
+| ⚙️ Hardware | CUDA-Gerät, VRAM-Budget |
+| 💾 Speicher | Datenwurzel, Modellverzeichnis, Ausgabepfad |
+| 🔌 Dienste | Label Studio API-Key, MLflow URI, W&B (optional) |
+| 🔒 Sicherheit | Secret Key (Auto-Generator), API-Token |
+| ✅ Überprüfung | Zusammenfassung aller Einstellungen |
+| 🎉 Fertig | Schreibt `.env`, zeigt Docker-Restart-Befehl |
+
+Nach Abschluss wird die `.env` automatisch geschrieben — kein manuelles Bearbeiten nötig.
+Erneut starten jederzeit über die Seitenleiste: **Ersteinrichtung**.
+
 - API-Docs: http://localhost:8000/docs
 
 ### 4.2 System prüfen
@@ -2021,10 +2056,12 @@ cd frontend && npm install && cd ..
 ### 3.5 Configuración del Entorno
 
 ```bash
-cp .env.example .env && nano .env
+cp .env.example .env
 ```
 
-Variables clave:
+> **Consejo:** Usa el **Asistente de Configuración** integrado en lugar de editar `.env` manualmente — te guía por cada ajuste de forma interactiva (→ §4.1).
+
+Para configuración manual, las variables clave son:
 
 ```env
 DATA_ROOT=/mnt/data/trichome          # o ./data para desarrollo local
@@ -2041,7 +2078,7 @@ LABEL_STUDIO_API_KEY=tu_clave_aqui
 
 ## ES 4. Primeros Pasos {#es-4}
 
-### 4.1 Iniciar en Modo Desarrollo
+### 4.1 Iniciar en Modo Desarrollo y Configuración Inicial
 
 ```bash
 # Terminal 1 — Backend API
@@ -2052,7 +2089,23 @@ uvicorn backend.main:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
-- Dashboard: http://localhost:3000
+Abrir **http://localhost:3000** — el **Asistente de Configuración se inicia automáticamente** en el primer arranque (cuando no hay `.env` configurado).
+
+El asistente recorre 7 pasos:
+
+| Paso | Configura |
+|---|---|
+| 🌐 Red | Dominio público vs. solo localhost, puerto nginx |
+| ⚙️ Hardware | Dispositivo CUDA, presupuesto VRAM |
+| 💾 Almacenamiento | Directorio raíz, modelos, salidas |
+| 🔌 Servicios | API Key de Label Studio, URI de MLflow, W&B (opcional) |
+| 🔒 Seguridad | Clave secreta (generador automático), token API |
+| ✅ Revisión | Resumen de todos los ajustes antes de guardar |
+| 🎉 Listo | Escribe `.env`, muestra comando de reinicio Docker |
+
+Al terminar, `.env` se escribe automáticamente — sin edición manual.
+Volver a ejecutar en cualquier momento desde la barra lateral: **Configuración Inicial**.
+
 - Docs API: http://localhost:8000/docs
 
 ### 4.2 Verificar el Sistema
