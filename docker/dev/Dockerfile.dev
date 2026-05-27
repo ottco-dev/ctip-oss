@@ -18,7 +18,13 @@ ARG PYTHON_VERSION=3.12
 ARG DEBIAN_FRONTEND=noninteractive
 
 # ── System dependencies ───────────────────────────────────────────
+# python3.12 is not in Ubuntu 22.04 default repos — add deadsnakes PPA first
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    gnupg \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     curl \

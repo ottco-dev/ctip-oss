@@ -45,7 +45,6 @@
 #   https://labelstud.io/guide/install.html#Docker
 # ─────────────────────────────────────────────────────────────────────────────
 
-version: "3.9"
 
 services:
 
