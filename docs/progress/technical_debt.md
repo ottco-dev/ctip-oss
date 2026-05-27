@@ -1,6 +1,6 @@
 # Technical Debt Register
 
-Last updated: 2026-05-25 (docker inference stack + GPU semaphore dependency sprint)
+Last updated: 2026-05-27 (.env crash fixes; containers REPO_ROOT bug; background task in-memory store)
 
 ## RESOLVED
 
@@ -83,6 +83,29 @@ Last updated: 2026-05-25 (docker inference stack + GPU semaphore dependency spri
 - `morphology/application/morphology_pipeline.py` — Removed inline
   `from morphology.domain.geometric import extract_geometric_descriptors as _ged`.
   The function was already imported at module level (line 26); now used directly.
+
+---
+
+### ~~TDB-015~~: `REPO_ROOT = parents[4]` in `containers.py` ✅ FIXED 2026-05-27
+- `backend/api/v1/containers.py` was 3 directories deep, not 4
+- Resolved to `/home/ottcouture` instead of `/home/ottcouture/trichome-analysis`
+- All `docker compose` operations failed with `[Errno 2] No such file or directory`
+- Fixed: `parents[3]`
+
+### ~~TDB-016~~: `.env` crash values ✅ FIXED 2026-05-27
+- `VRAM_INFERENCE_BUDGET_GB=""` — empty string → Pydantic `float_parsing` ValidationError on startup
+- `DATA_ROOT="/mnt/data/trichome"` — `/mnt/data` not mounted → `PermissionError` in `Settings.ensure_dirs()`
+- Fixed in `.env`: `VRAM_INFERENCE_BUDGET_GB="2.0"`, `DATA_ROOT="./data"`
+
+---
+
+## OPEN
+
+### TDB-017: Background task store is in-memory only
+- `_bg_tasks: dict[str, BgTask]` in `containers.py` is per-worker, lost on restart
+- **Impact**: Task history, running tasks from before restart are invisible
+- **Fix**: Persist to SQLite via SQLModel `BgTask` table, or use Redis for multi-worker
+- **Priority**: LOW (single-worker dev mode, tasks are short-lived)
 
 ---
 

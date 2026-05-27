@@ -1,6 +1,6 @@
 # Phase Status — Trichome Analysis Platform
 
-Last updated: 2026-05-26 (TRT 10.x runner+builder; tiling 57 tests; TRT runner 35 tests; tiling bug fixed; 960 tests passing)
+Last updated: 2026-05-27 (container management API; background docker tasks; browser notifications; reinstall + per-container pull; .env crash fixes)
 
 ---
 
@@ -19,14 +19,19 @@ Completion: 100%
 
 ## Phase 2 — Backend API (FastAPI)
 **Status: COMPLETE ✅**
-Completion: 98%
+Completion: 99%
 
 - [x] FastAPI app with lifespan startup/shutdown
-- [x] 128+ endpoints across system, datasets, training, annotation, reports, models, inference, labelstudio, measurement, analytics, active_learning, video
+- [x] 145+ endpoints across system, datasets, training, annotation, reports, models, inference, labelstudio, measurement, analytics, active_learning, video
 - [x] WebSocket: /ws/training, /ws/system, /ws/jobs, /ws/logs
 - [x] GPU guard middleware (asyncio.Semaphore(1))
 - [x] SQLite via SQLModel
 - [x] New module routers registered: focus, maturity, morphology, measurement, video_pipeline, analytics
+- [x] `backend/api/v1/containers.py` — NEW: full Docker container management (16 endpoints) ✅ 2026-05-27
+  - Background task system: fire-and-forget asyncio tasks with polling
+  - SSE live log streams for compose + individual container logs
+  - Per-container: start/stop/restart/pull/rm
+  - Compose: up/down/reinstall (background) + config reader + `.env` reader
 - [x] `backend/middleware/auth.py` — NEW: `APITokenMiddleware` — single-user API token auth
   - Bearer token, X-API-Key header, ?api_key query param
   - Constant-time `hmac.compare_digest` comparison (no timing leak)
@@ -361,36 +366,32 @@ Completion: 90%
 
 ## Phase 18 — Frontend
 **Status: COMPLETE ✅**
-Completion: 95%
+Completion: 97%
 
-- [x] 13 pages: dashboard, datasets, training, annotation, inference, labelstudio, processes, system, experiments, models, video, benchmarks, reports
+- [x] 14 pages: dashboard, datasets, training, annotation, inference, labelstudio, processes, system, experiments, models, video, benchmarks, reports, **wiki** (NEW)
 - [x] WebSocket integration
 - [x] TanStack Query
 - [x] `frontend/src/components/shared/ImageViewer.tsx` — zoom/pan, annotation overlay, Eye/EyeOff toggle
 - [x] `frontend/src/app/inference/page.tsx` — migrated to shared ImageViewer, `toAnnotationBoxes()` helper
 - [x] `frontend/src/app/datasets/[id]/page.tsx` — `SampleLightbox` with keyboard navigation, quality bars
 - [x] `frontend/src/app/video/page.tsx` — `FrameQualityTimeline` SVG chart, `AnalysisResults` KPI grid
-- [x] `frontend/src/app/training/page.tsx` — Full advanced hyperparameter controls:
-  - Collapsible sections: LR Schedule, Regularisation, Augmentation
-  - `Toggle`, `RangeInput`, `NumberInput` sub-components
-  - patience, cos_lr, lrf, warmup_epochs, weight_decay, momentum
-  - augment toggle, mosaic probability, close_mosaic, scale, degrees, fliplr, flipud, HSV sliders
-  - Reset-to-defaults button
-- [x] `frontend/src/components/charts/ReliabilityDiagram.tsx` — SVG reliability diagram (328 lines): ✅
-  - Dual-panel: accuracy bars (orange=overconfident, blue=underconfident) + confidence histogram overlay
-  - Perfect calibration diagonal, gap fill highlighting miscalibration
-  - ECE/MCE scalar badges with colour-coded quality assessment (green/yellow/red thresholds)
-  - Interpretation text + colour legend
-  - Props: ece, mce, bins (BinStats[]), totalSamples, isOverconfident, interpretation
+- [x] `frontend/src/app/training/page.tsx` — Full advanced hyperparameter controls
+- [x] `frontend/src/components/charts/ReliabilityDiagram.tsx` — SVG reliability diagram ✅ 2026-05-26
 - [x] `frontend/src/components/charts/MetricsChart.tsx` — Historical run overlay ✅ 2026-05-26
-  - RunSelector dropdown: pick any completed run from the same experiment
-  - `GET /training/runs/{run_uuid}/metrics` query (staleTime=60s — historical data cached)
-  - buildComparisonData(): cmp:-prefixed keys, merged with live data by epoch
-  - Reference run lines: muted palette (dark blue/red/green/purple), 2px dash
-  - Delta badge: "Best mAP@0.5: 73.2% (+4.1% vs ref)" in green/red
-  - Shows "(dashed = reference run)" label on chart panels when overlay active
-  - Clears comparison on run deselect; separate point count in footer
-  - `runs` prop passed from training page (already has useQuery for /training/runs)
+- [x] **`frontend/src/app/wiki/`** — In-app multilingual documentation ✅ 2026-05-27
+  - 14 content pages (EN/DE/ES): home, installation, setup-wizard, infrastructure, data-collection, labeling, training, inference, fine-tuning, architecture, api-reference, troubleshooting
+  - `WikiRenderer.tsx` — react-markdown + rehype-highlight + remark-gfm
+  - Sidebar with search, language switcher (persisted to localStorage), collapsible sections
+  - Prev/Next navigation per page
+- [x] **`frontend/src/app/processes/page.tsx`** — Container management UI ✅ 2026-05-27
+  - Containers tab: live list with status dots, compose labels, ports, state badges
+  - **"Start + Notify"** — background docker compose + Browser Notification API on finish
+  - **"Reinstall all"** — pull latest images + force-recreate (background)
+  - **"Stop all"** — compose down
+  - Per-container: Start/Stop/Restart/Pull/Logs/Live-stream buttons
+  - Background task status panel: collapsible log, elapsed timer, status badge
+  - In-app `ComposeToast` component (bottom-right, auto-dismiss 12s)
+  - `.env` viewer with sensitive key redaction
 
 ---
 
@@ -399,7 +400,7 @@ Completion: 95%
 | Phase | Status | % |
 |---|---|---|
 | 1. Shared Domain | ✅ Complete | 100% |
-| 2. Backend API | ✅ Complete | 98% |
+| 2. Backend API | ✅ Complete | 99% |
 | 3. Detection | ✅ Complete | 90% |
 | 4. Focus System | ✅ Complete | 99% |
 | 5. Maturity | ✅ Complete | 94% |
@@ -417,4 +418,4 @@ Completion: 95%
 | 17. CLI | ✅ Complete | 90% |
 | 18. Frontend | ✅ Complete | 97% |
 
-**Overall Platform Completion: ~97%**
+**Overall Platform Completion: ~98%**

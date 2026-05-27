@@ -1139,6 +1139,82 @@ Priority order for next sprint:
 
 ---
 
+## 2026-05-27 — Container management API + Background Docker tasks + Browser notifications
+
+### WHAT WAS IMPLEMENTED
+
+**`backend/api/v1/containers.py` — NEW router (16 endpoints)**
+
+Full Docker container management API:
+- `GET /containers` — `docker ps --format json`, parses compose labels (`com.docker.compose.project/service`)
+- `POST /containers/{name}/start|stop|restart` — individual container lifecycle
+- `DELETE /containers/{name}` — stop + rm
+- `GET /containers/{name}/logs` — last N lines via `docker logs --tail`
+- `GET /containers/{name}/logs/stream` — SSE live stream via `docker logs -f`
+- `GET /containers/compose/config` — compose ps JSON + `.env` key-value reader (sensitive keys redacted)
+- `POST /containers/compose/up|down` — synchronous REST compose control
+- `GET /containers/compose/up/stream` — SSE streaming compose up
+- `POST /containers/compose/up/background` — **fire-and-forget asyncio task**, returns `task_id` immediately
+- `POST /containers/compose/reinstall/background` — pull fresh images + `--force-recreate` (background)
+- `GET /containers/compose/task/{task_id}` — poll status: `queued|running|done|error` + log + elapsed
+- `GET /containers/compose/tasks` — last 20 background tasks
+- `POST /containers/{name}/pull` — pull latest image for one container + auto-restart
+
+**In-memory BgTask store** (`_bg_tasks: dict[str, BgTask]`):
+- `BgTask` Pydantic model: `id, status, started_at, finished_at, ok, log, profile`
+- `_run_compose_bg()` — async worker streaming stdout into `task.log`, capped at 500 lines
+- `_run_reinstall_bg()` — two-step: compose pull → compose up --force-recreate, both logged
+
+**`backend/api/v1/router.py`** — `containers` router registered
+
+**`frontend/src/app/processes/page.tsx` — full rewrite of ContainersPanel**
+
+Background task flow:
+- `startBgTask(profile, reinstall)` — POSTs to background endpoint, gets `task_id`
+- Requests Notification API permission before first start
+- Polls `GET /containers/compose/task/{task_id}` every 3s via `setInterval`
+- On `status === "done"` or `"error"`: fires `new Notification(...)` + shows in-app toast
+
+New UI elements:
+- **"Start + Notify"** button — replaces SSE (connection doesn't need to stay open)
+- **"Reinstall all"** button (purple) — pull + force-recreate
+- **"Stop all"** button — `POST /containers/compose/down`
+- **Background task status panel** — collapsible, shows status badge, elapsed, live log
+- **`ComposeToast`** component — fixed bottom-right, ✅/❌, auto-dismisses after 12s
+- **BellRing/Bell icon** in header — shows notification grant/blocked status
+- **Per-container Download button** — `POST /containers/{name}/pull`, result shown in log panel
+- **Pull result banner** in expanded log panel — green/red inline result
+
+### WHY IT WAS IMPLEMENTED
+- SSE streams keep the HTTP connection open for the full docker compose duration (3-10+ min)
+- If the user navigates away or the connection drops, the operation appears to fail
+- Background tasks decouple the operation from the HTTP connection lifecycle
+- Browser Notification API allows notification even when tab is in background or minimized
+- Reinstall needed for updating annotation containers without manual docker CLI access
+
+### BUGS FIXED
+
+**`REPO_ROOT = Path(__file__).resolve().parents[4]`** → `parents[3]`
+- `containers.py` is at depth `backend/api/v1/containers.py` — 3 parents to repo root, not 4
+- Caused all compose operations to fail with `[Errno 2] No such file or directory`
+
+**`VRAM_INFERENCE_BUDGET_GB=""`** → `"2.0"` in `.env`
+- Empty string fails `pydantic_settings` float parsing → backend crash on startup
+
+**`DATA_ROOT="/mnt/data/trichome"`** → `"./data"` in `.env`
+- `/mnt/data` is not mounted → `PermissionError` on `Settings.ensure_dirs()` → backend crash
+
+**uvicorn working directory** — must be started from `cd /home/ottcouture/trichome-analysis`
+- `.env` is loaded with `env_file=".env"` (relative path) — resolves from CWD at startup
+- Fixed by using explicit `cd /home/ottcouture/trichome-analysis` before `sg docker -c ...`
+
+### WHAT REMAINS
+- Persistent background task store (tasks lost on backend restart — in-memory only)
+- `POST /containers/{name}/rm` with confirmation UI (currently only in compose-level stop)
+- Push to GitHub (PAT required)
+
+---
+
 ## 2026-05-27 — Wiki infrastructure (Next.js)
 
 ### WHAT WAS IMPLEMENTED

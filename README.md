@@ -61,6 +61,8 @@ CTIP is a **full-stack, production-grade research platform** for automated trich
 | VLM Pre-labeling | Moondream-2B / Florence-2 / Qwen2-VL (4-bit) | Human-in-loop |
 | Active Learning | Uncertainty + disagreement sampling | — |
 | TensorRT Inference | FP16 engine, async v3 API | RTX 4060 optimized |
+| Container Management | docker compose background tasks + Browser Notifications | — |
+| In-app Documentation | Wiki in EN/DE/ES (14 pages) | — |
 
 ### What It Is NOT
 
@@ -725,8 +727,9 @@ docker compose up -d
 | Reports | /reports | Past report archive |
 | Benchmarks | /benchmarks | Benchmark history and comparison |
 | System | /system | Hardware stats, process monitor |
-| Processes | /processes | Background task manager |
+| Processes | /processes | Container manager, docker compose, live logs |
 | Settings | /settings | Config, calibration, API keys |
+| Wiki | /wiki | In-app documentation (EN/DE/ES, 14 pages) |
 
 ---
 
@@ -814,6 +817,31 @@ GET  /system/health                 # Full health check + GPU stats
 GET  /system/gpu                    # VRAM usage, temperature, utilization
 GET  /system/version                # Component versions
 GET  /models                        # Loaded model registry
+```
+
+### Container Management
+
+```bash
+GET  /containers                    # List all Docker containers (running + stopped)
+POST /containers/{name}/start       # Start a stopped container
+POST /containers/{name}/stop        # Stop a running container
+POST /containers/{name}/restart     # Restart a container
+POST /containers/{name}/pull        # Pull latest image + restart
+DELETE /containers/{name}           # Stop + remove container
+
+GET  /containers/{name}/logs        # Last N log lines (tail=200)
+GET  /containers/{name}/logs/stream # SSE live log tail (docker logs -f)
+
+GET  /containers/compose/config     # Compose services + .env key-value reader
+POST /containers/compose/up         # docker compose up -d (blocking)
+POST /containers/compose/down       # docker compose down (blocking)
+GET  /containers/compose/up/stream  # SSE streaming compose up
+
+# Background tasks (returns task_id immediately — poll for status)
+POST /containers/compose/up/background        # Start annotation stack in background
+POST /containers/compose/reinstall/background # Pull + force-recreate in background
+GET  /containers/compose/task/{task_id}       # Poll: status/log/elapsed
+GET  /containers/compose/tasks                # Last 20 background tasks
 ```
 
 ---
@@ -1684,8 +1712,9 @@ docker compose build --no-cache && docker compose up -d
 | Berichte | /reports | Vergangene Berichte |
 | Benchmarks | /benchmarks | Benchmark-Historie |
 | System | /system | Hardware-Stats, Prozessmonitor |
-| Prozesse | /processes | Hintergrund-Task-Manager |
+| Prozesse | /processes | Container-Verwaltung, docker compose, Live-Logs |
 | Einstellungen | /settings | Konfiguration, Kalibrierung, API-Schlüssel |
+| Wiki | /wiki | In-App-Dokumentation (DE/EN/ES, 14 Seiten) |
 
 ---
 
@@ -2594,8 +2623,9 @@ docker compose build --no-cache && docker compose up -d
 | Informes | /reports | Archivo de informes pasados |
 | Benchmarks | /benchmarks | Historial y comparación de benchmarks |
 | Sistema | /system | Stats de hardware, monitor de procesos |
-| Procesos | /processes | Gestor de tareas en segundo plano |
+| Procesos | /processes | Gestión de contenedores Docker, compose, logs en vivo |
 | Configuración | /settings | Config, calibración, claves API |
+| Wiki | /wiki | Documentación integrada (ES/EN/DE, 14 páginas) |
 
 ---
 

@@ -1,10 +1,41 @@
 # Current Focus
 
-**Updated: 2026-05-26 (TensorRT 10.x runner + builder + tiling tests; 960 tests passing)**
+**Updated: 2026-05-27 (container management API; background docker tasks; browser notifications; in-app wiki; .env crash fixes)**
 
 ---
 
 ## Completed This Sprint
+
+### Container Management + Background Docker Tasks ✅ 2026-05-27
+
+**Problem solved**: SSE streams kept the HTTP connection open for the full docker compose duration (3–10+ min). If the user navigated away, the operation appeared to fail.
+
+**Solution**: Fire-and-forget asyncio background tasks with polling:
+- `POST /containers/compose/up/background` → `{task_id}` returned immediately
+- `POST /containers/compose/reinstall/background` → pull + force-recreate (also background)
+- `GET /containers/compose/task/{task_id}` → poll every 3s for `status`, `log`, `elapsed_seconds`
+- Browser Notification API: `new Notification(...)` fires when task completes, works while navigated away
+- `ComposeToast` in-app fallback (bottom-right, 12s auto-dismiss)
+
+Additional endpoints: `POST /containers/{name}/pull`, SSE live log per container, compose config + `.env` reader
+
+**UI additions (processes page)**:
+- "Start + Notify" replaces SSE-blocking start
+- "Reinstall all" (purple) — full pull + recreate
+- Per-container: Download button, pull result banner in log panel
+- Notification permission indicator in header
+
+### .env crash fixes ✅ 2026-05-27
+- `VRAM_INFERENCE_BUDGET_GB=""` → `"2.0"` — empty string → Pydantic `float_parsing` → backend crash on startup
+- `DATA_ROOT="/mnt/data/trichome"` → `"./data"` — `/mnt/data` not mounted → `PermissionError` on `ensure_dirs()`
+- `REPO_ROOT parents[4]` → `parents[3]` in `containers.py` — was resolving to `/home/ottcouture`, not repo root
+
+### In-app Wiki (Next.js) ✅ 2026-05-27
+14-page multilingual documentation (EN/DE/ES), WikiRenderer, sidebar with search + language switcher, `docs/github-wiki/` for GitHub export.
+
+---
+
+## Previous Sprints
 
 **TensorRT 10.x Stack — COMPLETE ✅**
 

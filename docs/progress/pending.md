@@ -1,6 +1,6 @@
 # Pending Work
 
-Last updated: 2026-05-27 (807 tests passing; setup wizard + config API shipped)
+Last updated: 2026-05-27 (container management + background docker tasks + wiki shipped; 960 tests passing)
 
 ---
 
@@ -29,8 +29,13 @@ Last updated: 2026-05-27 (807 tests passing; setup wizard + config API shipped)
 
 ## MEDIUM PRIORITY (Platform)
 
-### Docker
+### Docker / Containers
 - [x] All docker stacks implemented ✅
+- [x] Container management API (16 endpoints) ✅ 2026-05-27
+- [x] Background docker compose tasks + Browser Notification API ✅ 2026-05-27
+- [x] "Reinstall all" (pull + force-recreate) + per-container pull ✅ 2026-05-27
+- [ ] Persistent background task store (tasks lost on backend restart — in-memory only)
+- [ ] `POST /containers/{name}/rm` confirmation dialog in UI
 
 ### Backend
 - [x] PostgreSQL migrations (Alembic) ✅
@@ -55,8 +60,13 @@ Last updated: 2026-05-27 (807 tests passing; setup wizard + config API shipped)
 - [x] Calibration analytics page — `analytics/page.tsx` wired to ReliabilityDiagram ✅ 2026-05-26
 - [x] Frontend TypeScript type-check pass ✅ 2026-05-27 (0 errors)
 - [x] Setup wizard (`/setup`) — OS-style 7-step first-run assistant ✅ 2026-05-27
+- [x] In-app wiki (`/wiki`) — 14 pages, EN/DE/ES, WikiRenderer, sidebar search ✅ 2026-05-27
+- [x] Container management UI (Processes → Containers tab) ✅ 2026-05-27
+  - Background task + polling + Browser Notification API
+  - Reinstall all, per-container pull, live log stream
 - [ ] nginx.conf dynamic `PUBLIC_DOMAIN` env var injection (currently hardcoded `server_name`)
 - [ ] `tests/unit/test_setup_api.py` — pytest unit tests for config API endpoints
+- [ ] `tests/unit/test_containers_api.py` — pytest tests for containers router
 
 ### Inference
 - [ ] TensorRT full implementation (requires NVIDIA TRT SDK — not in venv)
