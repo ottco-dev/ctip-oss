@@ -57,24 +57,27 @@ interface VerificationItem {
 }
 interface ModelInfo {
   id: string;
+  name: string;
   filename: string;
   size_mb: number;
+  purpose: string;
   required: boolean;
   url: string;
-  present?: boolean;
-  file_size_mb?: number;
+  present: boolean;
+  path?: string;
+  // file_size_mb not in backend response — use path to infer presence
 }
 interface DownloadTask {
-  status: string;
-  progress: number;
+  status: string;    // 'downloading' | 'done' | 'error' | 'queued'
+  progress: number;  // 0-100
   filename: string;
   size_mb: number;
+  downloaded_mb: number;
   detail: string;
-  downloaded_mb?: number;
 }
 interface ContainerInfo {
   name: string;
-  image: string;
+  image?: string;
   status: string;
   ports: string;
   running: boolean;
@@ -729,7 +732,8 @@ function StepModels() {
     setLoading(true);
     try {
       const res = await api.get('/setup/models/status');
-      setCatalog(res.data.models as ModelInfo[]);
+      // API returns list[ModelInfo] directly, not {models:[...]}
+      setCatalog(Array.isArray(res.data) ? res.data as ModelInfo[] : []);
     } catch {
       setCatalog([]);
     } finally {
@@ -774,7 +778,7 @@ function StepModels() {
       setModelTasks(prev => ({ ...prev, [model.id]: taskId }));
       setTasks(prev => ({
         ...prev,
-        [taskId]: { status: 'queued', progress: 0, filename: model.filename, size_mb: model.size_mb, detail: 'Starting…' },
+        [taskId]: { status: 'queued', progress: 0, filename: model.filename, size_mb: model.size_mb, downloaded_mb: 0, detail: 'Starting…' },
       }));
       pollTask(taskId, model.id);
     } catch (e: unknown) {
@@ -825,10 +829,10 @@ function StepModels() {
             </div>
             <p className="text-xs text-text-muted mt-0.5">
               {model.id} · {model.size_mb} MB
-              {model.present && model.file_size_mb && (
-                <span className="ml-2 text-status-success">({model.file_size_mb.toFixed(1)} MB on disk)</span>
-              )}
             </p>
+            {model.present && model.purpose && (
+              <p className="text-xs text-text-muted truncate">{model.purpose}</p>
+            )}
           </div>
           {!isDone && !isDownloading && (
             <button
