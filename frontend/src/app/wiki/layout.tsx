@@ -1,30 +1,13 @@
 'use client';
 
-import { useState, createContext, useContext, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Globe, ChevronRight, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WIKI_PAGES, getWikiPagesBySection } from '@/content/wiki/index';
-import { SECTIONS, UI_LABELS, type Lang } from '@/content/wiki/types';
-
-// ---------------------------------------------------------------------------
-// Language context
-// ---------------------------------------------------------------------------
-
-interface WikiLangCtx {
-  lang: Lang;
-  setLang: (l: Lang) => void;
-}
-
-export const WikiLangContext = createContext<WikiLangCtx>({
-  lang: 'en',
-  setLang: () => {},
-});
-
-export function useWikiLang() {
-  return useContext(WikiLangContext);
-}
+import { SECTIONS, UI_LABELS } from '@/content/wiki/types';
+import { WikiLangContext, type Lang } from '@/components/wiki/WikiLangContext';
 
 // ---------------------------------------------------------------------------
 // Layout
