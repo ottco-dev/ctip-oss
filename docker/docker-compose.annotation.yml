@@ -10,7 +10,7 @@
 #   3007 → PostgreSQL       (internal only, not exposed publicly)
 #
 # Public access via nginx (when composed with docker-compose.yml):
-#   http://ottco.ddns.net:3001/annotation/
+#   http://your-domain.com:3001/annotation/
 #
 # Usage:
 #   # Preferred: use profiles in docker-compose.yml
@@ -98,7 +98,7 @@ services:
       # Label Studio settings
       # Public URL — used for links in Label Studio emails/exports
       # Access via nginx at /annotation/ path
-      LABEL_STUDIO_HOST: http://ottco.ddns.net:3001/annotation
+      LABEL_STUDIO_HOST: http://your-domain.com:3001/annotation
       SECRET_KEY: ${LABEL_STUDIO_SECRET_KEY:-INSECURE_DEV_KEY_CHANGE_IN_PRODUCTION}
       DISABLE_SIGNUP_WITHOUT_LINK: ${LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK:-false}
 

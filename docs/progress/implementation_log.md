@@ -543,8 +543,8 @@ Technical debt log updated.
 
 - `docker/docker-compose.yml` — Complete rewrite
   - Added `nginx` service: `ports: ["3001:80"]`, mounts `./nginx/nginx.conf:ro`
-  - Backend: `ports: ["3002:8000"]`, CORS updated for ottco.ddns.net
-  - Frontend: `ports: ["3003:3000"]`, API_URL → `http://ottco.ddns.net:3001/api/v1`
+  - Backend: `ports: ["3002:8000"]`, CORS updated for your-domain.com
+  - Frontend: `ports: ["3003:3000"]`, API_URL → `http://your-domain.com:3001/api/v1`
   - MLflow: `ports: ["3004:5000"]`
   - Label Studio: `ports: ["3005:8080"]` (annotation profile)
   - CVAT: `ports: ["3006:8080"]` (annotation profile)
@@ -557,7 +557,7 @@ Technical debt log updated.
   - Rate limiting: api 30r/s (burst 60), inference 5r/s
   - WebSocket upgrade map for `/ws/` and `/api/v1/ws/` paths
   - `client_max_body_size 512M` for microscopy image uploads
-  - `server_name ottco.ddns.net localhost _`
+  - `server_name your-domain.com localhost _`
   - HTTPS stub commented out (requires TLS provisioning)
   - `proxy_read_timeout 300s` for REST, `3600s` for WebSocket (training runs)
 
@@ -568,11 +568,11 @@ Technical debt log updated.
 - `docker/docker-compose.annotation.yml` — Updated
   - Label Studio port: `"${LABEL_STUDIO_PORT:-8080}:8080"` → `"3005:8080"`
   - PostgreSQL port: `"${POSTGRES_PORT:-5432}:5432"` → `"3007:5432"`
-  - `LABEL_STUDIO_HOST` → `http://ottco.ddns.net:3001/annotation`
+  - `LABEL_STUDIO_HOST` → `http://your-domain.com:3001/annotation`
   - Header comment updated with new port layout and DDNS access
 
 - `backend/config.py` — Updated
-  - `cors_origins` default: adds `http://ottco.ddns.net:3001`, `http://ottco.ddns.net`, `http://localhost:3001`
+  - `cors_origins` default: adds `http://your-domain.com:3001`, `http://your-domain.com`, `http://localhost:3001`
   - `mlflow_tracking_uri` default: `http://localhost:5000` → `http://localhost:3004`
   - `cvat_url` default: `http://localhost:8080` → `http://localhost:3006`
   - `label_studio_url` default: `http://localhost:8090` → `http://localhost:3005`
@@ -582,8 +582,8 @@ Technical debt log updated.
   - MLFLOW_TRACKING_URI → `http://localhost:3004`
   - CVAT_URL → `http://localhost:3006`
   - LABEL_STUDIO_URL → `http://localhost:3005`
-  - CORS_ORIGINS includes ottco.ddns.net entries
-  - NEXT_PUBLIC_API_URL → `http://ottco.ddns.net:3001/api/v1`
+  - CORS_ORIGINS includes your-domain.com entries
+  - NEXT_PUBLIC_API_URL → `http://your-domain.com:3001/api/v1`
   - Removed LABEL_STUDIO_PORT and POSTGRES_PORT env vars (fixed in compose)
 
 - `docs/deployment/network_setup.md` ← NEW
@@ -608,7 +608,7 @@ Technical debt log updated.
 ### WHY
 - Consolidates all services to 3001-3010 range (single router forward rule)
 - Nginx as single public entry point eliminates direct-service exposure
-- DDNS via ottco.ddns.net enables remote access without static IP
+- DDNS via your-domain.com enables remote access without static IP
 - Path-based routing through nginx provides centralized rate limiting, security headers, and timeout control
 - 512M upload limit at nginx level eliminates per-service configuration drift
 

@@ -331,7 +331,7 @@ Completion: 95%
   - FastAPI inference API + nginx + MLflow read-only
   - External shared volumes (trichome-models:ro, trichome-mlflow:ro)
   - GPU reservation, 8G memory limit, CUDA ulimits
-- [x] `docker/nginx/nginx.conf` — path-based reverse proxy, ottco.ddns.net, rate limiting
+- [x] `docker/nginx/nginx.conf` — path-based reverse proxy, your-domain.com, rate limiting
 - [x] `docker/nginx/nginx.inference.conf` — lean inference-only nginx config (NEW 2026-05-25)
 - [x] `docs/deployment/network_setup.md` — port layout, DDNS setup, router forwarding
 - [x] `docs/deployment/annotation_stack.md` — Label Studio setup + HITL policy

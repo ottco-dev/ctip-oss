@@ -125,4 +125,4 @@ All stale numbers corrected (EN/DE/ES): 50→868 tests, 72+→128+ endpoints
 - **VLM outputs → NEVER directly to training data** (HITL mandatory)
 - **GPU semaphore = 1** (RTX 4060, 8 GB VRAM) — REST endpoints + background tasks share one slot
 - **No THC/cannabinoid concentration claims** (optical maturity only)
-- **File deletion only inside `/home/ottcouture/trichome-analysis/`**
+- **File deletion only inside `/path/to/trichome-analysis/`**

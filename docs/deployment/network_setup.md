@@ -1,6 +1,6 @@
 # Network Setup — Trichome Analysis Platform
 
-Public entry point: **http://ottco.ddns.net:3001**
+Public entry point: **http://your-domain.com:3001**
 
 ---
 
@@ -22,9 +22,9 @@ Only **port 3001** is forwarded from the router.
 
 ---
 
-## DDNS Setup (ottco.ddns.net)
+## DDNS Setup (your-domain.com)
 
-The DDNS hostname `ottco.ddns.net` must always resolve to this machine's public IP.
+The DDNS hostname `your-domain.com` must always resolve to this machine's public IP.
 
 ### Option A — No-IP client (headless)
 
@@ -38,7 +38,7 @@ use=web
 server=dynupdate.no-ip.com
 login=your_noip_email
 password=your_noip_password
-ottco.ddns.net
+your-domain.com
 
 # Enable and start
 sudo systemctl enable ddclient
@@ -62,15 +62,15 @@ docker run -d \
 
 ```bash
 # Add to crontab (every 5 min):
-*/5 * * * * curl -s "https://dynupdate.no-ip.com/nic/update?hostname=ottco.ddns.net" \
+*/5 * * * * curl -s "https://dynupdate.no-ip.com/nic/update?hostname=your-domain.com" \
   -u "email:password" >> /var/log/ddns.log 2>&1
 ```
 
 ### Verify resolution
 
 ```bash
-nslookup ottco.ddns.net
-dig ottco.ddns.net A +short
+nslookup your-domain.com
+dig your-domain.com A +short
 ```
 
 ---
@@ -103,21 +103,21 @@ hostname -I | awk '{print $1}'
 ### Core stack (nginx + backend + frontend + MLflow)
 
 ```bash
-cd /home/ottcouture/trichome-analysis/docker
+cd /path/to/trichome-analysis/docker
 docker compose up -d
 ```
 
 ### With annotation tools (adds Label Studio + CVAT + PostgreSQL)
 
 ```bash
-cd /home/ottcouture/trichome-analysis/docker
+cd /path/to/trichome-analysis/docker
 docker compose --profile annotation up -d
 ```
 
 ### With training stack
 
 ```bash
-cd /home/ottcouture/trichome-analysis/docker
+cd /path/to/trichome-analysis/docker
 docker compose -f docker-compose.yml -f docker-compose.training.yml up -d
 ```
 
@@ -127,12 +127,12 @@ docker compose -f docker-compose.yml -f docker-compose.training.yml up -d
 
 | Service       | Local (direct)                   | Via Nginx (LAN)                        | Via DDNS (public)                        |
 |---------------|----------------------------------|----------------------------------------|------------------------------------------|
-| Frontend      | http://localhost:3003            | http://localhost:3001/                 | http://ottco.ddns.net:3001/              |
-| Backend API   | http://localhost:3002/api/v1     | http://localhost:3001/api/v1/          | http://ottco.ddns.net:3001/api/v1/       |
-| Backend WS    | ws://localhost:3002/ws           | ws://localhost:3001/ws/                | ws://ottco.ddns.net:3001/ws/             |
-| MLflow        | http://localhost:3004            | http://localhost:3001/mlflow/          | http://ottco.ddns.net:3001/mlflow/       |
-| Label Studio  | http://localhost:3005            | http://localhost:3001/annotation/      | http://ottco.ddns.net:3001/annotation/   |
-| CVAT          | http://localhost:3006            | http://localhost:3001/cvat/            | http://ottco.ddns.net:3001/cvat/         |
+| Frontend      | http://localhost:3003            | http://localhost:3001/                 | http://your-domain.com:3001/              |
+| Backend API   | http://localhost:3002/api/v1     | http://localhost:3001/api/v1/          | http://your-domain.com:3001/api/v1/       |
+| Backend WS    | ws://localhost:3002/ws           | ws://localhost:3001/ws/                | ws://your-domain.com:3001/ws/             |
+| MLflow        | http://localhost:3004            | http://localhost:3001/mlflow/          | http://your-domain.com:3001/mlflow/       |
+| Label Studio  | http://localhost:3005            | http://localhost:3001/annotation/      | http://your-domain.com:3001/annotation/   |
+| CVAT          | http://localhost:3006            | http://localhost:3001/cvat/            | http://your-domain.com:3001/cvat/         |
 
 ---
 
@@ -194,7 +194,7 @@ The nginx config contains a commented HTTPS stub. To enable:
 
 1. Obtain certs via certbot (requires public DNS pointing to host):
    ```bash
-   certbot certonly --standalone -d ottco.ddns.net \
+   certbot certonly --standalone -d your-domain.com \
      --pre-hook "docker stop trichome-nginx" \
      --post-hook "docker start trichome-nginx"
    ```
@@ -202,7 +202,7 @@ The nginx config contains a commented HTTPS stub. To enable:
 2. Mount certs into nginx container:
    ```yaml
    volumes:
-     - /etc/letsencrypt/live/ottco.ddns.net:/etc/nginx/certs:ro
+     - /etc/letsencrypt/live/your-domain.com:/etc/nginx/certs:ro
    ```
 
 3. Uncomment the `server { listen 443 ssl http2; ... }` block in `nginx.conf`.

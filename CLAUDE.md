@@ -90,7 +90,7 @@ docker compose -f docker-compose.yml -f docker-compose.training.yml up -d
 docker compose -f docker-compose.inference.yml up -d
 
 # Port layout (host:container):
-#   3001 → nginx     (PUBLIC: http://ottco.ddns.net:3001)
+#   3001 → nginx     (PUBLIC: http://your-domain.com:3001)
 #   3002 → backend   (:8000)  http://localhost:3002/api/v1
 #   3003 → frontend  (:3000)  http://localhost:3003
 #   3004 → MLflow    (:5000)  http://localhost:3004

@@ -13,7 +13,7 @@
 #   mlflow          → MLflow read-only model registry (port 3004)
 #
 # Port layout (matches main docker-compose.yml namespace):
-#   3001 → nginx   (http://ottco.ddns.net:3001)
+#   3001 → nginx   (http://your-domain.com:3001)
 #   3002 → FastAPI (:8000 inside container)
 #   3004 → MLflow  (:5000 inside container)
 #
@@ -66,7 +66,7 @@ services:
       - ONNX_WEIGHTS_PATH=${ONNX_WEIGHTS_PATH:-/models/onnx}
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       # CORS — allow only local or proxy origins in inference mode
-      - CORS_ORIGINS=["http://ottco.ddns.net:3001","http://localhost:3001","http://localhost:3002"]
+      - CORS_ORIGINS=["http://your-domain.com:3001","http://localhost:3001","http://localhost:3002"]
     volumes:
       # Model weights — bind or named volume (read-only in production)
       - trichome-models:/models:ro
@@ -106,7 +106,7 @@ services:
     image: nginx:1.27-alpine
     container_name: trichome-inference-nginx
     ports:
-      - "3001:80"                     # PUBLIC: http://ottco.ddns.net:3001
+      - "3001:80"                     # PUBLIC: http://your-domain.com:3001
     volumes:
       - ./nginx/nginx.inference.conf:/etc/nginx/nginx.conf:ro
       - nginx-inference-logs:/var/log/nginx
