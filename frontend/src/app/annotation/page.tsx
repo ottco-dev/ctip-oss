@@ -356,7 +356,7 @@ function AutoLabelPanel() {
       >
         <h4 className="text-xs font-medium" style={{ color: '#8b949e' }}>Kappa Agreement</h4>
         <p className="text-[10px] leading-relaxed" style={{ color: '#484f58' }}>
-          Cohen's κ measures inter-annotator consistency. κ ≥ 0.80 is target for training data quality.
+          Cohen&apos;s κ measures inter-annotator consistency. κ ≥ 0.80 is target for training data quality.
         </p>
         <div className="flex items-center gap-2 mt-1">
           <div
@@ -445,7 +445,7 @@ function StatsTab() {
           className="px-4 py-3 rounded-xl"
           style={{ background: '#0d1117', border: '1px solid #21262d' }}
         >
-          <p className="text-xs mb-2" style={{ color: '#484f58' }}>Inter-Annotator Agreement (Cohen's κ)</p>
+          <p className="text-xs mb-2" style={{ color: '#484f58' }}>Inter-Annotator Agreement (Cohen&apos;s κ)</p>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#21262d' }}>
               <div

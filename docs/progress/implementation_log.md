@@ -1136,3 +1136,50 @@ Priority order for next sprint:
 - Phase 12: MLflow + W&B integration tests
 - Phase 13: TensorRT runner
 - Frontend: video frame thumbnail serving endpoint
+
+---
+
+## 2026-05-27 — Wiki infrastructure (Next.js)
+
+### WHAT WAS IMPLEMENTED
+
+**Frontend wiki system** — full in-app documentation for CTIP.
+
+Files added:
+- `frontend/src/content/wiki/types.ts` — `WikiPage` interface, `Lang` type, `SECTIONS`, `UI_LABELS`
+- `frontend/src/content/wiki/index.ts` — page registry with `WIKI_PAGES[]`, `getWikiPage()`, `getWikiPagesBySection()`
+- `frontend/src/content/wiki/pages/home.ts` — CTIP overview, architecture, quick start
+- `frontend/src/content/wiki/pages/installation-linux.ts` — Ubuntu/Debian/Fedora/Arch full guide
+- `frontend/src/content/wiki/pages/installation-windows.ts` — WSL2 + NVIDIA for WSL2
+- `frontend/src/content/wiki/pages/installation-macos.ts` — Apple Silicon MPS + Intel Mac
+- `frontend/src/content/wiki/pages/setup-wizard.ts` — All 11 wizard steps explained
+- `frontend/src/content/wiki/pages/infrastructure.ts` — nginx, Docker, FastAPI, GPU semaphore
+- `frontend/src/content/wiki/pages/data-collection.ts` — Microscope setup, calibration, VLM
+- `frontend/src/content/wiki/pages/labeling.ts` — Label Studio workflow, 4 classes, maturity
+- `frontend/src/content/wiki/pages/training.ts` — YOLO11s VRAM budgets, MLflow, maturity CNN
+- `frontend/src/content/wiki/pages/inference.ts` — Full pipeline, tiled inference, output formats
+- `frontend/src/content/wiki/pages/fine-tuning.ts` — Dataset merge, LR schedule, TensorRT
+- `frontend/src/content/wiki/pages/architecture.ts` — DDD layers, VLM HITL constraint
+- `frontend/src/content/wiki/pages/api-reference.ts` — All 16 setup endpoints, WebSocket streams
+- `frontend/src/content/wiki/pages/troubleshooting.ts` — OOM fixes, Docker, training failures
+- `frontend/src/components/wiki/WikiRenderer.tsx` — react-markdown + rehype-highlight renderer
+- `frontend/src/app/wiki/layout.tsx` — Wiki sidebar with search + language switcher (EN/DE/ES)
+- `frontend/src/app/wiki/page.tsx` — Redirect to /wiki/home
+- `frontend/src/app/wiki/[slug]/page.tsx` — Dynamic page renderer with prev/next navigation
+- `frontend/src/components/layout/Sidebar.tsx` — Added Wiki nav link (BookOpen icon)
+
+### WHY IT WAS IMPLEMENTED
+- End-user and developer documentation needed to be accessible without leaving the app
+- 3-language support (EN/DE/ES) required for international research teams
+- Prose in user language, all code/tools always in English
+
+### npm packages installed
+- `react-markdown@10.1.0`, `remark-gfm@4.0.1`, `rehype-highlight@7.0.2`, `rehype-slug@6.0.0`
+
+### BUILD STATUS
+- TypeScript: 0 errors
+- Next.js production build: ✓ passes
+- Routes: `/wiki` (redirect) + `/wiki/[slug]` (14 pages)
+
+### WHAT REMAINS
+- Push to GitHub (needs new PAT — old one was auto-revoked after force-push)

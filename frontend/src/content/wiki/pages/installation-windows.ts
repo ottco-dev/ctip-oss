@@ -1,0 +1,305 @@
+import type { WikiPage } from '../types';
+
+const en = `
+> CTIP runs on Windows via **WSL2** (Windows Subsystem for Linux 2).
+> Native Windows installation is not supported — GPU access works through WSL2 with CUDA.
+> Tested: Windows 10 21H2+, Windows 11 22H2+
+
+## 1. Enable WSL2
+
+\`\`\`powershell
+# Run as Administrator in PowerShell
+wsl --install -d Ubuntu-22.04
+
+# After reboot — set version 2
+wsl --set-default-version 2
+wsl --status
+\`\`\`
+
+## 2. NVIDIA drivers for WSL2
+
+**Important**: Install the Windows driver — NOT a Linux driver inside WSL2!
+
+1. Download [NVIDIA driver](https://www.nvidia.com/Download/index.aspx) — Game Ready or Studio
+2. Install, reboot Windows
+3. In WSL2 terminal, verify:
+
+\`\`\`bash
+nvidia-smi   # must show your GPU
+\`\`\`
+
+The CUDA runtime is provided by the Windows driver. Only nvcc needs separate install if required:
+
+\`\`\`bash
+sudo apt install -y nvidia-cuda-toolkit
+\`\`\`
+
+## 3. Docker Desktop
+
+1. Download [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+2. During install: enable **"Use WSL 2 based engine"**
+3. After install: Docker Desktop → Settings → Resources → WSL Integration → enable Ubuntu-22.04
+4. Verify in WSL2:
+
+\`\`\`bash
+docker run hello-world
+\`\`\`
+
+## 4. Windows Terminal (recommended)
+
+Install [Windows Terminal](https://aka.ms/terminal) from Microsoft Store.
+Set Ubuntu as default profile.
+
+## 5. Inside WSL2: follow Linux guide
+
+Everything from here runs in the **WSL2 Ubuntu terminal**.
+Follow the [Linux installation guide](installation-linux) from step 2 onward.
+
+### Important path note
+
+\`\`\`bash
+# Windows drives are mounted at:
+ls /mnt/c/Users/YourName/
+
+# RECOMMENDED: Clone CTIP into the Linux filesystem, NOT /mnt/c/
+# (I/O over the 9P protocol is very slow for build tools)
+cd ~
+git clone https://github.com/ottco-dev/ctip-oss.git
+\`\`\`
+
+### Port forwarding
+
+WSL2 automatically binds ports to Windows localhost.
+\`http://localhost:3001\` works directly in the Windows browser.
+
+## 6. Performance tips
+
+### Limit WSL2 memory
+
+Create \`C:\\Users\\YourName\\.wslconfig\`:
+
+\`\`\`ini
+[wsl2]
+memory=8GB
+processors=6
+swap=4GB
+localhostForwarding=true
+\`\`\`
+
+### Verify GPU inside WSL2
+
+\`\`\`bash
+python -c "
+import torch
+print('CUDA:', torch.cuda.is_available())
+print('GPU:', torch.cuda.get_device_name(0))
+print('VRAM:', round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 1), 'GB')
+"
+\`\`\`
+
+### Windows Defender exclusions
+
+Windows Defender can slow WSL2 file access significantly:
+\`Windows Security → Virus & threat protection → Exclusions\`
+→ Add \`%USERPROFILE%\\AppData\\Local\\Packages\\CanonicalGroupLimited.Ubuntu*\`
+
+## Common issues
+
+### \`nvidia-smi\` not found in WSL2
+
+\`\`\`powershell
+# In Windows PowerShell (Admin) — check driver version (must be ≥ 470.76)
+nvidia-smi --query-gpu=driver_version --format=csv,noheader
+\`\`\`
+
+\`\`\`bash
+# In WSL2 — check device nodes
+ls /dev/nvidia*
+# If empty: wsl --shutdown → reboot Windows
+\`\`\`
+
+### Port 3001 already taken on Windows side
+
+\`\`\`powershell
+netstat -ano | findstr :3001
+taskkill /PID <PID> /F
+\`\`\`
+
+### Docker Desktop won't start
+
+\`\`\`powershell
+# Enable Hyper-V
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+# Also enable virtualization in BIOS (Intel VT-x / AMD-V)
+\`\`\`
+
+### WSL2 has no internet access
+
+\`\`\`bash
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+\`\`\`
+
+Permanently, in \`/etc/wsl.conf\`:
+\`\`\`ini
+[network]
+generateResolvConf = false
+\`\`\`
+`;
+
+const de = `
+> CTIP läuft auf Windows über **WSL2** (Windows Subsystem for Linux 2).
+> Native Windows-Installation nicht unterstützt. GPU-Zugriff über WSL2 mit CUDA.
+> Getestet: Windows 10 21H2+, Windows 11 22H2+
+
+## 1. WSL2 aktivieren
+
+\`\`\`powershell
+# Als Administrator in PowerShell
+wsl --install -d Ubuntu-22.04
+
+# Nach Neustart
+wsl --set-default-version 2
+wsl --status
+\`\`\`
+
+## 2. NVIDIA-Treiber für WSL2
+
+**Wichtig**: Windows-Treiber installieren — NICHT den Linux-Treiber innerhalb von WSL2!
+
+1. [NVIDIA-Treiber herunterladen](https://www.nvidia.com/Download/index.aspx) — Game Ready oder Studio
+2. Installieren, Windows neu starten
+3. In WSL2-Terminal prüfen:
+
+\`\`\`bash
+nvidia-smi   # muss GPU anzeigen
+\`\`\`
+
+## 3. Docker Desktop
+
+1. [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/) herunterladen
+2. Bei Installation: **"Use WSL 2 based engine"** aktivieren
+3. Nach Installation: Docker Desktop → Settings → Resources → WSL Integration → Ubuntu-22.04 aktivieren
+4. In WSL2 prüfen:
+
+\`\`\`bash
+docker run hello-world
+\`\`\`
+
+## 4. Ab hier: WSL2-Terminal verwenden
+
+Alles weitere läuft im **WSL2-Ubuntu-Terminal**.
+Folge der [Linux-Installationsanleitung](installation-linux) ab Schritt 2.
+
+### Wichtiger Hinweis zu Pfaden
+
+\`\`\`bash
+# Windows-Laufwerke in WSL2:
+ls /mnt/c/Users/DeinName/
+
+# EMPFEHLUNG: CTIP ins Linux-Dateisystem klonen (NICHT /mnt/c/)
+# I/O über 9P-Protokoll ist sehr langsam für Build-Tools
+cd ~
+git clone https://github.com/ottco-dev/ctip-oss.git
+\`\`\`
+
+### Port-Weiterleitung
+
+WSL2 bindet Ports automatisch auf Windows-localhost.
+\`http://localhost:3001\` funktioniert direkt im Windows-Browser.
+
+## 5. Performance-Tipps
+
+### WSL2-Speicher begrenzen
+
+\`C:\\Users\\DeinName\\.wslconfig\` erstellen:
+
+\`\`\`ini
+[wsl2]
+memory=8GB
+processors=6
+swap=4GB
+localhostForwarding=true
+\`\`\`
+
+### Antivirus-Ausnahmen
+
+Windows Defender kann WSL2-Dateizugriffe stark verlangsamen:
+Ausnahme hinzufügen: \`%USERPROFILE%\\AppData\\Local\\Packages\\CanonicalGroupLimited.Ubuntu*\`
+
+## Häufige Probleme
+
+### \`nvidia-smi\` in WSL2 nicht gefunden
+
+\`\`\`powershell
+# Treiber-Version prüfen (muss ≥ 470.76)
+nvidia-smi --query-gpu=driver_version --format=csv,noheader
+\`\`\`
+
+\`\`\`bash
+# In WSL2 — Device-Nodes prüfen
+ls /dev/nvidia*
+# Kein Output: wsl --shutdown → Windows neu starten
+\`\`\`
+
+### Port 3001 auf Windows-Seite belegt
+
+\`\`\`powershell
+netstat -ano | findstr :3001
+taskkill /PID <PID> /F
+\`\`\`
+`;
+
+const es = `
+> CTIP se ejecuta en Windows mediante **WSL2** (Windows Subsystem for Linux 2).
+> Probado: Windows 10 21H2+, Windows 11 22H2+
+
+## 1. Activar WSL2
+
+\`\`\`powershell
+# Como Administrador en PowerShell
+wsl --install -d Ubuntu-22.04
+wsl --set-default-version 2
+\`\`\`
+
+## 2. Controladores NVIDIA para WSL2
+
+**Importante**: Instala el controlador de Windows — ¡NO el controlador Linux dentro de WSL2!
+
+1. Descarga el [controlador NVIDIA](https://www.nvidia.com/Download/index.aspx)
+2. Instala y reinicia Windows
+3. Verifica en WSL2: \`nvidia-smi\`
+
+## 3. Docker Desktop
+
+1. Descarga [Docker Desktop para Windows](https://www.docker.com/products/docker-desktop/)
+2. Habilita **"Use WSL 2 based engine"** durante la instalación
+3. Activa la integración con Ubuntu-22.04 en Settings → Resources → WSL Integration
+
+## 4. A partir de aquí: usar el terminal WSL2
+
+Sigue la [guía de instalación Linux](installation-linux) desde el paso 2.
+
+### Nota sobre rutas
+
+\`\`\`bash
+# Recomendación: clonar en el sistema de archivos Linux (NO en /mnt/c/)
+cd ~ && git clone https://github.com/ottco-dev/ctip-oss.git
+\`\`\`
+
+Los puertos WSL2 se reenvían automáticamente — \`http://localhost:3001\` funciona en el navegador Windows.
+`;
+
+const page: WikiPage = {
+  slug: 'installation-windows',
+  title: { en: 'Windows (WSL2) Installation', de: 'Windows (WSL2) Installation', es: 'Instalación Windows (WSL2)' },
+  description: {
+    en: 'Running CTIP on Windows via WSL2 — NVIDIA GPU, Docker Desktop, port forwarding.',
+    de: 'CTIP auf Windows über WSL2 — NVIDIA GPU, Docker Desktop, Port-Weiterleitung.',
+    es: 'Ejecutar CTIP en Windows vía WSL2 — GPU NVIDIA, Docker Desktop, reenvío de puertos.',
+  },
+  content: { en, de, es },
+  section: 'setup',
+  icon: '🪟',
+};
+
+export default page;
