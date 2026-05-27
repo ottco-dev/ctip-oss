@@ -538,9 +538,11 @@ function StepDocker() {
   const [status, setStatus] = useState<DockerStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [startLog, setStartLog] = useState<string>('');
+  const [logLines, setLogLines] = useState<string[]>([]);
   const [startOk, setStartOk] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
+  const logRef = useRef<HTMLPreElement>(null);
+  const esRef = useRef<EventSource | null>(null);
 
   const loadStatus = async () => {
     setLoading(true);
@@ -556,33 +558,45 @@ function StepDocker() {
 
   useEffect(() => { loadStatus(); }, []);
 
-  const startAnnotation = async () => {
+  // Auto-scroll log to bottom
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [logLines]);
+
+  // Cleanup SSE on unmount
+  useEffect(() => () => { esRef.current?.close(); }, []);
+
+  const startAnnotation = () => {
+    if (esRef.current) { esRef.current.close(); esRef.current = null; }
     setStarting(true);
-    setStartLog('');
+    setLogLines([]);
     setStartOk(null);
-    try {
-      const res = await api.post('/setup/docker/start-annotation', { profile: 'annotation' });
-      setStartLog(res.data.detail ?? '');
-      setStartOk(res.data.ok ?? false);
-      // Reload status after a short delay
-      setTimeout(() => loadStatus(), 2000);
-    } catch (e: unknown) {
-      const msg =
-        (e as { response?: { data?: { detail?: string | { msg: string }[] } } })
-          ?.response?.data?.detail;
-      const text =
-        Array.isArray(msg)
-          ? msg.map((d) => d.msg).join(', ')
-          : typeof msg === 'string'
-          ? msg
-          : e instanceof Error
-          ? e.message
-          : 'Failed to start containers';
-      setStartLog(text);
+
+    // Connect to SSE stream
+    const es = new EventSource('/api/v1/setup/docker/start-annotation/stream?profile=annotation');
+    esRef.current = es;
+
+    es.onmessage = (e) => {
+      const line: string = e.data;
+      if (line.startsWith('[DONE:')) {
+        const ok = line.includes('[DONE:OK]');
+        setStartOk(ok);
+        setStarting(false);
+        es.close();
+        esRef.current = null;
+        setTimeout(() => loadStatus(), 2000);
+      } else {
+        setLogLines(prev => [...prev, line]);
+      }
+    };
+
+    es.onerror = () => {
+      setLogLines(prev => [...prev, '[connection error — check backend logs]']);
       setStartOk(false);
-    } finally {
       setStarting(false);
-    }
+      es.close();
+      esRef.current = null;
+    };
   };
 
   const copyFixCommand = () => {
@@ -594,7 +608,6 @@ function StepDocker() {
   };
 
   const runningContainers = status?.containers.filter(c => c.running) ?? [];
-  const stoppedContainers = status?.containers.filter(c => !c.running) ?? [];
 
   return (
     <div className="space-y-5">
@@ -692,7 +705,8 @@ function StepDocker() {
             <SectionHeader>Annotation Stack</SectionHeader>
             <InfoBox>
               Starts Label Studio (:3005) and CVAT (:3006) via{' '}
-              <code>docker compose --profile annotation up -d</code>
+              <code>docker compose --profile annotation up -d</code>.
+              First run pulls Docker images — may take 3–5 minutes.
             </InfoBox>
             <button
               onClick={startAnnotation}
@@ -707,13 +721,35 @@ function StepDocker() {
             {!status.docker_available && (
               <p className="text-xs text-text-muted text-center">Docker must be available to start containers.</p>
             )}
-            {startLog && (
-              <div className="rounded-md p-3 font-mono text-xs"
-                style={{
-                  background: '#0d1117', border: `1px solid ${startOk ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                  color: startOk ? '#22c55e' : '#f87171',
-                }}>
-                <pre className="whitespace-pre-wrap break-words">{startLog}</pre>
+
+            {/* Live log terminal */}
+            {(logLines.length > 0 || starting) && (
+              <div className="rounded-md overflow-hidden"
+                style={{ border: `1px solid ${startOk === false ? 'rgba(239,68,68,0.3)' : startOk === true ? 'rgba(34,197,94,0.3)' : '#21262d'}` }}>
+                {/* Terminal title bar */}
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border"
+                  style={{ background: '#161b22' }}>
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
+                  </div>
+                  <span className="text-[10px] text-text-muted font-mono ml-1 flex-1">
+                    docker compose --profile annotation up -d
+                  </span>
+                  {starting && <Loader2 className="w-3 h-3 animate-spin text-accent" />}
+                  {startOk === true && <span className="text-[10px] text-status-success">✓ done</span>}
+                  {startOk === false && <span className="text-[10px] text-status-error">✗ failed</span>}
+                </div>
+                {/* Log output */}
+                <pre
+                  ref={logRef}
+                  className="p-3 font-mono text-[11px] leading-relaxed text-text-secondary overflow-y-auto max-h-64 whitespace-pre-wrap break-all"
+                  style={{ background: '#0d1117' }}
+                >
+                  {logLines.join('\n')}
+                  {starting && <span className="animate-pulse text-accent">▌</span>}
+                </pre>
               </div>
             )}
           </div>
