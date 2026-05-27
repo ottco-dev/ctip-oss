@@ -21,6 +21,7 @@ import {
   Tags,
   Activity,
   SlidersHorizontal,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/store/uiStore';
@@ -49,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/processes', label: 'Processes', icon: Activity },
   { href: '/system', label: 'System', icon: Settings },
   { href: '/setup', label: 'First-Time Setup', icon: SlidersHorizontal },
+  { href: '/wiki', label: 'Wiki', icon: BookOpen },
 ];
 
 export function Sidebar() {
