@@ -11,7 +11,7 @@
 #   mlflow   — MLflow tracking server (port 3004 on host, /mlflow/ via nginx)
 #
 # Port layout (matches docker-compose.yml):
-#   3004 → MLflow UI  (http://localhost:3004 | http://ottco.ddns.net:3001/mlflow/)
+#   3004 → MLflow UI  (http://localhost:3004 | http://your-domain.com:3001/mlflow/)
 # ─────────────────────────────────────────────────────────────────────────────
 
 version: "3.9"

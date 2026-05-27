@@ -682,13 +682,13 @@ docker compose up -d
 
 | Service | Local URL | Public (via nginx) |
 |---|---|---|
-| Nginx gateway | http://localhost:3001 | http://ottco.ddns.net:3001 |
-| Backend API | http://localhost:3002/api/v1 | http://ottco.ddns.net:3001/api/v1/ |
-| API Docs | http://localhost:3002/docs | http://ottco.ddns.net:3001/docs |
-| Frontend | http://localhost:3003 | http://ottco.ddns.net:3001/ |
-| MLflow | http://localhost:3004 | http://ottco.ddns.net:3001/mlflow/ |
-| Label Studio | http://localhost:3005 | http://ottco.ddns.net:3001/annotation/ |
-| CVAT | http://localhost:3006 | http://ottco.ddns.net:3001/cvat/ |
+| Nginx gateway | http://localhost:3001 | http://your-domain.com:3001 |
+| Backend API | http://localhost:3002/api/v1 | http://your-domain.com:3001/api/v1/ |
+| API Docs | http://localhost:3002/docs | http://your-domain.com:3001/docs |
+| Frontend | http://localhost:3003 | http://your-domain.com:3001/ |
+| MLflow | http://localhost:3004 | http://your-domain.com:3001/mlflow/ |
+| Label Studio | http://localhost:3005 | http://your-domain.com:3001/annotation/ |
+| CVAT | http://localhost:3006 | http://your-domain.com:3001/cvat/ |
 
 ### Frontend Pages
 
@@ -1623,7 +1623,7 @@ docker compose build --no-cache && docker compose up -d
 
 | Dienst | Lokal | Öffentlich (via Nginx) |
 |---|---|---|
-| Nginx-Gateway | http://localhost:3001 | http://ottco.ddns.net:3001 |
+| Nginx-Gateway | http://localhost:3001 | http://your-domain.com:3001 |
 | Backend-API | http://localhost:3002/api/v1 | .../api/v1/ |
 | API-Docs | http://localhost:3002/docs | .../docs |
 | Frontend | http://localhost:3003 | .../ |
@@ -2515,7 +2515,7 @@ docker compose build --no-cache && docker compose up -d
 
 | Servicio | URL Local | URL Pública (via nginx) |
 |---|---|---|
-| Gateway Nginx | http://localhost:3001 | http://ottco.ddns.net:3001 |
+| Gateway Nginx | http://localhost:3001 | http://your-domain.com:3001 |
 | Backend API | http://localhost:3002/api/v1 | .../api/v1/ |
 | Docs API | http://localhost:3002/docs | .../docs |
 | Frontend | http://localhost:3003 | .../ |

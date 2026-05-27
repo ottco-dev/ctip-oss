@@ -10,7 +10,7 @@ for trichome image annotation.
 - `label-studio`: Annotation platform (host port **3005**, container 8080)
 - `ls-postgres`: PostgreSQL 15 database (host port **3007**, container 5432)
 
-**Public access (via nginx):** `http://ottco.ddns.net:3001/annotation/`
+**Public access (via nginx):** `http://your-domain.com:3001/annotation/`
 
 **Hardware:** CPU-only. No GPU required for annotation.
 
@@ -30,7 +30,7 @@ docker compose --profile annotation up -d
 # 3. Wait for startup (~60s)
 docker compose logs -f label-studio
 
-# 4. Open http://localhost:3005  (or via nginx: http://ottco.ddns.net:3001/annotation/)
+# 4. Open http://localhost:3005  (or via nginx: http://your-domain.com:3001/annotation/)
 # Create admin account on first visit
 ```
 
@@ -52,7 +52,7 @@ POSTGRES_DB=labelstudio
 
 # Label Studio (set after first login)
 # Direct access:   http://localhost:3005
-# Via nginx proxy: http://ottco.ddns.net:3001/annotation/
+# Via nginx proxy: http://your-domain.com:3001/annotation/
 LABEL_STUDIO_API_KEY=<copy from Account Settings → Access Token>
 LABEL_STUDIO_URL=http://localhost:3005
 ```
@@ -159,7 +159,7 @@ cd docker
 docker compose --profile annotation up -d
 
 # Service URLs:
-# nginx (public entry):  http://ottco.ddns.net:3001
+# nginx (public entry):  http://your-domain.com:3001
 # Backend API:           http://localhost:3002/api/v1
 # Frontend:              http://localhost:3003
 # Label Studio:          http://localhost:3005  (or /annotation/ via nginx)

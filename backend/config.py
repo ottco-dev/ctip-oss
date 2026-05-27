@@ -48,8 +48,8 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3001",
             "http://127.0.0.1:3003",
             # Public DDNS access via nginx
-            "http://ottco.ddns.net:3001",
-            "http://ottco.ddns.net",
+            "http://your-domain.com:3001",
+            "http://your-domain.com",
         ]
     )
 
