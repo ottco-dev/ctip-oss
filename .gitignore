@@ -1,0 +1,106 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Model weights (large binary files)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.trt
+*.bin
+*.safetensors
+
+# Datasets (large, tracked via DVC)
+data/raw/
+data/annotated/
+data/splits/
+data/filtered/
+/data/
+
+# Training runs
+runs/
+wandb/
+
+# Logs
+logs/
+*.log
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Node.js
+node_modules/
+.next/
+frontend/.next/
+frontend/out/
+
+# Coverage & test artifacts
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker secrets
+docker/.env
+docker/secrets/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temp / cache
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+
+# DVC
+.dvc/tmp/
+.dvc/cache/
+
+# Reports output
+reports/generated/
+*.pdf

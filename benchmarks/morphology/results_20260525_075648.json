@@ -1,0 +1,73 @@
+{
+  "benchmark": "morphology_analysis",
+  "timestamp": "2026-05-25T07:56:48.111070+00:00",
+  "config": {
+    "n": 20,
+    "mask_size": 128,
+    "warmup": 2
+  },
+  "metrics": {
+    "contour_from_mask": {
+      "n": 20,
+      "avg_ms": 0.013,
+      "median_ms": 0.012,
+      "p95_ms": 0.022,
+      "fps": 78410.5
+    },
+    "extract_geometric_descriptors": {
+      "n": 20,
+      "avg_ms": 0.227,
+      "median_ms": 0.197,
+      "p95_ms": 0.376,
+      "fps": 4412.2
+    },
+    "detect_stalk_and_head": {
+      "n": 20,
+      "avg_ms": 0.152,
+      "median_ms": 0.151,
+      "p95_ms": 0.162,
+      "fps": 6570.9
+    },
+    "extract_geometric_features": {
+      "n": 20,
+      "avg_ms": 0.031,
+      "median_ms": 0.031,
+      "p95_ms": 0.037,
+      "fps": 32332.4
+    },
+    "classify_morphology_geometric": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "MorphologyClassifier.predict": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "compute_density_map_50pts": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "compute_density_map_50pts_kde": {
+      "error": "warmup_failed",
+      "avg_ms": null,
+      "fps": null
+    },
+    "pipeline_analyze_single": {
+      "n": 20,
+      "avg_ms": 0.002,
+      "median_ms": 0.002,
+      "p95_ms": 0.004,
+      "fps": 457257.8
+    },
+    "pipeline_analyze_batch_10": {
+      "n": 20,
+      "avg_ms": 0.003,
+      "median_ms": 0.002,
+      "p95_ms": 0.005,
+      "fps": 374538.9
+    }
+  }
+}

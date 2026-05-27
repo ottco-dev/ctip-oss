@@ -1,0 +1,118 @@
+{
+  "name": "Trichome Analysis — Dev Container",
+  "dockerComposeFile": ["../docker/docker-compose.yml"],
+  "service": "backend",
+  "workspaceFolder": "/app",
+
+  // GPU support: requires Dev Containers extension + NVIDIA Container Toolkit
+  "runArgs": [
+    "--gpus=all",
+    "--shm-size=8g"
+  ],
+
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        // Jupyter
+        "ms-toolsai.jupyter",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        // Docker
+        "ms-azuretools.vscode-docker",
+        // YAML (for Hydra configs)
+        "redhat.vscode-yaml",
+        // TypeScript / Next.js (frontend)
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets",
+        // Git
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        // NVIDIA GPU monitoring
+        "ms-vscode-remote.remote-containers",
+        // Docs
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-mermaid"
+      ],
+      "settings": {
+        // Python
+        "python.defaultInterpreterPath": "/app/.venv/bin/python",
+        "python.linting.enabled": true,
+        "python.formatting.provider": "black",
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+          },
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        // TypeScript
+        "[typescript]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescriptreact]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        // YAML
+        "yaml.schemas": {
+          "https://json.schemastore.org/github-workflow": ".github/workflows/*.yml"
+        },
+        // Editor
+        "editor.fontSize": 14,
+        "editor.tabSize": 4,
+        "editor.rulers": [100],
+        "editor.insertSpaces": true,
+        "files.trimTrailingWhitespace": true,
+        // Terminal
+        "terminal.integrated.defaultProfile.linux": "bash",
+        // Dark theme (matches the web UI)
+        "workbench.colorTheme": "One Dark Pro"
+      }
+    }
+  },
+
+  // Post-create: install Python deps and set up pre-commit
+  "postCreateCommand": "bash -c 'pip install uv && uv venv /app/.venv --python 3.12 && source /app/.venv/bin/activate && uv pip install -e \".[dev]\" && pre-commit install 2>/dev/null || true && echo Dev container ready'",
+
+  "postStartCommand": "echo 'Trichome Analysis Dev Container started. GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo NOT AVAILABLE)'",
+
+  // Environment variables
+  "containerEnv": {
+    "PYTHONPATH": "/app",
+    "TORCH_HOME": "/models/torch_cache",
+    "HF_HOME": "/models/huggingface_cache",
+    "MLFLOW_TRACKING_URI": "http://localhost:5000"
+  },
+
+  // Forward ports for all services
+  "forwardPorts": [
+    3000,   // Next.js frontend
+    8000,   // FastAPI backend
+    5000,   // MLflow
+    8080,   // CVAT (annotation profile)
+    8090    // Label Studio (annotation profile)
+  ],
+
+  "portsAttributes": {
+    "3000": {"label": "Frontend (Next.js)", "onAutoForward": "openBrowser"},
+    "8000": {"label": "Backend (FastAPI)", "onAutoForward": "notify"},
+    "5000": {"label": "MLflow", "onAutoForward": "notify"},
+    "8080": {"label": "CVAT", "onAutoForward": "silent"},
+    "8090": {"label": "Label Studio", "onAutoForward": "silent"}
+  }
+}

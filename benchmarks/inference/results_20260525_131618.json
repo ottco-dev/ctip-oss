@@ -1,0 +1,109 @@
+{
+  "hardware_target": "RTX 4060 8GB / i5-13400F",
+  "timestamp": "2026-05-25T13:16:10",
+  "imgsz": 1280,
+  "n_runs": 20,
+  "cuda_available": true,
+  "onnx_available": true,
+  "tensorrt_available": false,
+  "single_image": [
+    {
+      "runner_name": "preprocessing (CPU)",
+      "imgsz": 1280,
+      "n_runs": 20,
+      "latency_mean_ms": 11.865,
+      "latency_p50_ms": 11.455,
+      "latency_p95_ms": 13.918,
+      "latency_p99_ms": 15.848,
+      "latency_min_ms": 10.937,
+      "latency_max_ms": 16.331,
+      "throughput_fps": 84.3,
+      "device": "cpu"
+    },
+    {
+      "runner_name": "NMS post-process (CPU)",
+      "imgsz": 1280,
+      "n_runs": 20,
+      "latency_mean_ms": 0.148,
+      "latency_p50_ms": 0.147,
+      "latency_p95_ms": 0.157,
+      "latency_p99_ms": 0.163,
+      "latency_min_ms": 0.144,
+      "latency_max_ms": 0.165,
+      "throughput_fps": 6750.8,
+      "device": "cpu"
+    },
+    {
+      "runner_name": "ONNX-preprocess (Tensorrt)",
+      "imgsz": 1280,
+      "n_runs": 20,
+      "latency_mean_ms": 11.948,
+      "latency_p50_ms": 11.864,
+      "latency_p95_ms": 12.729,
+      "latency_p99_ms": 12.908,
+      "latency_min_ms": 11.6,
+      "latency_max_ms": 12.953,
+      "throughput_fps": 83.7,
+      "device": "cuda"
+    },
+    {
+      "runner_name": "ECE computation (10k predictions, 15 bins)",
+      "imgsz": 1280,
+      "n_runs": 20,
+      "latency_mean_ms": 1.071,
+      "latency_p50_ms": 1.071,
+      "latency_p95_ms": 1.083,
+      "latency_p99_ms": 1.085,
+      "latency_min_ms": 1.06,
+      "latency_max_ms": 1.086,
+      "throughput_fps": 933.8,
+      "device": "cpu"
+    }
+  ],
+  "batch": [
+    {
+      "runner_name": "preprocessing-batch (CPU)",
+      "imgsz": 1280,
+      "batch_size": 1,
+      "n_batches": 25,
+      "batch_latency_mean_ms": 13.002,
+      "per_image_ms": 13.002,
+      "batch_throughput_fps": 76.9,
+      "single_throughput_fps": 84.3,
+      "speedup_factor": 0.912
+    },
+    {
+      "runner_name": "preprocessing-batch (CPU)",
+      "imgsz": 1280,
+      "batch_size": 2,
+      "n_batches": 25,
+      "batch_latency_mean_ms": 36.242,
+      "per_image_ms": 18.121,
+      "batch_throughput_fps": 55.2,
+      "single_throughput_fps": 84.3,
+      "speedup_factor": 0.655
+    },
+    {
+      "runner_name": "preprocessing-batch (CPU)",
+      "imgsz": 1280,
+      "batch_size": 4,
+      "n_batches": 25,
+      "batch_latency_mean_ms": 63.983,
+      "per_image_ms": 15.996,
+      "batch_throughput_fps": 62.5,
+      "single_throughput_fps": 84.3,
+      "speedup_factor": 0.742
+    },
+    {
+      "runner_name": "preprocessing-batch (CPU)",
+      "imgsz": 1280,
+      "batch_size": 8,
+      "n_batches": 25,
+      "batch_latency_mean_ms": 118.929,
+      "per_image_ms": 14.866,
+      "batch_throughput_fps": 67.3,
+      "single_throughput_fps": 84.3,
+      "speedup_factor": 0.798
+    }
+  ]
+}

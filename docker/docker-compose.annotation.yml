@@ -1,0 +1,176 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.annotation.yml — Annotation stack for Trichome Analysis System
+#
+# Services:
+#   label-studio  — Label Studio annotation platform
+#   ls-postgres   — PostgreSQL 15 for Label Studio persistence
+#
+# Port layout (matches docker-compose.yml):
+#   3005 → Label Studio UI  (http://localhost:3005 | /annotation/ via nginx)
+#   3007 → PostgreSQL       (internal only, not exposed publicly)
+#
+# Public access via nginx (when composed with docker-compose.yml):
+#   http://ottco.ddns.net:3001/annotation/
+#
+# Usage:
+#   # Preferred: use profiles in docker-compose.yml
+#   docker-compose --profile annotation up -d
+#
+#   # Standalone annotation stack only:
+#   docker-compose -f docker/docker-compose.annotation.yml up -d
+#
+# First-time setup:
+#   1. docker-compose --profile annotation up -d
+#   2. Open http://localhost:3005
+#   3. Create admin account (email + password)
+#   4. Create new project: "Trichome Microscopy"
+#   5. Configure labeling interface (see docs/annotation/label_studio_setup.md)
+#   6. Copy API token from Account Settings → copy to .env as LABEL_STUDIO_API_KEY
+#
+# Environment variables (add to .env):
+#   LABEL_STUDIO_SECRET_KEY=<change-in-production>
+#   LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=false
+#   POSTGRES_USER=labelstudio
+#   POSTGRES_PASSWORD=<change-in-production>
+#   POSTGRES_DB=labelstudio
+#
+# Data persistence:
+#   - label-studio-data:  Project configs, uploaded images, annotations
+#   - label-studio-pg:    PostgreSQL data directory
+#
+# VRAM note: Label Studio is CPU-only. No GPU required for the annotation stack.
+#
+# Reference:
+#   https://labelstud.io/guide/start.html
+#   https://labelstud.io/guide/install.html#Docker
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # PostgreSQL 15 — Label Studio metadata store
+  # ──────────────────────────────────────────────────────────────────────────
+  ls-postgres:
+    image: postgres:15-alpine
+    container_name: trichome-ls-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-labelstudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-labelstudio_dev_only_CHANGE_ME}
+      POSTGRES_DB: ${POSTGRES_DB:-labelstudio}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - label-studio-pg:/var/lib/postgresql/data
+    ports:
+      - "3007:5432"         # Internal only — do NOT expose publicly
+    networks:
+      - trichome-annotation-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-labelstudio} -d ${POSTGRES_DB:-labelstudio}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Label Studio — annotation platform
+  #
+  # Image: heartexlabs/label-studio:latest (official)
+  # Built-in ML backends: disable for pure annotation workflow.
+  # ──────────────────────────────────────────────────────────────────────────
+  label-studio:
+    image: heartexlabs/label-studio:latest
+    container_name: trichome-label-studio
+    restart: unless-stopped
+    ports:
+      - "3005:8080"         # Direct: http://localhost:3005 | Via proxy: /annotation/
+    environment:
+      # Database backend
+      DJANGO_DB: postgresql
+      POSTGRE_HOST: ls-postgres
+      POSTGRE_PORT: "5432"
+      POSTGRE_USER: ${POSTGRES_USER:-labelstudio}
+      POSTGRE_PASSWORD: ${POSTGRES_PASSWORD:-labelstudio_dev_only_CHANGE_ME}
+      POSTGRE_NAME: ${POSTGRES_DB:-labelstudio}
+
+      # Label Studio settings
+      # Public URL — used for links in Label Studio emails/exports
+      # Access via nginx at /annotation/ path
+      LABEL_STUDIO_HOST: http://ottco.ddns.net:3001/annotation
+      SECRET_KEY: ${LABEL_STUDIO_SECRET_KEY:-INSECURE_DEV_KEY_CHANGE_IN_PRODUCTION}
+      DISABLE_SIGNUP_WITHOUT_LINK: ${LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK:-false}
+
+      # File storage: local filesystem inside container
+      # Swap to S3/GCS via STORAGE_TYPE env var for production
+      DATA_UPLOAD_MAX_MEMORY_SIZE: "536870912"  # 512 MB — for large tiff uploads
+      LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: "true"
+      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /label-studio/data/media
+
+      # Performance
+      GUNICORN_WORKERS: "2"  # Conservative for 16GB RAM dev machine
+
+    volumes:
+      # Label Studio data: projects, media (uploaded images), annotations export
+      - label-studio-data:/label-studio/data
+      # Mount microscopy dataset for local storage backend
+      # Uncomment and adjust path to your microscopy image store:
+      # - /mnt/data/microscopy:/label-studio/data/media/microscopy:ro
+    networks:
+      - trichome-annotation-net
+    depends_on:
+      ls-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Nginx reverse proxy (optional — useful behind SSL or with a domain name)
+  #
+  # Disabled by default. Enable by uncommenting and providing certs.
+  # ──────────────────────────────────────────────────────────────────────────
+  # ls-nginx:
+  #   image: nginx:1.25-alpine
+  #   container_name: trichome-ls-nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./annotation/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./annotation/certs:/etc/nginx/certs:ro
+  #   depends_on:
+  #     - label-studio
+  #   networks:
+  #     - trichome-annotation-net
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Named volumes
+# ──────────────────────────────────────────────────────────────────────────────
+volumes:
+  label-studio-data:
+    driver: local
+    labels:
+      project: trichome-analysis
+      component: annotation
+
+  label-studio-pg:
+    driver: local
+    labels:
+      project: trichome-analysis
+      component: annotation-db
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Network
+# ──────────────────────────────────────────────────────────────────────────────
+networks:
+  trichome-annotation-net:
+    name: trichome-annotation-net
+    driver: bridge

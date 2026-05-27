@@ -1,0 +1,73 @@
+{
+  "benchmark": "measurement_pipeline",
+  "timestamp": "2026-05-25T07:59:48.224412+00:00",
+  "config": {
+    "n": 500,
+    "warmup": 10
+  },
+  "metrics": {
+    "combine_uncertainties": {
+      "n": 500,
+      "avg_ms": 0.0,
+      "median_ms": 0.0,
+      "p95_ms": 0.0,
+      "fps": 2815315.3
+    },
+    "propagate_linear": {
+      "n": 500,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 1312832.2
+    },
+    "propagate_area": {
+      "n": 500,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 1270244.5
+    },
+    "propagate_ratio": {
+      "n": 500,
+      "avg_ms": 0.002,
+      "median_ms": 0.002,
+      "p95_ms": 0.002,
+      "fps": 486914.2
+    },
+    "focus_induced_uncertainty": {
+      "n": 500,
+      "avg_ms": 0.0,
+      "median_ms": 0.0,
+      "p95_ms": 0.0,
+      "fps": 4396376.6
+    },
+    "measurer_measure": {
+      "n": 500,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 707869.4
+    },
+    "estimate_scale_from_objective": {
+      "n": 500,
+      "avg_ms": 0.003,
+      "median_ms": 0.003,
+      "p95_ms": 0.003,
+      "fps": 330774.5
+    },
+    "pipeline_measure_single": {
+      "n": 500,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 1061460.8
+    },
+    "pipeline_measure_batch_10": {
+      "n": 500,
+      "avg_ms": 0.001,
+      "median_ms": 0.001,
+      "p95_ms": 0.001,
+      "fps": 850114.6
+    }
+  }
+}

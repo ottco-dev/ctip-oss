@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trichome Analysis — Research Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bg:       '#080b10',
+            surface:  '#0d1117',
+            panel:    '#161b22',
+            border:   '#21262d',
+            accent:   '#238636',
+            accentHover: '#2ea043',
+            muted:    '#8b949e',
+            text:     '#e6edf3',
+            textSub:  '#7d8590',
+            amber:    '#d29922',
+            red:      '#da3633',
+            blue:     '#388bfd',
+            purple:   '#a371f7',
+            teal:     '#39d353',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #080b10; color: #e6edf3; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0d1117; }
+    ::-webkit-scrollbar-thumb { background: #21262d; border-radius: 3px; }
+    .nav-item { transition: all 0.15s ease; }
+    .nav-item:hover { background: #161b22; color: #e6edf3; }
+    .nav-item.active { background: #161b22; color: #e6edf3; border-left: 2px solid #238636; }
+    .card { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; }
+    .metric-card { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 16px; }
+    .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+    .glow-green { box-shadow: 0 0 8px rgba(35, 134, 54, 0.4); }
+    .mini-bar { height: 4px; background: #21262d; border-radius: 2px; overflow: hidden; }
+    .mini-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+    .sparkline { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
+    .spark-bar { width: 4px; border-radius: 1px; background: #238636; opacity: 0.7; }
+    .tab { padding: 6px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.15s; color: #7d8590; }
+    .tab.active { background: #161b22; color: #e6edf3; }
+    .tab:hover:not(.active) { color: #e6edf3; }
+    .icon { width: 16px; height: 16px; display: inline-block; }
+    .monospace { font-family: 'JetBrains Mono', monospace; }
+    .progress-ring { transform: rotate(-90deg); }
+    .gpu-ring circle { transition: stroke-dashoffset 0.5s ease; }
+    .page { display: none; }
+    .page.active { display: flex; flex-direction: column; }
+    .sidebar-badge { background: #21262d; color: #8b949e; border-radius: 10px; padding: 1px 6px; font-size: 10px; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- SIDEBAR -->
+<aside style="width:220px;min-width:220px;background:#0d1117;border-right:1px solid #21262d;" class="flex flex-col">
+  <!-- Logo -->
+  <div style="padding:16px 20px;border-bottom:1px solid #21262d;" class="flex items-center gap-3">
+    <div style="width:28px;height:28px;background:linear-gradient(135deg,#238636,#2ea043);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+      <span style="font-size:14px;">🔬</span>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#e6edf3;line-height:1.2;">TrichomeLab</div>
+      <div style="font-size:10px;color:#7d8590;">Research Platform v0.1</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto" style="padding:8px 0;">
+    <div style="padding:4px 12px 8px;font-size:10px;color:#7d8590;font-weight:600;letter-spacing:0.08em;">WORKSPACE</div>
+
+    <a onclick="showPage('dashboard')" class="nav-item active flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#e6edf3;text-decoration:none;">
+      <span>⊞</span> Dashboard
+    </a>
+    <a onclick="showPage('datasets')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🗄️</span> Datasets <span class="sidebar-badge ml-auto">3</span>
+    </a>
+    <a onclick="showPage('inference')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🔍</span> Analysis Workbench
+    </a>
+    <a onclick="showPage('video')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🎥</span> Video Pipeline
+    </a>
+
+    <div style="padding:12px 12px 8px;font-size:10px;color:#7d8590;font-weight:600;letter-spacing:0.08em;margin-top:4px;">ML OPS</div>
+
+    <a onclick="showPage('training')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🏋️</span> Training <span class="sidebar-badge ml-auto" style="background:#238636;color:#fff;">LIVE</span>
+    </a>
+    <a onclick="showPage('experiments')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🧪</span> Experiments <span class="sidebar-badge ml-auto">12</span>
+    </a>
+    <a onclick="showPage('models')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>📦</span> Models
+    </a>
+    <a class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>📊</span> Benchmarks
+    </a>
+
+    <div style="padding:12px 12px 8px;font-size:10px;color:#7d8590;font-weight:600;letter-spacing:0.08em;margin-top:4px;">LABELING</div>
+
+    <a onclick="showPage('annotation')" class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🏷️</span> Auto-Label <span class="sidebar-badge ml-auto" style="background:#d29922;color:#000;">47</span>
+    </a>
+    <a class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>👁️</span> Review Queue <span class="sidebar-badge ml-auto">23</span>
+    </a>
+    <a class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>🎯</span> Active Learning
+    </a>
+
+    <div style="padding:12px 12px 8px;font-size:10px;color:#7d8590;font-weight:600;letter-spacing:0.08em;margin-top:4px;">RESEARCH</div>
+
+    <a class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>📚</span> Literature
+    </a>
+    <a class="nav-item flex items-center gap-3 px-4 py-2 cursor-pointer" style="font-size:13px;color:#7d8590;text-decoration:none;">
+      <span>📄</span> Reports
+    </a>
+  </nav>
+
+  <!-- System Status Bottom -->
+  <div style="border-top:1px solid #21262d;padding:12px 16px;">
+    <div style="font-size:11px;color:#7d8590;margin-bottom:8px;font-weight:500;">SYSTEM</div>
+    <div style="margin-bottom:6px;">
+      <div class="flex justify-between" style="font-size:11px;margin-bottom:3px;">
+        <span style="color:#8b949e;">GPU RTX 4060</span>
+        <span style="color:#39d353;font-family:'JetBrains Mono',monospace;font-size:10px;">71%</span>
+      </div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:71%;background:#39d353;"></div></div>
+    </div>
+    <div style="margin-bottom:6px;">
+      <div class="flex justify-between" style="font-size:11px;margin-bottom:3px;">
+        <span style="color:#8b949e;">VRAM 8 GB</span>
+        <span style="color:#d29922;font-family:'JetBrains Mono',monospace;font-size:10px;">5.8/8</span>
+      </div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:72%;background:#d29922;"></div></div>
+    </div>
+    <div>
+      <div class="flex justify-between" style="font-size:11px;margin-bottom:3px;">
+        <span style="color:#8b949e;">RAM 16 GB</span>
+        <span style="color:#7d8590;font-family:'JetBrains Mono',monospace;font-size:10px;">9.2/16</span>
+      </div>
+      <div class="mini-bar"><div class="mini-bar-fill" style="width:57%;background:#388bfd;"></div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- TOP BAR -->
+  <header style="background:#0d1117;border-bottom:1px solid #21262d;padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;">
+    <div class="flex items-center gap-6">
+      <div id="breadcrumb" style="font-size:14px;color:#e6edf3;font-weight:500;">Dashboard</div>
+      <div class="flex items-center gap-2">
+        <span class="badge" style="background:#238636;color:#fff;font-size:10px;">
+          <span class="pulse" style="width:6px;height:6px;background:#fff;border-radius:50%;display:inline-block;margin-right:5px;"></span>
+          Training Running — epoch 47/150
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2" style="font-size:12px;color:#7d8590;">
+        <span style="width:6px;height:6px;background:#39d353;border-radius:50%;display:inline-block;"></span>
+        API Connected
+      </div>
+      <div style="width:1px;height:20px;background:#21262d;"></div>
+      <button style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;">+ New Experiment</button>
+    </div>
+  </header>
+
+  <!-- PAGES CONTAINER -->
+  <main class="flex-1 overflow-y-auto" style="background:#080b10;padding:24px;">
+
+    <!-- ==================== DASHBOARD PAGE ==================== -->
+    <div id="page-dashboard" class="page active">
+
+      <!-- KPI Row -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;font-weight:500;">TOTAL IMAGES</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">14,382</div>
+          <div style="font-size:11px;color:#39d353;margin-top:4px;">↑ +347 this week</div>
+        </div>
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;font-weight:500;">ANNOTATED</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">8,104</div>
+          <div class="mini-bar mt-2"><div class="mini-bar-fill" style="width:56%;background:#388bfd;"></div></div>
+          <div style="font-size:11px;color:#7d8590;margin-top:4px;">56.3% complete</div>
+        </div>
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;font-weight:500;">BEST mAP50</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">0.847</div>
+          <div style="font-size:11px;color:#a371f7;margin-top:4px;">yolo11s-v3 checkpoint</div>
+        </div>
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;font-weight:500;">REVIEW QUEUE</div>
+          <div style="font-size:28px;font-weight:700;color:#d29922;font-family:'JetBrains Mono',monospace;">70</div>
+          <div style="font-size:11px;color:#d29922;margin-top:4px;">23 urgent (low confidence)</div>
+        </div>
+      </div>
+
+      <!-- Middle Row: Training + Maturity Distribution -->
+      <div class="grid gap-4 mb-6" style="grid-template-columns:2fr 1fr;">
+
+        <!-- Training Card -->
+        <div class="card p-5">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:#e6edf3;">Active Training Run</div>
+              <div style="font-size:12px;color:#7d8590;margin-top:2px;font-family:'JetBrains Mono',monospace;">yolo11s-trichome-v3 · epoch 47/150</div>
+            </div>
+            <div class="flex gap-2">
+              <button style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">⏸ Pause</button>
+              <button style="background:#21262d;border:1px solid #30363d;color:#da3633;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;">■ Stop</button>
+            </div>
+          </div>
+
+          <!-- Loss Chart Mock -->
+          <div style="height:120px;background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:12px;position:relative;overflow:hidden;">
+            <div style="font-size:10px;color:#7d8590;margin-bottom:6px;">Box Loss · Val Loss</div>
+            <svg viewBox="0 0 400 80" width="100%" height="80" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="0" y1="20" x2="400" y2="20" stroke="#21262d" stroke-width="0.5"/>
+              <line x1="0" y1="40" x2="400" y2="40" stroke="#21262d" stroke-width="0.5"/>
+              <line x1="0" y1="60" x2="400" y2="60" stroke="#21262d" stroke-width="0.5"/>
+              <!-- Train loss curve (green) -->
+              <polyline points="0,72 20,65 40,60 60,52 80,48 100,43 120,40 140,37 160,34 180,32 200,30 220,29 240,27 260,26 280,25 300,24 320,24 340,23 360,22 380,22 400,21"
+                fill="none" stroke="#238636" stroke-width="1.5" stroke-linejoin="round"/>
+              <!-- Val loss curve (blue) -->
+              <polyline points="0,75 20,68 40,63 60,57 80,52 100,49 120,46 140,44 160,42 180,40 200,39 220,38 240,37 260,36 280,35 300,35 320,34 340,35 360,34 380,34 400,33"
+                fill="none" stroke="#388bfd" stroke-width="1.5" stroke-linejoin="round" stroke-dasharray="4,2"/>
+            </svg>
+          </div>
+
+          <!-- Metrics Row -->
+          <div class="grid grid-cols-4 gap-3 mt-4">
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#39d353;font-family:'JetBrains Mono',monospace;">0.847</div>
+              <div style="font-size:10px;color:#7d8590;">mAP50</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">0.891</div>
+              <div style="font-size:10px;color:#7d8590;">Precision</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">0.812</div>
+              <div style="font-size:10px;color:#7d8590;">Recall</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:18px;font-weight:700;color:#a371f7;font-family:'JetBrains Mono',monospace;">0.0231</div>
+              <div style="font-size:10px;color:#7d8590;">Box Loss</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maturity Distribution -->
+        <div class="card p-5">
+          <div style="font-size:14px;font-weight:600;color:#e6edf3;margin-bottom:16px;">Maturity Distribution</div>
+          <div style="font-size:10px;color:#7d8590;margin-bottom:12px;padding:8px;background:#161b22;border-radius:6px;border-left:2px solid #d29922;">
+            ⚠ Optical proxy only — does not measure cannabinoids
+          </div>
+
+          <!-- Distribution bars -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#e6edf3;">⚪ Clear</span>
+                <span style="color:#7d8590;font-family:'JetBrains Mono',monospace;">12.4%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:12%;background:#8b949e;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#e6edf3;">🥛 Cloudy</span>
+                <span style="color:#388bfd;font-family:'JetBrains Mono',monospace;">54.7%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:55%;background:#388bfd;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#e6edf3;">🟡 Amber</span>
+                <span style="color:#d29922;font-family:'JetBrains Mono',monospace;">28.1%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:28%;background:#d29922;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#e6edf3;">🔴 Degraded</span>
+                <span style="color:#da3633;font-family:'JetBrains Mono',monospace;">4.8%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:5%;background:#da3633;"></div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid #21262d;font-size:11px;color:#7d8590;">
+            Analyzed: 2,847 trichomes · Strain: OG Kush #4
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row: Recent Activity + Pipeline Status -->
+      <div class="grid gap-4" style="grid-template-columns:1fr 1fr 1fr;">
+
+        <!-- Recent Jobs -->
+        <div class="card p-4">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Recent Jobs</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="flex items-center gap-3" style="padding:8px;background:#161b22;border-radius:6px;">
+              <span style="width:8px;height:8px;background:#39d353;border-radius:50%;display:block;"></span>
+              <div class="flex-1">
+                <div style="font-size:12px;color:#e6edf3;">VLM Auto-Label Batch</div>
+                <div style="font-size:10px;color:#7d8590;">Moondream · 320 images</div>
+              </div>
+              <span class="badge" style="background:#0f2419;color:#39d353;">done</span>
+            </div>
+            <div class="flex items-center gap-3" style="padding:8px;background:#161b22;border-radius:6px;">
+              <span class="pulse" style="width:8px;height:8px;background:#d29922;border-radius:50%;display:block;"></span>
+              <div class="flex-1">
+                <div style="font-size:12px;color:#e6edf3;">YOLO Training v3</div>
+                <div style="font-size:10px;color:#7d8590;">epoch 47/150 · ETA 2h14m</div>
+              </div>
+              <span class="badge" style="background:#271d00;color:#d29922;">running</span>
+            </div>
+            <div class="flex items-center gap-3" style="padding:8px;background:#161b22;border-radius:6px;">
+              <span style="width:8px;height:8px;background:#388bfd;border-radius:50%;display:block;"></span>
+              <div class="flex-1">
+                <div style="font-size:12px;color:#e6edf3;">SAM2 Segmentation</div>
+                <div style="font-size:10px;color:#7d8590;">1,240 crops processed</div>
+              </div>
+              <span class="badge" style="background:#0f1f40;color:#388bfd;">done</span>
+            </div>
+            <div class="flex items-center gap-3" style="padding:8px;background:#161b22;border-radius:6px;">
+              <span style="width:8px;height:8px;background:#7d8590;border-radius:50%;display:block;"></span>
+              <div class="flex-1">
+                <div style="font-size:12px;color:#e6edf3;">Benchmark mAP Suite</div>
+                <div style="font-size:10px;color:#7d8590;">test split · 5-fold CV</div>
+              </div>
+              <span class="badge" style="background:#1c1c1c;color:#7d8590;">queued</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Morphology Breakdown -->
+        <div class="card p-4">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Morphology Analysis</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <div class="flex items-center gap-2">
+                  <span style="width:10px;height:10px;background:#a371f7;border-radius:2px;display:inline-block;"></span>
+                  <span style="color:#e6edf3;">Capitate Stalked</span>
+                </div>
+                <span style="color:#a371f7;font-family:'JetBrains Mono',monospace;">68.3%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:68%;background:#a371f7;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <div class="flex items-center gap-2">
+                  <span style="width:10px;height:10px;background:#388bfd;border-radius:2px;display:inline-block;"></span>
+                  <span style="color:#e6edf3;">Capitate Sessile</span>
+                </div>
+                <span style="color:#388bfd;font-family:'JetBrains Mono',monospace;">24.1%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:24%;background:#388bfd;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <div class="flex items-center gap-2">
+                  <span style="width:10px;height:10px;background:#8b949e;border-radius:2px;display:inline-block;"></span>
+                  <span style="color:#e6edf3;">Bulbous</span>
+                </div>
+                <span style="color:#8b949e;font-family:'JetBrains Mono',monospace;">7.6%</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:8%;background:#8b949e;"></div></div>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #21262d;">
+            <div style="font-size:11px;color:#7d8590;margin-bottom:6px;">Mean Head Diameter (µm)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+              <div style="text-align:center;padding:6px;background:#161b22;border-radius:4px;">
+                <div style="font-size:14px;font-weight:600;color:#a371f7;font-family:'JetBrains Mono',monospace;">287</div>
+                <div style="font-size:9px;color:#7d8590;">stalked</div>
+              </div>
+              <div style="text-align:center;padding:6px;background:#161b22;border-radius:4px;">
+                <div style="font-size:14px;font-weight:600;color:#388bfd;font-family:'JetBrains Mono',monospace;">68</div>
+                <div style="font-size:9px;color:#7d8590;">sessile</div>
+              </div>
+              <div style="text-align:center;padding:6px;background:#161b22;border-radius:4px;">
+                <div style="font-size:14px;font-weight:600;color:#8b949e;font-family:'JetBrains Mono',monospace;">12</div>
+                <div style="font-size:9px;color:#7d8590;">bulbous</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dataset Health -->
+        <div class="card p-4">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Dataset Health</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="flex justify-between items-center" style="padding:6px 0;border-bottom:1px solid #21262d;">
+              <span style="font-size:12px;color:#8b949e;">Total Samples</span>
+              <span style="font-size:12px;color:#e6edf3;font-family:'JetBrains Mono',monospace;">14,382</span>
+            </div>
+            <div class="flex justify-between items-center" style="padding:6px 0;border-bottom:1px solid #21262d;">
+              <span style="font-size:12px;color:#8b949e;">Duplicates Found</span>
+              <span style="font-size:12px;color:#d29922;font-family:'JetBrains Mono',monospace;">142</span>
+            </div>
+            <div class="flex justify-between items-center" style="padding:6px 0;border-bottom:1px solid #21262d;">
+              <span style="font-size:12px;color:#8b949e;">Corrupt Images</span>
+              <span style="font-size:12px;color:#da3633;font-family:'JetBrains Mono',monospace;">7</span>
+            </div>
+            <div class="flex justify-between items-center" style="padding:6px 0;border-bottom:1px solid #21262d;">
+              <span style="font-size:12px;color:#8b949e;">Mean Focus Score</span>
+              <span style="font-size:12px;color:#39d353;font-family:'JetBrains Mono',monospace;">0.823</span>
+            </div>
+            <div class="flex justify-between items-center" style="padding:6px 0;border-bottom:1px solid #21262d;">
+              <span style="font-size:12px;color:#8b949e;">Strains</span>
+              <span style="font-size:12px;color:#e6edf3;font-family:'JetBrains Mono',monospace;">8</span>
+            </div>
+            <div class="flex justify-between items-center" style="padding:6px 0;">
+              <span style="font-size:12px;color:#8b949e;">Class Imbalance</span>
+              <span class="badge" style="background:#0f2419;color:#39d353;font-size:10px;">LOW</span>
+            </div>
+          </div>
+          <button style="width:100%;margin-top:12px;background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;">Run Health Check →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TRAINING PAGE ==================== -->
+    <div id="page-training" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Training Control Center</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">RTX 4060 · FP16 · batch=4 · accumulate=4 → effective batch 16</p>
+        </div>
+        <div class="flex gap-3">
+          <button style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">📋 New Config</button>
+          <button style="background:#238636;border:1px solid #2ea043;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">▶ Start Training</button>
+        </div>
+      </div>
+
+      <!-- Active Run Banner -->
+      <div style="background:linear-gradient(90deg,#0d2418,#0d1117);border:1px solid #238636;border-radius:8px;padding:16px 20px;margin-bottom:20px;" class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="pulse" style="width:10px;height:10px;background:#39d353;border-radius:50%;"></div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#e6edf3;">yolo11s-trichome-v3</div>
+            <div style="font-size:12px;color:#7d8590;font-family:'JetBrains Mono',monospace;">Epoch 47/150 · LR: 0.00821 · ETA: 2h 14m</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <div style="text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:#39d353;font-family:'JetBrains Mono',monospace;">0.847</div>
+            <div style="font-size:10px;color:#7d8590;">mAP50</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">0.0231</div>
+            <div style="font-size:10px;color:#7d8590;">Box Loss</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:20px;font-weight:700;color:#d29922;font-family:'JetBrains Mono',monospace;">71%</div>
+            <div style="font-size:10px;color:#7d8590;">GPU Util</div>
+          </div>
+          <div class="flex gap-2">
+            <button style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;">⏸ Pause</button>
+            <button style="background:#1a0a0a;border:1px solid #da3633;color:#da3633;padding:6px 14px;border-radius:6px;font-size:12px;cursor:pointer;">■ Stop</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-4" style="grid-template-columns:2fr 1fr;">
+        <!-- Charts -->
+        <div class="card p-5">
+          <div class="flex gap-4 mb-4">
+            <span class="tab active">Loss Curves</span>
+            <span class="tab">Metrics</span>
+            <span class="tab">LR Schedule</span>
+            <span class="tab">Grad Norm</span>
+          </div>
+          <div style="height:200px;background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:16px;display:flex;align-items:flex-end;gap:2px;overflow:hidden;">
+            <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#238636" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#238636" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid -->
+              <line x1="0" y1="40" x2="600" y2="40" stroke="#21262d" stroke-width="0.5"/>
+              <line x1="0" y1="80" x2="600" y2="80" stroke="#21262d" stroke-width="0.5"/>
+              <line x1="0" y1="120" x2="600" y2="120" stroke="#21262d" stroke-width="0.5"/>
+              <!-- Train loss -->
+              <polyline points="0,145 30,135 60,122 90,112 120,103 150,96 180,89 210,84 240,79 270,75 300,71 330,68 360,66 390,63 420,61 450,59 480,58 510,57 540,56 570,55 600,54"
+                fill="none" stroke="#238636" stroke-width="2" stroke-linejoin="round"/>
+              <!-- Val loss -->
+              <polyline points="0,148 30,140 60,129 90,119 120,112 150,106 180,101 210,97 240,93 270,90 300,87 330,85 360,83 390,82 420,81 450,80 480,80 510,80 540,79 570,79 600,79"
+                fill="none" stroke="#388bfd" stroke-width="2" stroke-linejoin="round" stroke-dasharray="5,3"/>
+              <!-- Labels -->
+              <text x="8" y="12" fill="#7d8590" font-size="9">Val Loss</text>
+              <rect x="0" y="2" width="6" height="2" fill="#388bfd" rx="1"/>
+              <text x="22" y="12" fill="#7d8590" font-size="9"> · Train Loss</text>
+              <rect x="18" y="2" width="6" height="2" fill="#238636" rx="1"/>
+            </svg>
+          </div>
+          <div class="grid grid-cols-4 gap-3 mt-4">
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:16px;font-weight:700;color:#39d353;font-family:'JetBrains Mono',monospace;">0.847</div>
+              <div style="font-size:10px;color:#7d8590;">mAP50</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:16px;font-weight:700;color:#388bfd;font-family:'JetBrains Mono',monospace;">0.791</div>
+              <div style="font-size:10px;color:#7d8590;">mAP50-95</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:16px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">0.891</div>
+              <div style="font-size:10px;color:#7d8590;">Precision</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:16px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">0.812</div>
+              <div style="font-size:10px;color:#7d8590;">Recall</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GPU Monitor -->
+        <div class="card p-5">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:16px;">GPU Monitor</div>
+
+          <!-- GPU Ring -->
+          <div style="display:flex;justify-content:center;margin-bottom:16px;">
+            <div style="position:relative;width:100px;height:100px;">
+              <svg width="100" height="100" class="progress-ring">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#21262d" stroke-width="8"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="#238636" stroke-width="8"
+                  stroke-dasharray="264" stroke-dashoffset="76" class="gpu-ring"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:20px;font-weight:700;color:#39d353;font-family:'JetBrains Mono',monospace;">71%</div>
+                <div style="font-size:9px;color:#7d8590;">GPU Util</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#8b949e;">VRAM Used</span>
+                <span style="color:#d29922;font-family:'JetBrains Mono',monospace;">5.8 / 8.0 GB</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:72%;background:#d29922;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#8b949e;">GPU Temp</span>
+                <span style="color:#39d353;font-family:'JetBrains Mono',monospace;">74°C</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:74%;background:#39d353;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#8b949e;">RAM Used</span>
+                <span style="color:#388bfd;font-family:'JetBrains Mono',monospace;">9.2 / 16 GB</span>
+              </div>
+              <div class="mini-bar"><div class="mini-bar-fill" style="width:57%;background:#388bfd;"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#8b949e;">Throughput</span>
+                <span style="color:#e6edf3;font-family:'JetBrains Mono',monospace;">127 img/s</span>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between" style="font-size:11px;margin-bottom:4px;">
+                <span style="color:#8b949e;">it/s</span>
+                <span style="color:#e6edf3;font-family:'JetBrains Mono',monospace;">2.4 iter/s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== DATASETS PAGE ==================== -->
+    <div id="page-datasets" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Dataset Browser</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">14,382 images · 8 strains · 3 microscopes</p>
+        </div>
+        <div class="flex gap-3">
+          <button style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">⬆ Upload Images</button>
+          <button style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">🎥 Upload Video</button>
+          <button style="background:#238636;border:1px solid #2ea043;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">+ New Dataset</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:16px;margin-bottom:16px;" class="flex items-center gap-4 flex-wrap">
+        <div style="font-size:12px;color:#7d8590;font-weight:500;">FILTER:</div>
+        <select style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:6px;font-size:12px;">
+          <option>All Strains</option>
+          <option>OG Kush #4</option>
+          <option>Blue Dream</option>
+          <option>Gorilla Glue</option>
+        </select>
+        <select style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:6px;font-size:12px;">
+          <option>All Microscopes</option>
+          <option>Dino-Lite AM7515MZT</option>
+          <option>USB 200× portable</option>
+        </select>
+        <select style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:6px;font-size:12px;">
+          <option>All Quality</option>
+          <option>Excellent (≥0.8)</option>
+          <option>Good (0.6–0.8)</option>
+          <option>Poor (&lt;0.6)</option>
+        </select>
+        <select style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:6px;font-size:12px;">
+          <option>All Labels</option>
+          <option>Annotated</option>
+          <option>Unannotated</option>
+          <option>Needs Review</option>
+        </select>
+        <div style="margin-left:auto;font-size:12px;color:#7d8590;">Showing 14,382 results</div>
+      </div>
+
+      <!-- Image Grid Mock -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;">
+        <!-- Mock image tiles -->
+        <script>
+          const statuses = [
+            {color:'#238636',text:'annotated'},
+            {color:'#d29922',text:'review'},
+            {color:'#388bfd',text:'vlm-labeled'},
+            {color:'#7d8590',text:'raw'},
+          ];
+          const maturity = ['cloudy','amber','clear','mixed','degraded'];
+          const conf = ['0.94','0.87','0.91','0.78','0.82','0.95','0.71','0.88'];
+          for(let i=0;i<24;i++){
+            const s=statuses[i%statuses.length];
+            const m=maturity[i%maturity.length];
+            const c=conf[i%conf.length];
+            const hue=180+Math.random()*40;
+            const sat=10+Math.random()*15;
+            document.write(`
+              <div style="background:#0d1117;border:1px solid #21262d;border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#388bfd'" onmouseleave="this.style.borderColor='#21262d'">
+                <div style="width:100%;height:110px;background:hsl(${hue},${sat}%,8%);display:flex;align-items:center;justify-content:center;position:relative;">
+                  <div style="text-align:center;opacity:0.4;">
+                    <div style="font-size:24px;">🔬</div>
+                    <div style="font-size:9px;color:#7d8590;font-family:'JetBrains Mono',monospace;">${1024+i*37}×${768+i*21}</div>
+                  </div>
+                  <div style="position:absolute;top:6px;right:6px;width:8px;height:8px;background:${s.color};border-radius:50%;"></div>
+                  <div style="position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,0.7);padding:2px 6px;border-radius:3px;font-size:9px;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${c}</div>
+                </div>
+                <div style="padding:8px;">
+                  <div style="font-size:10px;color:#e6edf3;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">img_${String(i+1001).padStart(4,'0')}.tif</div>
+                  <div style="font-size:9px;color:#7d8590;margin-top:2px;">${m} · ${s.text}</div>
+                </div>
+              </div>
+            `);
+          }
+        </script>
+      </div>
+
+      <!-- Pagination -->
+      <div style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <button style="background:#161b22;border:1px solid #30363d;color:#7d8590;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">← Prev</button>
+        <span style="font-size:12px;color:#7d8590;">Page 1 of 599</span>
+        <button style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Next →</button>
+      </div>
+    </div>
+
+    <!-- ==================== INFERENCE WORKBENCH PAGE ==================== -->
+    <div id="page-inference" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Analysis Workbench</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">Upload · Detect · Segment · Analyze · Export</p>
+        </div>
+      </div>
+
+      <div class="grid gap-4" style="grid-template-columns:1fr 1fr;">
+        <!-- Upload + Canvas -->
+        <div class="card p-5">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Input Image</div>
+          <div style="height:300px;background:#161b22;border:2px dashed #30363d;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='#238636'" onmouseleave="this.style.borderColor='#30363d'">
+            <div style="font-size:36px;margin-bottom:12px;">🔬</div>
+            <div style="font-size:14px;color:#e6edf3;font-weight:500;">Drop image here</div>
+            <div style="font-size:12px;color:#7d8590;margin-top:4px;">TIFF, PNG, JPG — up to 50 MB</div>
+            <button style="margin-top:12px;background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:7px 18px;border-radius:6px;font-size:12px;cursor:pointer;">Browse File</button>
+          </div>
+
+          <div style="margin-top:16px;">
+            <div style="font-size:11px;color:#7d8590;margin-bottom:8px;font-weight:500;">PIPELINE CONFIG</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Detection Model</label>
+                <select style="width:100%;background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 10px;border-radius:6px;font-size:11px;">
+                  <option>yolo11s-v3 (default)</option>
+                  <option>yolo11n (fast)</option>
+                  <option>ensemble (slow)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Segmentation</label>
+                <select style="width:100%;background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 10px;border-radius:6px;font-size:11px;">
+                  <option>SAM2-tiny</option>
+                  <option>MobileSAM</option>
+                  <option>Skip</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Confidence Threshold</label>
+                <input type="range" min="0.1" max="0.9" value="0.35" style="width:100%;">
+                <div style="font-size:10px;color:#7d8590;text-align:center;font-family:'JetBrains Mono',monospace;">0.35</div>
+              </div>
+              <div>
+                <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Tiled Inference</label>
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 0;">
+                  <div style="width:32px;height:18px;background:#238636;border-radius:9px;cursor:pointer;position:relative;">
+                    <div style="position:absolute;right:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;"></div>
+                  </div>
+                  <span style="font-size:11px;color:#39d353;">Enabled</span>
+                </div>
+              </div>
+            </div>
+            <button style="width:100%;margin-top:12px;background:#238636;border:1px solid #2ea043;color:#fff;padding:10px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500;">▶ Run Analysis</button>
+          </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="card p-5">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Results</div>
+
+          <!-- Mock Result Stats -->
+          <div class="grid grid-cols-3 gap-3 mb-4">
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:22px;font-weight:700;color:#e6edf3;font-family:'JetBrains Mono',monospace;">284</div>
+              <div style="font-size:10px;color:#7d8590;">Detected</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:22px;font-weight:700;color:#39d353;font-family:'JetBrains Mono',monospace;">271</div>
+              <div style="font-size:10px;color:#7d8590;">Segmented</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:#161b22;border-radius:6px;">
+              <div style="font-size:22px;font-weight:700;color:#d29922;font-family:'JetBrains Mono',monospace;">14</div>
+              <div style="font-size:10px;color:#7d8590;">Uncertain</div>
+            </div>
+          </div>
+
+          <!-- Maturity breakdown in results -->
+          <div style="background:#161b22;border-radius:6px;padding:12px;margin-bottom:12px;">
+            <div style="font-size:11px;color:#7d8590;margin-bottom:8px;font-weight:500;">MATURITY DISTRIBUTION</div>
+            <div style="padding:6px 8px;background:#0d2820;border:1px solid #238636;border-radius:4px;font-size:10px;color:#8b949e;margin-bottom:8px;">
+              ⚠ Visual proxy only — chromatography required for cannabinoid quantification
+            </div>
+            <div style="display:flex;gap:2px;height:24px;border-radius:4px;overflow:hidden;">
+              <div style="width:11%;background:#8b949e;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;">11%</div>
+              <div style="width:57%;background:#388bfd;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;">57% Cloudy</div>
+              <div style="width:27%;background:#d29922;display:flex;align-items:center;justify-content:center;font-size:8px;color:#000;">27%</div>
+              <div style="width:5%;background:#da3633;"></div>
+            </div>
+          </div>
+
+          <!-- Trichome type summary -->
+          <div style="background:#161b22;border-radius:6px;padding:12px;margin-bottom:12px;">
+            <div style="font-size:11px;color:#7d8590;margin-bottom:8px;font-weight:500;">TYPE BREAKDOWN</div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:#e6edf3;">
+              <span>Capitate Stalked: <strong style="color:#a371f7;">68%</strong></span>
+              <span>Sessile: <strong style="color:#388bfd;">24%</strong></span>
+              <span>Bulbous: <strong style="color:#8b949e;">8%</strong></span>
+            </div>
+          </div>
+
+          <!-- Measurements -->
+          <div style="background:#161b22;border-radius:6px;padding:12px;margin-bottom:12px;">
+            <div style="font-size:11px;color:#7d8590;margin-bottom:8px;font-weight:500;">MEASUREMENTS (µm)</div>
+            <div class="grid grid-cols-3 gap-2" style="font-size:11px;">
+              <div style="text-align:center;">
+                <div style="color:#e6edf3;font-family:'JetBrains Mono',monospace;font-weight:600;">287 ± 34</div>
+                <div style="color:#7d8590;">Head Diam.</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="color:#e6edf3;font-family:'JetBrains Mono',monospace;font-weight:600;">183 ± 28</div>
+                <div style="color:#7d8590;">Stalk Len.</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="color:#e6edf3;font-family:'JetBrains Mono',monospace;font-weight:600;">0.43 µm/px</div>
+                <div style="color:#7d8590;">Scale</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button style="flex:1;background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;">📊 Export CSV</button>
+            <button style="flex:1;background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;">📄 PDF Report</button>
+            <button style="flex:1;background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;">💾 JSON</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIDEO PAGE ==================== -->
+    <div id="page-video" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Video Pipeline</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">Extract → Quality Score → Deduplicate → Best Frames → Analyze</p>
+        </div>
+      </div>
+
+      <div class="card p-5 mb-4">
+        <!-- Video player mock -->
+        <div style="background:#000;border-radius:6px;height:220px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;">
+          <div style="text-align:center;">
+            <div style="font-size:48px;margin-bottom:8px;opacity:0.5;">🎬</div>
+            <div style="font-size:13px;color:#7d8590;">microscopy_session_04.mp4 · 2m 34s · 4K</div>
+          </div>
+          <div style="position:absolute;bottom:12px;right:12px;display:flex;gap:6px;">
+            <span class="badge" style="background:#21262d;color:#e6edf3;">1920×1080</span>
+            <span class="badge" style="background:#21262d;color:#e6edf3;">30fps</span>
+          </div>
+        </div>
+
+        <!-- Frame scrubber mock -->
+        <div style="background:#21262d;height:48px;border-radius:6px;margin-bottom:8px;position:relative;overflow:hidden;cursor:pointer;">
+          <!-- Sharpness visualization -->
+          <div style="display:flex;align-items:flex-end;height:100%;gap:1px;padding:4px;">
+            <script>
+              for(let i=0;i<100;i++){
+                const h=10+Math.random()*38;
+                const sharp=h>30;
+                document.write(`<div style="width:100%;height:${h}px;background:${sharp?'#238636':'#da3633'};border-radius:1px;opacity:0.7;"></div>`);
+              }
+            </script>
+          </div>
+          <!-- Playhead -->
+          <div style="position:absolute;top:0;bottom:0;left:34%;width:2px;background:#fff;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#7d8590;font-family:'JetBrains Mono',monospace;margin-bottom:12px;">
+          <span>0:00</span><span style="color:#39d353;">▲ Sharp zones</span><span style="color:#da3633;">▲ Blurry zones</span><span>2:34</span>
+        </div>
+
+        <!-- Frame Gallery -->
+        <div style="font-size:11px;color:#7d8590;margin-bottom:8px;font-weight:500;">TOP 10 FRAMES (by sharpness + quality)</div>
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;">
+          <script>
+            const scores=[0.94,0.92,0.91,0.89,0.88,0.87,0.86,0.84,0.83,0.81];
+            scores.forEach((s,i)=>{
+              const selected=i<3;
+              document.write(`
+                <div style="min-width:90px;background:${selected?'#0d2418':'#161b22'};border:1px solid ${selected?'#238636':'#30363d'};border-radius:6px;overflow:hidden;cursor:pointer;flex-shrink:0;">
+                  <div style="height:60px;display:flex;align-items:center;justify-content:center;background:#0d1117;">
+                    <div style="text-align:center;">
+                      <div style="font-size:16px;">🔬</div>
+                    </div>
+                  </div>
+                  <div style="padding:4px 6px;">
+                    <div style="font-size:9px;color:#7d8590;font-family:'JetBrains Mono',monospace;">f${String(i*154+23).padStart(4,'0')}</div>
+                    <div style="font-size:10px;color:${selected?'#39d353':'#8b949e'};font-family:'JetBrains Mono',monospace;">${s}</div>
+                  </div>
+                </div>
+              `);
+            });
+          </script>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-4">
+        <div class="card p-4">
+          <div style="font-size:12px;font-weight:600;color:#e6edf3;margin-bottom:8px;">Extraction</div>
+          <div style="font-size:11px;color:#7d8590;">4,620 total frames<br>1,847 sharp (≥0.6)<br>324 duplicates removed</div>
+        </div>
+        <div class="card p-4">
+          <div style="font-size:12px;font-weight:600;color:#e6edf3;margin-bottom:8px;">Quality Stats</div>
+          <div style="font-size:11px;color:#7d8590;">Mean sharpness: 0.71<br>Mean exposure: 0.83<br>Motion blur: 12.4%</div>
+        </div>
+        <div class="card p-4">
+          <div style="font-size:12px;font-weight:600;color:#e6edf3;margin-bottom:8px;">Output</div>
+          <button style="width:100%;background:#238636;border:1px solid #2ea043;color:#fff;padding:8px;border-radius:6px;font-size:12px;cursor:pointer;">Extract Best 50 Frames →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ANNOTATION PAGE ==================== -->
+    <div id="page-annotation" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Auto-Label Pipeline</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">VLM → SAM-assisted → Human Review — always human-in-the-loop</p>
+        </div>
+        <button style="background:#238636;border:1px solid #2ea043;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">▶ Start Auto-Label Job</button>
+      </div>
+
+      <div class="grid gap-4 mb-4" style="grid-template-columns:repeat(3,1fr);">
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;">PENDING LABEL</div>
+          <div style="font-size:28px;font-weight:700;color:#d29922;font-family:'JetBrains Mono',monospace;">6,278</div>
+        </div>
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;">REVIEW QUEUE</div>
+          <div style="font-size:28px;font-weight:700;color:#388bfd;font-family:'JetBrains Mono',monospace;">70</div>
+        </div>
+        <div class="metric-card">
+          <div style="font-size:11px;color:#7d8590;margin-bottom:4px;">APPROVED TODAY</div>
+          <div style="font-size:28px;font-weight:700;color:#39d353;font-family:'JetBrains Mono',monospace;">143</div>
+        </div>
+      </div>
+
+      <div class="grid gap-4" style="grid-template-columns:1fr 1fr;">
+        <!-- VLM Config -->
+        <div class="card p-5">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">VLM Configuration</div>
+          <div style="padding:8px;background:#1a1000;border:1px solid #d29922;border-radius:6px;font-size:11px;color:#d29922;margin-bottom:12px;">
+            ⚠ VLM outputs are pseudo-labels only. All labels require human approval before entering the training dataset.
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Model</label>
+              <select style="width:100%;background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:8px 12px;border-radius:6px;font-size:12px;">
+                <option>Moondream-2B (4-bit) — 2.1 GB VRAM</option>
+                <option>Florence-2-Large — 5.8 GB VRAM</option>
+                <option>MiniCPM-V-2.6 — 6.2 GB VRAM</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Prompt Template</label>
+              <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:10px;font-size:11px;color:#8b949e;font-family:'JetBrains Mono',monospace;line-height:1.6;">
+                "Analyze this cannabis trichome microscopy image. Identify all visible trichome heads. For each, classify as: clear, cloudy, or amber. Output JSON: &#123;"trichomes":[&#123;"type":"capitate_stalked","maturity":"cloudy"&#125;]&#125;"
+              </div>
+            </div>
+            <div>
+              <label style="font-size:10px;color:#7d8590;display:block;margin-bottom:4px;">Min Confidence for Auto-Approve</label>
+              <input type="range" min="0" max="100" value="85" style="width:100%;">
+              <div style="font-size:10px;color:#7d8590;text-align:center;font-family:'JetBrains Mono',monospace;">0.85 — anything below goes to human review</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review Queue -->
+        <div class="card p-5">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Human Review Queue</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <script>
+              const items=[
+                {file:'img_2847.tif',model:'Moondream',issue:'Low confidence: 0.71',urgent:true},
+                {file:'img_2891.tif',model:'Florence-2',issue:'Uncertain maturity stage',urgent:true},
+                {file:'img_2901.tif',model:'Moondream',issue:'Conflicting type class',urgent:false},
+                {file:'img_2934.tif',model:'Moondream',issue:'Low confidence: 0.68',urgent:false},
+                {file:'img_2967.tif',model:'Florence-2',issue:'Boundary trichome ambiguity',urgent:false},
+              ];
+              items.forEach(item=>{
+                document.write(`
+                  <div style="padding:10px 12px;background:#161b22;border:1px solid #21262d;border-radius:6px;display:flex;align-items:center;gap:10px;">
+                    <div style="width:32px;height:32px;background:#0d1117;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;">🔬</div>
+                    <div style="flex:1;">
+                      <div style="font-size:12px;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${item.file}</div>
+                      <div style="font-size:10px;color:#7d8590;">${item.model} · ${item.issue}</div>
+                    </div>
+                    ${item.urgent?'<span class="badge" style="background:#3d1a00;color:#d29922;">urgent</span>':''}
+                    <div style="display:flex;gap:4px;">
+                      <button style="background:#0f2419;border:1px solid #238636;color:#39d353;padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;">✓</button>
+                      <button style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;">✎</button>
+                      <button style="background:#1a0a0a;border:1px solid #da3633;color:#da3633;padding:4px 10px;border-radius:4px;font-size:10px;cursor:pointer;">✗</button>
+                    </div>
+                  </div>
+                `);
+              });
+            </script>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== MODELS PAGE ==================== -->
+    <div id="page-models" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Model Registry</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">Detection · Segmentation · VLM · Custom checkpoints</p>
+        </div>
+        <button style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;">+ Register Model</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <script>
+          const models=[
+            {name:'yolo11s-trichome-v3',type:'Detection',format:'PyTorch',size:'43 MB',map:'0.847',vram:'1.2 GB',status:'active',tag:'best'},
+            {name:'yolo11s-trichome-v2',type:'Detection',format:'ONNX',size:'41 MB',map:'0.831',vram:'CPU',status:'available',tag:''},
+            {name:'sam2-tiny-hiera',type:'Segmentation',format:'PyTorch',size:'155 MB',map:'IoU 0.84',vram:'3.8 GB',status:'available',tag:''},
+            {name:'mobile-sam',type:'Segmentation',format:'PyTorch',size:'38 MB',map:'IoU 0.76',vram:'1.4 GB',status:'available',tag:'fast'},
+            {name:'moondream-2B-q4',type:'VLM',format:'GGUF',size:'1.9 GB',map:'human eval',vram:'2.1 GB',status:'available',tag:'recommended'},
+            {name:'florence-2-large',type:'VLM',format:'PyTorch',size:'5.8 GB',map:'human eval',vram:'5.8 GB',status:'download',tag:''},
+          ];
+          models.forEach(m=>{
+            const statusColor=m.status==='active'?'#39d353':m.status==='download'?'#388bfd':'#7d8590';
+            const statusBg=m.status==='active'?'#0f2419':m.status==='download'?'#0f1f40':'#1c1c1c';
+            const tagColor={'best':'#a371f7','fast':'#d29922','recommended':'#238636'}[m.tag]||'';
+            document.write(`
+              <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:16px;display:flex;align-items:center;gap:16px;">
+                <div style="width:40px;height:40px;background:#161b22;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">
+                  ${m.type==='Detection'?'🎯':m.type==='Segmentation'?'✂️':'🤖'}
+                </div>
+                <div style="flex:1;">
+                  <div class="flex items-center gap-2">
+                    <span style="font-size:14px;font-weight:600;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${m.name}</span>
+                    ${m.tag?`<span style="font-size:10px;padding:2px 6px;background:${tagColor}22;color:${tagColor};border-radius:3px;">${m.tag}</span>`:''}
+                  </div>
+                  <div style="font-size:11px;color:#7d8590;margin-top:2px;">${m.type} · ${m.format} · ${m.size}</div>
+                </div>
+                <div style="text-align:center;min-width:80px;">
+                  <div style="font-size:13px;font-weight:600;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${m.map}</div>
+                  <div style="font-size:10px;color:#7d8590;">performance</div>
+                </div>
+                <div style="text-align:center;min-width:80px;">
+                  <div style="font-size:13px;color:#d29922;font-family:'JetBrains Mono',monospace;">${m.vram}</div>
+                  <div style="font-size:10px;color:#7d8590;">VRAM</div>
+                </div>
+                <span class="badge" style="background:${statusBg};color:${statusColor};">${m.status}</span>
+                <div class="flex gap-2">
+                  ${m.status==='download'?
+                    `<button style="background:#0f1f40;border:1px solid #388bfd;color:#388bfd;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;">⬇ Download</button>`:
+                    `<button style="background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;">Use</button>`
+                  }
+                  <button style="background:#161b22;border:1px solid #30363d;color:#7d8590;padding:6px 10px;border-radius:6px;font-size:11px;cursor:pointer;">⋯</button>
+                </div>
+              </div>
+            `);
+          });
+        </script>
+      </div>
+    </div>
+
+    <!-- ==================== EXPERIMENTS PAGE ==================== -->
+    <div id="page-experiments" class="page">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;color:#e6edf3;margin:0;">Experiment Tracker</h2>
+          <p style="font-size:13px;color:#7d8590;margin:4px 0 0;">Compare runs · Track hyperparameters · Analyze ablations</p>
+        </div>
+      </div>
+
+      <div class="card p-5">
+        <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:12px;">Run Comparison</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:1px solid #21262d;">
+                <th style="text-align:left;padding:8px 12px;color:#7d8590;font-weight:500;">Run</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">Model</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">Epochs</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">mAP50</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">mAP50-95</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">Precision</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">Recall</th>
+                <th style="text-align:center;padding:8px 12px;color:#7d8590;font-weight:500;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <script>
+                const runs=[
+                  {name:'yolo11s-v3',model:'yolo11s',ep:'47/150',map:'0.847',map95:'0.791',p:'0.891',r:'0.812',status:'running',best:true},
+                  {name:'yolo11s-v2',model:'yolo11s',ep:'150',map:'0.831',map95:'0.774',p:'0.876',r:'0.798',status:'done',best:false},
+                  {name:'yolo11n-fast',model:'yolo11n',ep:'150',map:'0.802',map95:'0.741',p:'0.851',r:'0.771',status:'done',best:false},
+                  {name:'yolo11s-v1',model:'yolo11s',ep:'150',map:'0.788',map95:'0.723',p:'0.831',r:'0.754',status:'done',best:false},
+                  {name:'yolo11s-aug-heavy',model:'yolo11s',ep:'120',map:'0.814',map95:'0.756',p:'0.847',r:'0.789',status:'done',best:false},
+                ];
+                runs.forEach(r=>{
+                  document.write(`
+                    <tr style="border-bottom:1px solid #21262d;${r.best?'background:#0d2418;':''}" onmouseenter="this.style.background='${r.best?'#0f2a1c':'#161b22'}'" onmouseleave="this.style.background='${r.best?'#0d2418':''}'">
+                      <td style="padding:10px 12px;">
+                        <div style="font-family:'JetBrains Mono',monospace;color:${r.best?'#39d353':'#e6edf3'};">${r.name}</div>
+                        ${r.best?'<div style="font-size:9px;color:#238636;">★ BEST</div>':''}
+                      </td>
+                      <td style="padding:10px 12px;text-align:center;color:#7d8590;font-family:'JetBrains Mono',monospace;">${r.model}</td>
+                      <td style="padding:10px 12px;text-align:center;color:#7d8590;font-family:'JetBrains Mono',monospace;">${r.ep}</td>
+                      <td style="padding:10px 12px;text-align:center;font-weight:600;color:${parseFloat(r.map)>0.84?'#39d353':parseFloat(r.map)>0.81?'#d29922':'#da3633'};font-family:'JetBrains Mono',monospace;">${r.map}</td>
+                      <td style="padding:10px 12px;text-align:center;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${r.map95}</td>
+                      <td style="padding:10px 12px;text-align:center;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${r.p}</td>
+                      <td style="padding:10px 12px;text-align:center;color:#e6edf3;font-family:'JetBrains Mono',monospace;">${r.r}</td>
+                      <td style="padding:10px 12px;text-align:center;">
+                        <span class="badge" style="background:${r.status==='running'?'#0f2419':'#1c1c1c'};color:${r.status==='running'?'#39d353':'#7d8590'};">${r.status}</span>
+                      </td>
+                    </tr>
+                  `);
+                });
+              </script>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showPage(name) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // Show target
+  document.getElementById('page-' + name).classList.add('active');
+  // Update nav active state
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  // Update breadcrumb
+  const labels = {
+    dashboard: 'Dashboard',
+    datasets: 'Datasets',
+    inference: 'Analysis Workbench',
+    video: 'Video Pipeline',
+    training: 'Training Control Center',
+    experiments: 'Experiments',
+    models: 'Model Registry',
+    annotation: 'Auto-Label Pipeline',
+  };
+  document.getElementById('breadcrumb').textContent = labels[name] || name;
+}
+</script>
+</body>
+</html>

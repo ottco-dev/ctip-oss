@@ -1,0 +1,90 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# docker/dev/Dockerfile.dev
+#
+# Full development image: CUDA 12.1 + PyTorch + all project deps + dev tools.
+# Includes hot-reload, Jupyter, profilers, and test runners.
+#
+# Build:
+#   docker build -f docker/dev/Dockerfile.dev -t trichome-dev .
+#
+# Run:
+#   docker run --gpus all -p 8000:8000 -p 3000:3000 \
+#     -v $(pwd):/workspace trichome-dev
+# ──────────────────────────────────────────────────────────────────────────────
+
+FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+
+ARG PYTHON_VERSION=3.12
+ARG DEBIAN_FRONTEND=noninteractive
+
+# ── System dependencies ───────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    curl \
+    ffmpeg \
+    git \
+    git-lfs \
+    htop \
+    libglib2.0-0 \
+    libgl1-mesa-glx \
+    libgomp1 \
+    libopencv-dev \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    nodejs \
+    npm \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    python${PYTHON_VERSION}-venv \
+    vim \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Python + uv ───────────────────────────────────────────────────
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
+
+RUN ln -s /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 \
+    && ln -s /usr/local/bin/python3 /usr/local/bin/python
+
+# ── Workspace ─────────────────────────────────────────────────────
+WORKDIR /workspace
+
+# Cache dependency layer separately
+COPY pyproject.toml .
+RUN uv pip install --system ".[all,dev]"
+
+# Install extra dev tools not in pyproject.toml
+RUN uv pip install --system \
+    ipython \
+    jupyter \
+    jupyterlab \
+    pytest-xdist \
+    pytest-watch \
+    memory-profiler \
+    line-profiler \
+    scalene \
+    viztracer
+
+# ── Project source ────────────────────────────────────────────────
+COPY . .
+
+# ── CLI entry point ───────────────────────────────────────────────
+RUN uv pip install --system -e ".[all,dev]"
+
+# ── Environment ───────────────────────────────────────────────────
+ENV PYTHONPATH=/workspace
+ENV CUDA_VISIBLE_DEVICES=0
+ENV TRICHOME_ENV=development
+
+# ── Ports ─────────────────────────────────────────────────────────
+EXPOSE 8000 3000 8888
+
+# ── Default: backend with hot-reload ─────────────────────────────
+CMD ["uvicorn", "backend.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--reload", \
+     "--reload-dir", "/workspace"]

@@ -1,0 +1,78 @@
+# YOLO11s Trichome Detection Training Configuration
+# Hardware: RTX 4060 (8 GB VRAM), i5-13400F, 16 GB RAM
+# Effective batch size: 4 × 4 accumulation = 16
+
+# ── MODEL ──────────────────────────────────────────────────────────
+model: yolo11s.pt          # ~1.2 GB VRAM at batch=4, imgsz=1280
+task: detect
+
+# ── DATA ───────────────────────────────────────────────────────────
+# Override at runtime: trichome train --data /path/to/data.yaml
+data: data/trichome_dataset/data.yaml
+nc: 4                       # capitate_stalked, capitate_sessile, bulbous, non_glandular
+
+# ── TRAINING ───────────────────────────────────────────────────────
+epochs: 150
+patience: 20               # Early stopping: stop if no improvement for 20 epochs
+batch: 4                   # RTX 4060: 4 @ 1280px is safe
+imgsz: 1280                # High resolution for microscopy
+
+# ── OPTIMIZATION ───────────────────────────────────────────────────
+optimizer: AdamW
+lr0: 0.01                  # Initial learning rate
+lrf: 0.01                  # Final LR = lr0 × lrf (cosine anneal)
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3.0
+warmup_momentum: 0.8
+warmup_bias_lr: 0.1
+
+# ── AUGMENTATION ───────────────────────────────────────────────────
+# Conservative for microscopy — preserve color semantics (maturity stage)
+degrees: 10.0              # Rotation (trichomes have no canonical orientation)
+flipud: 0.5                # Vertical flip
+fliplr: 0.5                # Horizontal flip
+mosaic: 1.0                # Mosaic augmentation
+mixup: 0.1                 # MixUp (mild)
+copy_paste: 0.0            # Copy-paste (disabled — complex for trichomes)
+hsv_h: 0.015               # Hue shift (very mild — maturity is color-coded)
+hsv_s: 0.7                 # Saturation variation
+hsv_v: 0.4                 # Value variation
+translate: 0.1
+scale: 0.5
+shear: 0.0
+perspective: 0.0
+close_mosaic: 10           # Disable mosaic for final 10 epochs
+
+# ── HARDWARE ───────────────────────────────────────────────────────
+device: 0                  # GPU 0 (RTX 4060)
+amp: true                  # FP16 mixed precision — required for RTX 4060 efficiency
+workers: 4                 # i5-13400F: 4 efficient workers
+cache: disk                # Cache on disk (not RAM — only 16GB)
+
+# ── CHECKPOINTING ──────────────────────────────────────────────────
+save: true
+save_period: 10            # Save checkpoint every 10 epochs
+project: runs/detect
+name: yolo11s_trichome
+
+# ── VALIDATION ─────────────────────────────────────────────────────
+val: true
+iou: 0.7                   # IoU threshold for mAP computation
+conf: 0.001                # Low conf for NMS during validation (see all candidates)
+max_det: 300               # Max detections per image
+
+# ── PLOTS ──────────────────────────────────────────────────────────
+plots: true                # Save training plots (loss curves, confusion matrix)
+
+# ── REPRODUCIBILITY ─────────────────────────────────────────────────
+seed: 42
+deterministic: true
+
+# ── NMS ────────────────────────────────────────────────────────────
+nms: false                 # Standard NMS (use overlap=0.45 for trichomes)
+
+# ── EXPECTED PERFORMANCE (RTX 4060) ────────────────────────────────
+# Training time: ~6-8 hours for 150 epochs @ imgsz=1280, batch=4
+# GPU memory: ~5-6 GB VRAM peak (leaves headroom for system)
+# Expected mAP50: 0.75-0.90 depending on dataset quality

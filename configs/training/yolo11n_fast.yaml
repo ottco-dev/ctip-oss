@@ -1,0 +1,48 @@
+# YOLO11n Fast Iteration Config — for rapid experimentation
+# Smaller model, higher batch size, fewer epochs
+# Use when: testing augmentations, debugging pipelines, quick baseline
+
+model: yolo11n.pt          # Nano — ~0.6 GB VRAM, ~150fps inference
+task: detect
+
+data: data/trichome_dataset/data.yaml
+nc: 4
+
+epochs: 50
+patience: 10
+batch: 16                  # Larger batch possible with nano model
+imgsz: 640                 # Reduced resolution for speed
+
+optimizer: SGD
+lr0: 0.01
+lrf: 0.01
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3.0
+
+# Moderate augmentation
+degrees: 10.0
+flipud: 0.5
+fliplr: 0.5
+mosaic: 1.0
+mixup: 0.0                 # No mixup for fast runs
+hsv_h: 0.015
+hsv_s: 0.7
+hsv_v: 0.4
+close_mosaic: 5
+
+device: 0
+amp: true
+workers: 6                 # More workers since model is smaller
+cache: ram                 # With nano model, RAM cache is fast
+save: true
+save_period: -1            # Only save best and last
+project: runs/detect
+name: yolo11n_fast
+
+val: true
+plots: true
+seed: 42
+deterministic: true
+
+# Expected: ~25min training, ~0.55-0.70 mAP50

@@ -1,0 +1,101 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.training.yml — Training stack for Trichome Analysis System
+#
+# Extends: docker-compose.yml
+# Usage:
+#   docker-compose -f docker/docker-compose.yml \
+#                  -f docker/docker-compose.training.yml up
+#
+# Services:
+#   trainer  — YOLO training container (GPU reserved)
+#   mlflow   — MLflow tracking server (port 3004 on host, /mlflow/ via nginx)
+#
+# Port layout (matches docker-compose.yml):
+#   3004 → MLflow UI  (http://localhost:3004 | http://ottco.ddns.net:3001/mlflow/)
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  # ---------------------------------------------------------------------------
+  # YOLO trainer
+  # ---------------------------------------------------------------------------
+  trainer:
+    build:
+      context: ..
+      dockerfile: docker/training/Dockerfile.training
+      args:
+        BASE_IMAGE: trichome-base:latest
+    image: trichome-training:latest
+    container_name: trichome_trainer
+    runtime: nvidia
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - PYTHONPATH=/app
+    volumes:
+      # Data and model storage (bind mounts for persistence)
+      - trichome-data:/data
+      - trichome-models:/models
+      # Training outputs (runs, checkpoints)
+      - trichome-runs:/app/runs
+      - trichome-checkpoints:/app/checkpoints
+      # Source code (for development — comment out in production)
+      - ..:/app/src
+    networks:
+      - trichome-net
+    depends_on:
+      - mlflow
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Default: wait for explicit train command
+    entrypoint: ["tail", "-f", "/dev/null"]
+
+  # ---------------------------------------------------------------------------
+  # MLflow tracking server
+  # ---------------------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.0
+    container_name: trichome_mlflow
+    ports:
+      - "3004:5000"         # Direct: http://localhost:3004 | Via proxy: /mlflow/
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    volumes:
+      - trichome-mlflow:/mlflow
+    networks:
+      - trichome-net
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri=sqlite:////mlflow/mlflow.db
+      - --default-artifact-root=/mlflow/artifacts
+      - --host=0.0.0.0
+      - --port=5000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/2.0/mlflow/experiments/list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# ---------------------------------------------------------------------------
+# Volumes (training-specific)
+# ---------------------------------------------------------------------------
+volumes:
+  trichome-runs:
+    driver: local
+  trichome-checkpoints:
+    driver: local
+
+networks:
+  trichome-net:
+    external: true

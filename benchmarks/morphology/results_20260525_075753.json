@@ -1,0 +1,81 @@
+{
+  "benchmark": "morphology_analysis",
+  "timestamp": "2026-05-25T07:57:53.271452+00:00",
+  "config": {
+    "n": 20,
+    "mask_size": 128,
+    "warmup": 2
+  },
+  "metrics": {
+    "contour_from_mask": {
+      "n": 20,
+      "avg_ms": 0.011,
+      "median_ms": 0.011,
+      "p95_ms": 0.019,
+      "fps": 89948.3
+    },
+    "extract_geometric_descriptors": {
+      "n": 20,
+      "avg_ms": 0.221,
+      "median_ms": 0.193,
+      "p95_ms": 0.343,
+      "fps": 4531.8
+    },
+    "detect_stalk_and_head": {
+      "n": 20,
+      "avg_ms": 0.147,
+      "median_ms": 0.145,
+      "p95_ms": 0.17,
+      "fps": 6814.0
+    },
+    "extract_geometric_features": {
+      "n": 20,
+      "avg_ms": 0.031,
+      "median_ms": 0.03,
+      "p95_ms": 0.039,
+      "fps": 32392.2
+    },
+    "classify_morphology_geometric": {
+      "n": 20,
+      "avg_ms": 0.003,
+      "median_ms": 0.003,
+      "p95_ms": 0.005,
+      "fps": 330808.2
+    },
+    "MorphologyClassifier.predict": {
+      "n": 20,
+      "avg_ms": 0.003,
+      "median_ms": 0.003,
+      "p95_ms": 0.004,
+      "fps": 336298.4
+    },
+    "compute_density_map_50pts": {
+      "n": 20,
+      "avg_ms": 2.972,
+      "median_ms": 2.978,
+      "p95_ms": 3.043,
+      "fps": 336.5
+    },
+    "compute_density_map_50pts_kde": {
+      "n": 20,
+      "avg_ms": 3.063,
+      "median_ms": 2.957,
+      "p95_ms": 4.307,
+      "fps": 326.5
+    },
+    "pipeline_analyze_single": {
+      "n": 20,
+      "avg_ms": 1.029,
+      "median_ms": 1.027,
+      "p95_ms": 1.072,
+      "fps": 971.4
+    },
+    "pipeline_analyze_batch_10": {
+      "n": 20,
+      "avg_ms": 7.596,
+      "median_ms": 6.647,
+      "p95_ms": 9.851,
+      "fps": 131.6
+    }
+  }
+}

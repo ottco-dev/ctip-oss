@@ -1,0 +1,123 @@
+{
+  "benchmark": "focus_metrics",
+  "timestamp": "2026-05-25T07:59:02.862110+00:00",
+  "config": {
+    "n": 200,
+    "image_size": 512,
+    "warmup": 10
+  },
+  "metrics": {
+    "laplacian_variance": {
+      "n": 200,
+      "avg_ms": 1.109,
+      "median_ms": 1.094,
+      "p95_ms": 1.215,
+      "fps": 901.5
+    },
+    "modified_laplacian": {
+      "n": 200,
+      "avg_ms": 2.495,
+      "median_ms": 2.504,
+      "p95_ms": 2.65,
+      "fps": 400.8
+    },
+    "squared_laplacian_gradient": {
+      "n": 200,
+      "avg_ms": 0.984,
+      "median_ms": 0.968,
+      "p95_ms": 1.077,
+      "fps": 1016.3
+    },
+    "laplacian_energy_of_gradient": {
+      "n": 200,
+      "avg_ms": 1.348,
+      "median_ms": 1.342,
+      "p95_ms": 1.391,
+      "fps": 741.7
+    },
+    "regional_laplacian_variance": {
+      "n": 200,
+      "avg_ms": 0.847,
+      "median_ms": 0.833,
+      "p95_ms": 0.928,
+      "fps": 1180.7
+    },
+    "tenengrad": {
+      "n": 200,
+      "avg_ms": 2.55,
+      "median_ms": 2.528,
+      "p95_ms": 2.819,
+      "fps": 392.2
+    },
+    "tenengrad_variance": {
+      "n": 200,
+      "avg_ms": 2.854,
+      "median_ms": 2.824,
+      "p95_ms": 3.176,
+      "fps": 350.4
+    },
+    "absolute_gradient_sum": {
+      "n": 200,
+      "avg_ms": 2.213,
+      "median_ms": 2.195,
+      "p95_ms": 2.351,
+      "fps": 451.9
+    },
+    "fft_high_frequency_ratio": {
+      "n": 200,
+      "avg_ms": 7.166,
+      "median_ms": 6.988,
+      "p95_ms": 8.008,
+      "fps": 139.6
+    },
+    "dct_high_frequency_score": {
+      "n": 200,
+      "avg_ms": 0.713,
+      "median_ms": 0.711,
+      "p95_ms": 0.73,
+      "fps": 1403.0
+    },
+    "brenner_focus": {
+      "n": 200,
+      "avg_ms": 0.332,
+      "median_ms": 0.329,
+      "p95_ms": 0.35,
+      "fps": 3016.1
+    },
+    "vollath_f4": {
+      "n": 200,
+      "avg_ms": 0.464,
+      "median_ms": 0.461,
+      "p95_ms": 0.479,
+      "fps": 2157.4
+    },
+    "composite_score": {
+      "n": 200,
+      "avg_ms": 9.724,
+      "median_ms": 9.517,
+      "p95_ms": 10.81,
+      "fps": 102.8
+    },
+    "composite_regional_4x4": {
+      "n": 200,
+      "avg_ms": 10.909,
+      "median_ms": 10.713,
+      "p95_ms": 11.902,
+      "fps": 91.7
+    },
+    "generate_heatmap_composite": {
+      "n": 200,
+      "avg_ms": 2.874,
+      "median_ms": 2.915,
+      "p95_ms": 3.017,
+      "fps": 347.9
+    },
+    "generate_heatmap_guidance": {
+      "n": 200,
+      "avg_ms": 7.032,
+      "median_ms": 7.038,
+      "p95_ms": 7.603,
+      "fps": 142.2
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "benchmark": "maturity_analysis",
+  "timestamp": "2026-05-25T07:56:44.258023+00:00",
+  "config": {
+    "n": 20,
+    "crop_size": 64,
+    "warmup": 2
+  },
+  "metrics": {
+    "extract_color_features": {
+      "n": 20,
+      "avg_ms": 0.181,
+      "median_ms": 0.179,
+      "p95_ms": 0.199,
+      "fps": 5517.8
+    },
+    "rule_based_maturity_estimate": {
+      "n": 20,
+      "avg_ms": 0.176,
+      "median_ms": 0.174,
+      "p95_ms": 0.196,
+      "fps": 5687.7
+    },
+    "compute_lbp": {
+      "n": 20,
+      "avg_ms": 8.196,
+      "median_ms": 8.177,
+      "p95_ms": 8.473,
+      "fps": 122.0
+    },
+    "compute_glcm_features": {
+      "n": 20,
+      "avg_ms": 1.805,
+      "median_ms": 1.778,
+      "p95_ms": 1.965,
+      "fps": 554.0
+    },
+    "compute_gabor_features": {
+      "n": 20,
+      "avg_ms": 1.774,
+      "median_ms": 1.766,
+      "p95_ms": 1.861,
+      "fps": 563.8
+    },
+    "compute_shannon_entropy": {
+      "n": 20,
+      "avg_ms": 0.05,
+      "median_ms": 0.049,
+      "p95_ms": 0.059,
+      "fps": 19948.5
+    },
+    "extract_texture_features": {
+      "n": 20,
+      "avg_ms": 9.861,
+      "median_ms": 9.812,
+      "p95_ms": 10.429,
+      "fps": 101.4
+    },
+    "estimate_translucency": {
+      "n": 20,
+      "avg_ms": 0.088,
+      "median_ms": 0.087,
+      "p95_ms": 0.099,
+      "fps": 11312.5
+    },
+    "detect_color_degradation": {
+      "n": 20,
+      "avg_ms": 0.029,
+      "median_ms": 0.028,
+      "p95_ms": 0.031,
+      "fps": 34715.2
+    },
+    "detect_structural_collapse": {
+      "n": 20,
+      "avg_ms": 0.177,
+      "median_ms": 0.171,
+      "p95_ms": 0.249,
+      "fps": 5659.2
+    },
+    "detect_texture_irregularity": {
+      "n": 20,
+      "avg_ms": 0.028,
+      "median_ms": 0.027,
+      "p95_ms": 0.044,
+      "fps": 36048.4
+    },
+    "assess_degradation": {
+      "n": 20,
+      "avg_ms": 0.256,
+      "median_ms": 0.246,
+      "p95_ms": 0.335,
+      "fps": 3904.4
+    },
+    "pipeline_analyze_crop": {
+      "n": 20,
+      "avg_ms": 10.599,
+      "median_ms": 10.466,
+      "p95_ms": 11.617,
+      "fps": 94.3
+    },
+    "pipeline_analyze_batch_10": {
+      "n": 20,
+      "avg_ms": 106.716,
+      "median_ms": 106.022,
+      "p95_ms": 110.835,
+      "fps": 9.4
+    }
+  }
+}
