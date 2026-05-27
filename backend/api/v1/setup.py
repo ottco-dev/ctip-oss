@@ -593,8 +593,56 @@ async def docker_start_annotation(body: DockerStartRequest) -> DockerStartRespon
         "--profile", profile,
         "up", "-d", "--remove-orphans",
     ]
-    ok, out = await asyncio.to_thread(_run, cmd, timeout=180)
+    ok, out = await asyncio.to_thread(_run, cmd, timeout=600)
     return DockerStartResponse(ok=ok, output=out[:3000], detail=out[:500] if not ok else "")
+
+
+@router.get("/docker/start-annotation/stream")
+async def docker_start_annotation_stream(profile: str = "annotation"):
+    """SSE stream of docker compose up output. Connect via EventSource."""
+    from fastapi.responses import StreamingResponse as _SR
+    import asyncio as _aio
+
+    ok_dk, _ = await _aio.to_thread(_run, ["docker", "info"])
+    if not ok_dk:
+        async def _err():
+            yield "data: [ERROR] Docker not accessible\n\n"
+            yield "data: [DONE]\n\n"
+        return _SR(_err(), media_type="text/event-stream")
+
+    compose_file = str(REPO_ROOT / "docker" / "docker-compose.yml")
+    cmd = [
+        "docker", "compose",
+        "--project-directory", str(REPO_ROOT / "docker"),
+        "-f", compose_file,
+        "--profile", profile,
+        "up", "-d", "--remove-orphans",
+    ]
+
+    async def _stream():
+        import asyncio.subprocess as _asp
+        proc = await _asp.create_subprocess_exec(
+            *cmd,
+            stdout=_asp.PIPE,
+            stderr=_asp.STDOUT,
+            cwd=str(REPO_ROOT / "docker"),
+        )
+        assert proc.stdout is not None
+        try:
+            async for raw in proc.stdout:
+                line = raw.decode(errors="replace").rstrip()
+                if line:
+                    yield f"data: {line}\n\n"
+        finally:
+            await proc.wait()
+            status = "OK" if proc.returncode == 0 else f"ERROR (exit {proc.returncode})"
+            yield f"data: [DONE:{status}]\n\n"
+
+    return _SR(
+        _stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # ── Model endpoints ───────────────────────────────────────────────────────────
