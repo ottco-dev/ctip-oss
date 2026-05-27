@@ -2,6 +2,57 @@
 
 ---
 
+## 2026-05-27 — OS-Style Setup Wizard + Backend Config API + Public README
+
+### WHAT WAS IMPLEMENTED
+
+**`backend/api/v1/setup.py` (new):**
+- `GET /setup/status` — check if first-run setup is complete (`SETUP_COMPLETED` flag)
+- `GET /setup/config` — read current config, redacts sensitive keys (API keys, passwords, secret key)
+- `POST /setup/validate` — validate config values before writing (domain format, port range, VRAM, URL patterns)
+- `POST /setup/configure` — atomically write to `.env` (temp file → rename), allowlist-only (ALLOWED_KEYS set)
+- `POST /setup/reset` — clear `SETUP_COMPLETED` so wizard triggers again
+- Integrated into `backend/api/v1/router.py` as the first registered router
+
+**`frontend/src/app/setup/page.tsx` (new — 850 LOC):**
+- Full-screen fixed overlay (`z-[9999]`) — OS-style first-run assistant (macOS/Windows OOBE inspired)
+- 7-step wizard: Welcome → Network → Hardware → Storage → Services → Security → Review
+- Left panel step indicator with done/active/pending states (desktop), progress bar (mobile)
+- Per-step validation with inline error display
+- Session storage draft persistence (survives page refresh, cleared on save)
+- Loads existing `.env` config on mount via backend API
+- Secret key auto-generator
+- Toggle components, password reveal/hide, monospace path fields
+- Animated step transitions (`animate-wizard-step` keyframe)
+- Completion screen with Docker restart command and "Run Again" option
+- TypeScript strict: 0 errors, 0 lint issues
+
+**`frontend/src/components/layout/Sidebar.tsx` (updated):**
+- Added "First-Time Setup" link with `SlidersHorizontal` icon → `/setup`
+
+**`frontend/src/styles/globals.css` (updated):**
+- Added `@keyframes wizardStepIn` + `.animate-wizard-step` utility
+
+**`frontend/.eslintrc.json` (new):**
+- Created `next/core-web-vitals` ESLint config
+
+**`README.md` (comprehensive rewrite — 3 languages EN/DE/ES):**
+- 17 sections: architecture, quickstart, labeling workflow, data collection tips, training, verification, Docker setup, nginx/domain config, technology stack & rationale
+- Tech stack section explains WHY each technology was chosen
+- Nginx domain config: `PUBLIC_DOMAIN` env var, localhost-only default, wizard reference
+
+### WHY IT WAS IMPLEMENTED
+- Users need a guided first-run experience to configure domain, GPU, storage, and services without editing .env manually
+- Onboarding friction was high (14 env vars, nginx config, multiple service URLs)
+- Backend config API enables in-app reconfiguration and future admin panels
+
+### WHAT STILL REMAINS
+- nginx.conf does not yet read `PUBLIC_DOMAIN` dynamically from env (currently hardcoded)
+- `test_setup_api.py` unit tests pending
+- DE/ES sections of tech stack in README still have placeholder nginx domain config prose (EN complete)
+
+---
+
 ## 2026-05-26 — TensorRT 10.x Runner + Engine Builder + Tiling Tests + Bug Fix
 
 ### WHAT WAS IMPLEMENTED

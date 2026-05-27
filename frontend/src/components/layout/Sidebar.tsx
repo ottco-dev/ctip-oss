@@ -20,6 +20,7 @@ import {
   Microscope,
   Tags,
   Activity,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/store/uiStore';
@@ -47,6 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/labelstudio', label: 'Label Studio', icon: Tags },
   { href: '/processes', label: 'Processes', icon: Activity },
   { href: '/system', label: 'System', icon: Settings },
+  { href: '/setup', label: 'First-Time Setup', icon: SlidersHorizontal },
 ];
 
 export function Sidebar() {
