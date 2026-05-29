@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -1132,13 +1132,423 @@ function ExperimentsTab() {
   );
 }
 
+// ── Distributed training types ─────────────────────────────────────────────
+
+interface DistributedStatus {
+  gpu_count: number;
+  nccl_available: boolean;
+  gloo_available: boolean;
+  optimal_world_size: number;
+  current_job: string | null;
+}
+
+interface DistributedStartRequest {
+  data_yaml: string;
+  epochs: number;
+  world_size: number;
+  backend: 'nccl' | 'gloo';
+  gradient_accumulation_steps: number;
+  mixed_precision: 'fp16' | 'bf16' | 'no';
+  sync_batchnorm: boolean;
+  gradient_checkpointing: boolean;
+}
+
+interface DistributedStartResponse {
+  task_id: string;
+  world_size: number;
+  backend: string;
+}
+
+interface DistributedJobStatus {
+  task_id: string;
+  status: string;
+  frames_processed?: number;
+  error?: string;
+}
+
+// ── Distributed tab ────────────────────────────────────────────────────────
+
+function DistributedTab() {
+  const qc = useQueryClient();
+
+  const [form, setForm] = useState<DistributedStartRequest>({
+    data_yaml: '/data/datasets/trichome/data.yaml',
+    epochs: 150,
+    world_size: -1,
+    backend: 'nccl',
+    gradient_accumulation_steps: 4,
+    mixed_precision: 'fp16',
+    sync_batchnorm: true,
+    gradient_checkpointing: false,
+  });
+
+  const setField = <K extends keyof DistributedStartRequest>(
+    key: K,
+    val: DistributedStartRequest[K],
+  ) => setForm((f) => ({ ...f, [key]: val }));
+
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+
+  // GPU status — auto-refresh every 10s
+  const { data: gpuStatus } = useQuery<DistributedStatus>({
+    queryKey: ['distributed-status'],
+    queryFn: () => api.get('/training/distributed/status').then((r) => r.data),
+    refetchInterval: 10_000,
+  });
+
+  // Sync side-effects from GPU status (RQ v5: onSuccess removed, use useEffect)
+  useEffect(() => {
+    if (!gpuStatus) return;
+    // Auto-select backend based on availability
+    setForm((f) => ({
+      ...f,
+      backend: gpuStatus.nccl_available ? 'nccl' : 'gloo',
+    }));
+    // Track existing job from server if none tracked locally
+    if (gpuStatus.current_job && !activeTaskId) {
+      setActiveTaskId(gpuStatus.current_job);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gpuStatus]);
+
+  // Active job polling — every 2s when a job is running
+  const { data: jobStatus } = useQuery<DistributedJobStatus>({
+    queryKey: ['distributed-job', activeTaskId],
+    queryFn: () =>
+      api.get(`/training/distributed/jobs/${activeTaskId}`).then((r) => r.data),
+    enabled: !!activeTaskId,
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      if (!d) return 2_000;
+      return d.status === 'running' ? 2_000 : false;
+    },
+  });
+
+  const startMutation = useMutation<DistributedStartResponse, Error, DistributedStartRequest>({
+    mutationFn: (req) =>
+      api.post('/training/distributed/start', req).then((r) => r.data),
+    onSuccess: (data) => {
+      setActiveTaskId(data.task_id);
+      qc.invalidateQueries({ queryKey: ['distributed-status'] });
+    },
+  });
+
+  const stopMutation = useMutation<{ stopped: boolean }, Error, string>({
+    mutationFn: (taskId) =>
+      api.post(`/training/distributed/stop/${taskId}`).then((r) => r.data),
+    onSuccess: () => {
+      setActiveTaskId(null);
+      qc.invalidateQueries({ queryKey: ['distributed-status'] });
+      qc.removeQueries({ queryKey: ['distributed-job'] });
+    },
+  });
+
+  const isJobRunning =
+    !!activeTaskId && jobStatus?.status === 'running';
+
+  const handleStart = () => {
+    if (!form.data_yaml) {
+      alert('Please specify the dataset YAML path.');
+      return;
+    }
+    startMutation.mutate(form);
+  };
+
+  const gpuCount = gpuStatus?.gpu_count ?? 0;
+  const optimalWorldSize = gpuStatus?.optimal_world_size ?? 1;
+
+  // Status badge helper
+  const jobStatusBadge = () => {
+    if (!jobStatus) return null;
+    const { status } = jobStatus;
+    if (status === 'running') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-400">
+          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+          Running
+        </span>
+      );
+    }
+    if (status === 'complete' || status === 'completed') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-400">
+          <span className="w-2 h-2 rounded-full bg-green-400" />
+          Complete
+        </span>
+      );
+    }
+    if (status === 'error' || status === 'failed') {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-400">
+          <span className="w-2 h-2 rounded-full bg-red-400" />
+          Error
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary capitalize">
+        {status}
+      </span>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* GPU status card */}
+      <div className="card">
+        <div className="card-header flex items-center gap-2">
+          <Cpu className="w-4 h-4 text-text-secondary" />
+          GPU Environment
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+          {/* GPU count */}
+          <div className="flex items-center gap-3">
+            <Cpu className="w-5 h-5 text-text-muted flex-shrink-0" />
+            <div>
+              <div className="text-sm font-medium text-text-primary">
+                {gpuCount > 0 ? `${gpuCount} GPU${gpuCount > 1 ? 's' : ''} detected` : 'No CUDA GPUs'}
+              </div>
+              <div className="text-xs text-text-muted">CUDA devices</div>
+            </div>
+          </div>
+
+          {/* Backend availability */}
+          <div className="space-y-1">
+            <div className="text-xs text-text-muted mb-1">Backend availability</div>
+            <div className="flex items-center gap-2 text-xs">
+              {gpuStatus?.nccl_available ? (
+                <span className="text-green-400 font-medium">✓ NCCL</span>
+              ) : (
+                <span className="text-red-400 font-medium">✗ NCCL</span>
+              )}
+              <span className="text-green-400 font-medium">✓ Gloo</span>
+            </div>
+          </div>
+
+          {/* Recommended world size */}
+          <div>
+            <div className="text-xs text-text-muted mb-1">Recommendation</div>
+            <div className="text-sm text-text-primary">
+              {gpuCount > 0
+                ? `Recommended: ${optimalWorldSize} GPU${optimalWorldSize > 1 ? 's' : ''} for this VRAM budget`
+                : 'No GPUs available for DDP'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Config panel */}
+        <div className="lg:col-span-1 space-y-3">
+          <Section title="Dataset" icon={Settings} defaultOpen>
+            <div>
+              <label className="block text-xs text-text-secondary mb-1.5">
+                Dataset YAML Path
+              </label>
+              <input
+                className="input font-mono text-xs"
+                value={form.data_yaml}
+                onChange={(e) => setField('data_yaml', e.target.value)}
+                placeholder="/data/datasets/trichome/data.yaml"
+              />
+            </div>
+          </Section>
+
+          <Section title="Parallelism" icon={Activity} defaultOpen>
+            <NumberInput
+              label="World Size"
+              hint={`-1 = auto (detected: ${gpuCount} GPU${gpuCount !== 1 ? 's' : ''})`}
+              value={form.world_size}
+              min={-1}
+              max={8}
+              step={1}
+              onChange={(v) => setField('world_size', v)}
+              mono
+            />
+            <div>
+              <label className="block text-xs text-text-secondary mb-1.5">Backend</label>
+              <select
+                className="input"
+                value={form.backend}
+                onChange={(e) =>
+                  setField('backend', e.target.value as 'nccl' | 'gloo')
+                }
+              >
+                <option value="nccl">
+                  NCCL{gpuStatus?.nccl_available ? ' (available)' : ' (unavailable)'}
+                </option>
+                <option value="gloo">Gloo (always available)</option>
+              </select>
+            </div>
+            <NumberInput
+              label="Gradient Accumulation Steps"
+              value={form.gradient_accumulation_steps}
+              min={1}
+              max={16}
+              step={1}
+              onChange={(v) => setField('gradient_accumulation_steps', v)}
+            />
+          </Section>
+
+          <Section title="Precision & Memory" icon={Sliders} defaultOpen>
+            <div>
+              <label className="block text-xs text-text-secondary mb-1.5">
+                Mixed Precision
+              </label>
+              <select
+                className="input"
+                value={form.mixed_precision}
+                onChange={(e) =>
+                  setField('mixed_precision', e.target.value as 'fp16' | 'bf16' | 'no')
+                }
+              >
+                <option value="fp16">fp16 — recommended for RTX 4060</option>
+                <option value="bf16">bf16 — Ampere+ only</option>
+                <option value="no">no — full fp32</option>
+              </select>
+            </div>
+            <Toggle
+              value={form.sync_batchnorm}
+              onChange={(v) => setField('sync_batchnorm', v)}
+              label="Sync BatchNorm"
+              hint="Convert BN → SyncBN (required for DDP)"
+            />
+            <Toggle
+              value={form.gradient_checkpointing}
+              onChange={(v) => setField('gradient_checkpointing', v)}
+              label="Gradient Checkpointing"
+              hint="Trade compute for VRAM"
+            />
+          </Section>
+
+          <Section title="Training" icon={Activity} defaultOpen>
+            <NumberInput
+              label="Epochs"
+              value={form.epochs}
+              min={1}
+              max={1000}
+              step={1}
+              onChange={(v) => setField('epochs', v)}
+            />
+          </Section>
+
+          <button
+            className="btn-primary w-full flex items-center justify-center gap-2"
+            onClick={handleStart}
+            disabled={isJobRunning || startMutation.isPending}
+          >
+            <Play className="w-4 h-4" />
+            {isJobRunning ? 'Job running…' : 'Launch Distributed Training'}
+          </button>
+
+          {startMutation.isError && (
+            <div className="text-xs text-status-error bg-status-error/10 rounded p-2">
+              {(startMutation.error as Error)?.message ?? String(startMutation.error)}
+            </div>
+          )}
+        </div>
+
+        {/* Right panel */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Active job panel */}
+          {activeTaskId && (
+            <div
+              className={cn(
+                'card',
+                jobStatus?.status === 'running' && 'border-blue-500/30 bg-blue-500/5',
+                (jobStatus?.status === 'complete' || jobStatus?.status === 'completed') &&
+                  'border-green-500/30 bg-green-500/5',
+                (jobStatus?.status === 'error' || jobStatus?.status === 'failed') &&
+                  'border-red-500/30 bg-red-500/5',
+              )}
+            >
+              <div className="card-header flex items-center justify-between">
+                <span>Active Distributed Job</span>
+                {jobStatusBadge()}
+              </div>
+
+              <div className="space-y-3 mt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-muted">Task ID:</span>
+                  <span className="font-mono text-xs text-text-primary">
+                    {activeTaskId}
+                  </span>
+                </div>
+
+                {jobStatus?.frames_processed !== undefined && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-text-muted">Frames processed:</span>
+                    <span className="font-mono text-xs text-text-primary">
+                      {jobStatus.frames_processed.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {(jobStatus?.status === 'error' || jobStatus?.status === 'failed') &&
+                  jobStatus.error && (
+                    <div className="text-xs text-red-400 bg-red-500/10 rounded p-2">
+                      {jobStatus.error}
+                    </div>
+                  )}
+
+                {isJobRunning && (
+                  <button
+                    className="btn-danger flex items-center gap-2"
+                    onClick={() => stopMutation.mutate(activeTaskId)}
+                    disabled={stopMutation.isPending}
+                  >
+                    {stopMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                    Stop Job
+                  </button>
+                )}
+
+                {!isJobRunning &&
+                  jobStatus &&
+                  jobStatus.status !== 'running' && (
+                    <button
+                      className="text-xs text-text-muted hover:text-text-secondary underline"
+                      onClick={() => {
+                        setActiveTaskId(null);
+                        qc.removeQueries({ queryKey: ['distributed-job'] });
+                      }}
+                    >
+                      Dismiss
+                    </button>
+                  )}
+              </div>
+            </div>
+          )}
+
+          {/* Idle state */}
+          {!activeTaskId && (
+            <div className="card flex flex-col items-center justify-center py-16 text-center">
+              <Cpu className="w-12 h-12 text-text-muted opacity-30 mb-4" />
+              <p className="text-sm font-medium text-text-secondary">
+                No distributed job running
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                Configure the options on the left and click &ldquo;Launch Distributed Training&rdquo;
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Tab-aware inner component (reads searchParams) ─────────────────────────
 
-type TabId = 'runs' | 'experiments';
+type TabId = 'runs' | 'experiments' | 'distributed';
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'runs', label: 'Runs', icon: Cpu },
+  { id: 'runs', label: 'Runs', icon: Activity },
   { id: 'experiments', label: 'Experiments', icon: FlaskConical },
+  { id: 'distributed', label: 'Distributed', icon: Cpu },
 ];
 
 function TrainingPageInner() {
@@ -1146,7 +1556,12 @@ function TrainingPageInner() {
   const searchParams = useSearchParams();
 
   const rawTab = searchParams.get('tab');
-  const activeTab: TabId = rawTab === 'experiments' ? 'experiments' : 'runs';
+  const activeTab: TabId =
+    rawTab === 'experiments'
+      ? 'experiments'
+      : rawTab === 'distributed'
+      ? 'distributed'
+      : 'runs';
 
   const setTab = (tab: TabId) => {
     router.replace(`/training?tab=${tab}`);
@@ -1185,7 +1600,9 @@ function TrainingPageInner() {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'runs' ? <RunsTab /> : <ExperimentsTab />}
+      {activeTab === 'runs' && <RunsTab />}
+      {activeTab === 'experiments' && <ExperimentsTab />}
+      {activeTab === 'distributed' && <DistributedTab />}
     </div>
   );
 }

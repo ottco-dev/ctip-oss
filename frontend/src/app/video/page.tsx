@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Film,
@@ -13,6 +13,8 @@ import {
   Trash2,
   Star,
   BarChart2,
+  Activity,
+  Target,
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { api } from "@/lib/api";
@@ -775,12 +777,743 @@ function VideoList({ onDelete }: { onDelete: () => void }) {
 }
 
 // ---------------------------------------------------------------------------
+// Tracking types
+// ---------------------------------------------------------------------------
+
+interface TrackingConfig {
+  max_age: number;
+  min_hits: number;
+  iou_threshold: number;
+  min_track_length: number;
+}
+
+interface TrackingStartResponse {
+  session_id: string;
+  status: string;
+}
+
+interface TrackingStatusResponse {
+  status: "running" | "complete" | "error";
+  frames_processed: number;
+  track_count: number;
+}
+
+interface TrackingSummary {
+  total_tracks: number;
+  confirmed_tracks: number;
+  avg_track_length: number;
+  type_distribution: Record<string, number>;
+  trajectory_data: Array<{
+    track_id: number;
+    frames: number[];
+    positions: Array<{ x_min: number; y_min: number; x_max: number; y_max: number }>;
+    type: string | null;
+  }>;
+}
+
+interface TrajectoryRecord {
+  track_id: number;
+  trichome_type: string | null;
+  frames: number[];
+  positions: Array<{ x_min: number; y_min: number; x_max: number; y_max: number }>;
+}
+
+interface SessionHistoryEntry {
+  session_id: string;
+  video_id: string;
+  track_count: number;
+  started_at: number;
+}
+
+// Color map for trichome types (matches existing morphology palette)
+const TRICHOME_TYPE_COLORS: Record<string, string> = {
+  CAPITATE_STALKED: "#06b6d4",   // cyan
+  CAPITATE_SESSILE: "#22c55e",   // green
+  BULBOUS: "#a855f7",            // purple
+  NON_GLANDULAR: "#f97316",      // orange
+};
+
+function typeColor(t: string): string {
+  return TRICHOME_TYPE_COLORS[t] ?? "#8b949e";
+}
+
+// ---------------------------------------------------------------------------
+// TypeDistributionChart — pure SVG horizontal bar chart
+// ---------------------------------------------------------------------------
+
+function TypeDistributionChart({ distribution }: { distribution: Record<string, number> }) {
+  const entries = Object.entries(distribution).sort((a, b) => b[1] - a[1]);
+  const maxCount = Math.max(...entries.map(([, v]) => v), 1);
+
+  const BAR_HEIGHT = 18;
+  const BAR_GAP = 8;
+  const LABEL_W = 150;
+  const COUNT_W = 32;
+  const BAR_AREA_W = 260;
+  const PAD_X = 8;
+  const PAD_Y = 6;
+
+  const totalH = PAD_Y * 2 + entries.length * (BAR_HEIGHT + BAR_GAP) - BAR_GAP;
+  const totalW = PAD_X * 2 + LABEL_W + BAR_AREA_W + COUNT_W;
+
+  if (entries.length === 0) {
+    return (
+      <p className="text-xs text-center py-4" style={{ color: "#484f58" }}>
+        No distribution data
+      </p>
+    );
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${totalW} ${totalH}`}
+      style={{ width: "100%", maxWidth: totalW, height: totalH, display: "block" }}
+    >
+      {entries.map(([type, count], i) => {
+        const y = PAD_Y + i * (BAR_HEIGHT + BAR_GAP);
+        const barW = (count / maxCount) * BAR_AREA_W;
+        const color = typeColor(type);
+        const labelX = PAD_X;
+        const barX = PAD_X + LABEL_W;
+        const countX = barX + BAR_AREA_W + 4;
+
+        return (
+          <g key={type}>
+            {/* Type label */}
+            <text
+              x={labelX + LABEL_W - 6}
+              y={y + BAR_HEIGHT / 2 + 4}
+              textAnchor="end"
+              fontSize={9}
+              fill="#8b949e"
+              fontFamily="monospace"
+            >
+              {type.replace(/_/g, " ")}
+            </text>
+            {/* Background track */}
+            <rect
+              x={barX}
+              y={y}
+              width={BAR_AREA_W}
+              height={BAR_HEIGHT}
+              fill="#21262d"
+              rx={3}
+            />
+            {/* Value bar */}
+            <rect
+              x={barX}
+              y={y}
+              width={Math.max(barW, 2)}
+              height={BAR_HEIGHT}
+              fill={color}
+              rx={3}
+              opacity={0.85}
+            />
+            {/* Count label */}
+            <text
+              x={countX}
+              y={y + BAR_HEIGHT / 2 + 4}
+              fontSize={9}
+              fill={color}
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              {count}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TrackingTab component
+// ---------------------------------------------------------------------------
+
+function TrackingTab() {
+  // Session config state
+  const [videoId, setVideoId] = useState<string>("");
+  const [config, setConfig] = useState<TrackingConfig>({
+    max_age: 3,
+    min_hits: 2,
+    iou_threshold: 0.3,
+    min_track_length: 3,
+  });
+
+  // Active session state
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [pollingActive, setPollingActive] = useState(false);
+  const [trackingStatus, setTrackingStatus] = useState<TrackingStatusResponse | null>(null);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  // Results state
+  const [summary, setSummary] = useState<TrackingSummary | null>(null);
+  const [trajectories, setTrajectories] = useState<TrajectoryRecord[]>([]);
+
+  // Session history (in-memory, resets on reload)
+  const [history, setHistory] = useState<SessionHistoryEntry[]>([]);
+
+  // Polling ref for cleanup
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch video library
+  const { data: videoData } = useQuery<{ videos: VideoRecord[] }>({
+    queryKey: ["videos"],
+    queryFn: () => api.get("/video/videos").then((r) => r.data),
+    refetchInterval: 15_000,
+  });
+
+  const videos = videoData?.videos ?? (Array.isArray(videoData) ? (videoData as VideoRecord[]) : []);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
+  }, []);
+
+  // Poll tracking status
+  useEffect(() => {
+    if (!pollingActive || !sessionId) return;
+
+    const poll = async () => {
+      try {
+        const res = await api.get<TrackingStatusResponse>(
+          `/video/tracking/${sessionId}/status`
+        );
+        const st = res.data;
+        setTrackingStatus(st);
+
+        if (st.status === "running") {
+          pollTimerRef.current = setTimeout(poll, 1500);
+        } else if (st.status === "complete") {
+          setPollingActive(false);
+          // Fetch summary and trajectories
+          const [sumRes, trajRes] = await Promise.all([
+            api.get<TrackingSummary>(`/video/tracking/${sessionId}/summary`),
+            api.get<TrajectoryRecord[]>(`/video/tracking/${sessionId}/trajectories`),
+          ]);
+          setSummary(sumRes.data);
+          setTrajectories(trajRes.data);
+          // Update history entry with final track count
+          setHistory((prev) =>
+            prev.map((h) =>
+              h.session_id === sessionId
+                ? { ...h, track_count: sumRes.data.confirmed_tracks }
+                : h
+            )
+          );
+        } else if (st.status === "error") {
+          setPollingActive(false);
+          setTrackingError("Tracking session encountered an error.");
+        }
+      } catch (e) {
+        setPollingActive(false);
+        setTrackingError(e instanceof Error ? e.message : "Polling failed");
+      }
+    };
+
+    poll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollingActive, sessionId]);
+
+  // Start tracking mutation
+  const startMutation = useMutation<TrackingStartResponse, Error, void>({
+    mutationFn: async () => {
+      const res = await api.post<TrackingStartResponse>("/video/tracking/start", {
+        video_id: videoId,
+        config,
+      });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      const newSessionId = data.session_id;
+      setSessionId(newSessionId);
+      setTrackingStatus(null);
+      setSummary(null);
+      setTrajectories([]);
+      setTrackingError(null);
+      setPollingActive(true);
+      // Add to history
+      setHistory((prev) => [
+        {
+          session_id: newSessionId,
+          video_id: videoId,
+          track_count: 0,
+          started_at: Date.now(),
+        },
+        ...prev,
+      ]);
+    },
+    onError: (err) => {
+      setTrackingError(err.message);
+    },
+  });
+
+  // Delete session mutation
+  const deleteMutation = useMutation<void, Error, string>({
+    mutationFn: async (sid: string) => {
+      await api.delete(`/video/tracking/${sid}`);
+    },
+    onSuccess: (_data, sid) => {
+      setHistory((prev) => prev.filter((h) => h.session_id !== sid));
+      if (sid === sessionId) {
+        setSessionId(null);
+        setTrackingStatus(null);
+        setSummary(null);
+        setTrajectories([]);
+        setPollingActive(false);
+        if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+      }
+    },
+  });
+
+  // Export trajectories as JSON
+  function exportJson() {
+    if (!trajectories.length || !sessionId) return;
+    const blob = new Blob([JSON.stringify(trajectories, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tracking_${sessionId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Most common trichome type from distribution
+  function mostCommonType(dist: Record<string, number>): string {
+    const entries = Object.entries(dist);
+    if (!entries.length) return "—";
+    return entries.sort((a, b) => b[1] - a[1])[0][0].replace(/_/g, " ");
+  }
+
+  const isRunning = pollingActive || startMutation.isPending;
+  const isComplete = trackingStatus?.status === "complete" && summary !== null;
+
+  return (
+    <div className="space-y-5">
+      {/* ── Step 1: Session setup ─────────────────────────────────────────── */}
+      <div
+        className="rounded-xl p-4 space-y-4"
+        style={{ background: "#161b22", border: "1px solid #21262d" }}
+      >
+        <div className="flex items-center gap-2">
+          <Target className="w-3.5 h-3.5 text-blue-400" />
+          <span className="text-xs font-semibold text-white">Session Setup</span>
+        </div>
+
+        {/* Video picker */}
+        <div className="space-y-1">
+          <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+            Video
+          </label>
+          {videos.length > 0 ? (
+            <select
+              value={videoId}
+              onChange={(e) => setVideoId(e.target.value)}
+              className="w-full px-3 py-1.5 rounded-lg text-xs focus:outline-none"
+              style={{
+                background: "#0d1117",
+                border: "1px solid #21262d",
+                color: videoId ? "#e6edf3" : "#484f58",
+              }}
+              disabled={isRunning}
+            >
+              <option value="" disabled>
+                Select a video…
+              </option>
+              {videos.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.filename} ({v.id.slice(0, 8)}…)
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              placeholder="Enter video_id manually…"
+              value={videoId}
+              onChange={(e) => setVideoId(e.target.value)}
+              className="w-full px-3 py-1.5 rounded-lg text-xs focus:outline-none"
+              style={{
+                background: "#0d1117",
+                border: "1px solid #21262d",
+                color: "#e6edf3",
+              }}
+              disabled={isRunning}
+            />
+          )}
+        </div>
+
+        {/* Config sliders */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+          {/* max_age */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+                Max Age
+              </label>
+              <span className="text-[10px] font-mono text-blue-400">{config.max_age}</span>
+            </div>
+            <p className="text-[9px]" style={{ color: "#484f58" }}>frames before track deletion</p>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              step={1}
+              value={config.max_age}
+              onChange={(e) => setConfig((c) => ({ ...c, max_age: Number(e.target.value) }))}
+              className="w-full h-1.5 appearance-none rounded cursor-pointer"
+              style={{ background: "#21262d" }}
+              disabled={isRunning}
+            />
+          </div>
+
+          {/* min_hits */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+                Min Hits
+              </label>
+              <span className="text-[10px] font-mono text-blue-400">{config.min_hits}</span>
+            </div>
+            <p className="text-[9px]" style={{ color: "#484f58" }}>frames to confirm a track</p>
+            <input
+              type="range"
+              min={1}
+              max={5}
+              step={1}
+              value={config.min_hits}
+              onChange={(e) => setConfig((c) => ({ ...c, min_hits: Number(e.target.value) }))}
+              className="w-full h-1.5 appearance-none rounded cursor-pointer"
+              style={{ background: "#21262d" }}
+              disabled={isRunning}
+            />
+          </div>
+
+          {/* iou_threshold */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+                IoU Threshold
+              </label>
+              <span className="text-[10px] font-mono text-blue-400">
+                {config.iou_threshold.toFixed(2)}
+              </span>
+            </div>
+            <p className="text-[9px]" style={{ color: "#484f58" }}>box overlap for association</p>
+            <input
+              type="range"
+              min={0.1}
+              max={0.9}
+              step={0.05}
+              value={config.iou_threshold}
+              onChange={(e) =>
+                setConfig((c) => ({ ...c, iou_threshold: Number(e.target.value) }))
+              }
+              className="w-full h-1.5 appearance-none rounded cursor-pointer"
+              style={{ background: "#21262d" }}
+              disabled={isRunning}
+            />
+          </div>
+
+          {/* min_track_length */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+                Min Track Length
+              </label>
+              <span className="text-[10px] font-mono text-blue-400">{config.min_track_length}</span>
+            </div>
+            <p className="text-[9px]" style={{ color: "#484f58" }}>minimum frames in a track</p>
+            <input
+              type="range"
+              min={1}
+              max={20}
+              step={1}
+              value={config.min_track_length}
+              onChange={(e) =>
+                setConfig((c) => ({ ...c, min_track_length: Number(e.target.value) }))
+              }
+              className="w-full h-1.5 appearance-none rounded cursor-pointer"
+              style={{ background: "#21262d" }}
+              disabled={isRunning}
+            />
+          </div>
+        </div>
+
+        {/* Start button */}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={() => startMutation.mutate()}
+            disabled={!videoId || isRunning}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {startMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+            Start Tracking
+          </button>
+          {isRunning && (
+            <span className="text-xs" style={{ color: "#484f58" }}>
+              Session: <span className="font-mono text-blue-400">{sessionId?.slice(0, 12)}…</span>
+            </span>
+          )}
+        </div>
+
+        {/* Start error */}
+        {trackingError && (
+          <div
+            className="flex items-start gap-2 px-3 py-2.5 rounded-lg"
+            style={{
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.2)",
+            }}
+          >
+            <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-red-400">{trackingError}</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Step 2: Progress indicator ────────────────────────────────────── */}
+      {sessionId && trackingStatus && trackingStatus.status === "running" && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={{ background: "#161b22", border: "1px solid #21262d" }}
+        >
+          <span
+            className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
+            style={{ background: "#22c55e" }}
+          />
+          <Activity className="w-4 h-4 text-blue-400 flex-shrink-0" />
+          <span className="text-sm" style={{ color: "#8b949e" }}>
+            Processed{" "}
+            <span className="font-mono text-white">
+              {trackingStatus.frames_processed}
+            </span>{" "}
+            frames ·{" "}
+            <span className="font-mono text-white">{trackingStatus.track_count}</span> tracks
+            found
+          </span>
+        </div>
+      )}
+
+      {/* ── Step 3: Results panel ─────────────────────────────────────────── */}
+      {isComplete && summary && (
+        <div className="space-y-4">
+          {/* Summary cards */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              {
+                label: "Total Tracks",
+                value: summary.total_tracks.toLocaleString(),
+                color: "#e6edf3",
+              },
+              {
+                label: "Confirmed Tracks",
+                value: summary.confirmed_tracks.toLocaleString(),
+                color: "#22c55e",
+              },
+              {
+                label: "Avg Track Length",
+                value: summary.avg_track_length.toFixed(1),
+                color: "#58a6ff",
+              },
+              {
+                label: "Top Type",
+                value: mostCommonType(summary.type_distribution),
+                color: "#a855f7",
+              },
+            ].map(({ label, value, color }) => (
+              <div
+                key={label}
+                className="rounded-xl p-3"
+                style={{ background: "#0d1117", border: "1px solid #21262d" }}
+              >
+                <p
+                  className="text-[10px] uppercase tracking-wide mb-1"
+                  style={{ color: "#484f58" }}
+                >
+                  {label}
+                </p>
+                <p className="text-lg font-bold font-mono leading-tight" style={{ color }}>
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Type distribution chart */}
+          {Object.keys(summary.type_distribution).length > 0 && (
+            <div
+              className="rounded-xl p-4 space-y-3"
+              style={{ background: "#0d1117", border: "1px solid #21262d" }}
+            >
+              <div className="flex items-center gap-2">
+                <BarChart2 className="w-3.5 h-3.5" style={{ color: "#484f58" }} />
+                <span className="text-xs font-semibold text-white">Type Distribution</span>
+              </div>
+              <TypeDistributionChart distribution={summary.type_distribution} />
+            </div>
+          )}
+
+          {/* Trajectory table */}
+          {trajectories.length > 0 && (
+            <div
+              className="rounded-xl p-4 space-y-3"
+              style={{ background: "#0d1117", border: "1px solid #21262d" }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-white">
+                  Trajectories ({trajectories.length})
+                </span>
+                <button
+                  onClick={exportJson}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all hover:bg-blue-500/20"
+                  style={{
+                    color: "#58a6ff",
+                    border: "1px solid rgba(88,166,255,0.25)",
+                  }}
+                >
+                  <Download className="w-3 h-3" />
+                  Export JSON
+                </button>
+              </div>
+
+              <div
+                className="overflow-y-auto rounded-lg"
+                style={{ maxHeight: 300, border: "1px solid #21262d" }}
+              >
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr style={{ background: "#161b22" }}>
+                      {["Track ID", "Type", "Frame Span", "Length", "State"].map((h) => (
+                        <th
+                          key={h}
+                          className="px-3 py-2 text-left font-medium uppercase tracking-wide"
+                          style={{ color: "#484f58", borderBottom: "1px solid #21262d" }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trajectories.slice(0, 50).map((t, idx) => {
+                      const firstFrame = t.frames.length > 0 ? Math.min(...t.frames) : 0;
+                      const lastFrame = t.frames.length > 0 ? Math.max(...t.frames) : 0;
+                      const length = t.frames.length;
+                      const isConfirmed = length >= config.min_track_length;
+                      const color = t.trichome_type ? typeColor(t.trichome_type) : "#484f58";
+                      return (
+                        <tr
+                          key={t.track_id}
+                          style={{
+                            background: idx % 2 === 0 ? "#0d1117" : "transparent",
+                            borderBottom: "1px solid #21262d",
+                          }}
+                        >
+                          <td className="px-3 py-1.5 font-mono" style={{ color: "#8b949e" }}>
+                            #{t.track_id}
+                          </td>
+                          <td className="px-3 py-1.5 font-mono" style={{ color }}>
+                            {t.trichome_type
+                              ? t.trichome_type.replace(/_/g, " ")
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-1.5 font-mono" style={{ color: "#8b949e" }}>
+                            {firstFrame}–{lastFrame}
+                          </td>
+                          <td className="px-3 py-1.5 font-mono" style={{ color: "#8b949e" }}>
+                            {length}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            <span
+                              className={cn(
+                                "text-[10px] px-1.5 py-0.5 rounded font-medium",
+                                isConfirmed
+                                  ? "bg-green-500/20 text-green-400"
+                                  : "bg-gray-500/20 text-gray-400"
+                              )}
+                            >
+                              {isConfirmed ? "confirmed" : "tentative"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {trajectories.length > 50 && (
+                <p className="text-[10px] text-center" style={{ color: "#484f58" }}>
+                  Showing first 50 of {trajectories.length} trajectories. Export JSON for full
+                  dataset.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 4: Session history ───────────────────────────────────────── */}
+      {history.length > 0 && (
+        <div
+          className="rounded-xl p-4 space-y-2"
+          style={{ background: "#161b22", border: "1px solid #21262d" }}
+        >
+          <span className="text-xs font-semibold text-white">Session History</span>
+          <div className="space-y-1.5">
+            {history.map((h) => (
+              <div
+                key={h.session_id}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                style={{ background: "#0d1117", border: "1px solid #21262d" }}
+              >
+                <span className="text-[10px] font-mono text-blue-400 flex-shrink-0">
+                  {h.session_id.slice(0, 14)}…
+                </span>
+                <span
+                  className="text-[10px] truncate flex-1 min-w-0"
+                  style={{ color: "#8b949e" }}
+                >
+                  {h.video_id}
+                </span>
+                {h.track_count > 0 && (
+                  <span className="text-[10px] font-mono text-green-400 flex-shrink-0">
+                    {h.track_count} tracks
+                  </span>
+                )}
+                <button
+                  onClick={() => deleteMutation.mutate(h.session_id)}
+                  disabled={deleteMutation.isPending}
+                  className="p-1 rounded hover:text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
+                  style={{ color: "#484f58" }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main video analysis page
 // ---------------------------------------------------------------------------
 
 export default function VideoPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"upload" | "library">("upload");
+  const [tab, setTab] = useState<"upload" | "library" | "tracking">("upload");
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -798,7 +1531,7 @@ export default function VideoPage() {
             className="flex gap-1 p-0.5 rounded-lg"
             style={{ background: '#161b22', border: '1px solid #21262d' }}
           >
-            {(["upload", "library"] as const).map((t) => (
+            {(["upload", "library", "tracking"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
@@ -829,6 +1562,10 @@ export default function VideoPage() {
 
         {tab === "library" && (
           <VideoList onDelete={() => {}} />
+        )}
+
+        {tab === "tracking" && (
+          <TrackingTab />
         )}
       </div>
     </div>
