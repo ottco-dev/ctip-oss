@@ -10,7 +10,9 @@ All sub-commands are implemented in apps/cli/commands/:
     train.py    — trichome train     YOLO training + evaluation
     video.py    — trichome video     Video frame extraction + ranking
     annotate.py — trichome annotate  VLM auto-labeling (HITL enforced)
-    export.py   — trichome export    PDF/CSV/JSON report generation
+    export.py       — trichome export       PDF/CSV/JSON report generation
+    completions.py  — trichome completions  Shell completion scripts (bash/zsh/fish)
+    convert.py      — trichome convert      YOLO .pt → ONNX → TensorRT
 
 Plus built-in commands:
     serve       — Start FastAPI backend server
@@ -81,8 +83,10 @@ _add_subapp("calibrate", "apps.cli.commands.calibrate", "Microscope pixel-to-µm
 _add_subapp("benchmark", "apps.cli.commands.benchmark", "Pipeline performance benchmarks (FPS, mAP, VRAM).")
 _add_subapp("train",     "apps.cli.commands.train",     "YOLO training, evaluation, and export.")
 _add_subapp("video",     "apps.cli.commands.video",     "Extract and rank best frames from microscopy video.")
-_add_subapp("annotate",  "apps.cli.commands.annotate",  "VLM auto-labeling with mandatory human review.")
-_add_subapp("export",    "apps.cli.commands.export",    "Export session results to PDF, CSV, JSON reports.")
+_add_subapp("annotate",     "apps.cli.commands.annotate",     "VLM auto-labeling with mandatory human review.")
+_add_subapp("export",       "apps.cli.commands.export",       "Export session results to PDF, CSV, JSON reports.")
+_add_subapp("completions",  "apps.cli.commands.completions",  "Shell completion scripts (bash/zsh/fish).")
+_add_subapp("convert",      "apps.cli.commands.convert",      "Convert YOLO .pt weights to ONNX and TensorRT.")
 
 # ── Built-in commands ─────────────────────────────────────────────────────────
 
