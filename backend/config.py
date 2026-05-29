@@ -110,6 +110,21 @@ class Settings(BaseSettings):
     Increase for endpoints with acceptable latency tolerance (e.g. batch jobs).
     """
 
+    batch_queue_window_ms: float = 50.0
+    """
+    Collection window for the detection batch queue (milliseconds).
+    Requests arriving within this window are processed in a single YOLO batch.
+    Lower = lower latency but smaller batches.
+    Higher = better throughput at the cost of added latency.
+    """
+
+    batch_queue_max_size: int = 8
+    """
+    Maximum images per GPU batch in the detection queue.
+    8 is optimal for RTX 4060 at 1280 px (fits comfortably in 8 GB VRAM).
+    Reduce to 4 if OOM errors occur during concurrent VLM + inference.
+    """
+
     # ── EXPERIMENT TRACKING ──────────────────────────────────────────
     mlflow_tracking_uri: str = "http://localhost:3004"  # host port; container uses :5000
     mlflow_experiment_name: str = "trichome-detection"

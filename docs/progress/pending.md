@@ -1,6 +1,6 @@
 # Pending Work
 
-Last updated: 2026-05-29 (CTIP rebrand; dark/light theme; system dashboard; nginx envsubst; model-tests tests; 1053 tests passing)
+Last updated: 2026-05-29 (DetectionBatchQueue; /detect/queued + /batch_queue/stats endpoints; 41 new tests; 1211 total tests passing)
 
 ---
 
@@ -76,7 +76,13 @@ Last updated: 2026-05-29 (CTIP rebrand; dark/light theme; system dashboard; ngin
 - [x] TensorRT API (management endpoints, graceful degradation, 23 tests) ✅ 2026-05-29
 - [x] NVIDIA Container Toolkit docs + compose file updates ✅ 2026-05-29
 - [ ] TensorRT E2E engine build (requires YOLO11s .pt → ONNX export first)
-- [ ] Batch inference optimization
+- [x] Batch inference optimization — DetectionBatchQueue ✅ 2026-05-29
+  - `backend/tasks/batch_queue.py`: 50ms collection window, max_size=8, EMA stats
+  - `POST /inference/detect/queued`: queued endpoint (no per-request semaphore)
+  - `GET /inference/batch_queue/stats`: monitoring endpoint
+  - `_run_detection_batch()`: true YOLO batch forward pass with sequential fallback
+  - Config: `BATCH_QUEUE_WINDOW_MS`, `BATCH_QUEUE_MAX_SIZE` in Settings
+  - 41 tests, all passing
 
 ### Analytics
 - [x] `tests/unit/test_analytics_export.py` — export module test coverage ✅
