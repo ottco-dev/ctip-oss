@@ -1,6 +1,6 @@
 # Pending Work
 
-Last updated: 2026-05-29 (DetectionBatchQueue; /detect/queued + /batch_queue/stats endpoints; 41 new tests; 1211 total tests passing)
+Last updated: 2026-05-29 (VLM ensemble API + 42 tests; Morphology CNN trainer + 50 tests; Token Management UI + API; Batch Inference UI; Annotation VlmConfigPanel; 1303 unit tests passing)
 
 ---
 
@@ -88,8 +88,37 @@ Last updated: 2026-05-29 (DetectionBatchQueue; /detect/queued + /batch_queue/sta
 - [x] `tests/unit/test_analytics_export.py` — export module test coverage ✅
 - [x] `tests/unit/test_model_tests_api.py` — 26 tests (POST/GET/PUT/DELETE + edge cases) ✅ 2026-05-29
 
+### VLM / Annotation
+- [x] VLM Ensemble API (`/vlm/ensemble/label`) ✅ 2026-05-29
+  - Parallel provider calls via `asyncio.gather`, majority-vote consensus, agreement score
+  - GPU semaphore per local provider; remote providers bypass it
+  - Prompt registry: `GET /vlm/prompts`, `GET /vlm/prompts/{name}`, `POST /vlm/prompts/validate`
+  - 42 tests passing (`tests/unit/test_vlm_ensemble.py`)
+- [x] Annotation VLM Config Panel ✅ 2026-05-29
+  - Provider + model dropdowns, prompt preset selector, custom system/user prompt textarea
+  - Ensemble mode toggle with multi-provider selector
+  - `AutoLabelRequest` extended with provider_id, model_id, prompt_name, custom prompts, ensemble fields
+
+### Morphology
+- [x] Morphology CNN Trainer (`morphology/training/cnn_trainer.py`) ✅ 2026-05-29
+  - EfficientNet-B0 backbone, 4-class head (CAPITATE_STALKED/SESSILE/BULBOUS/NON_GLANDULAR)
+  - FP16 mixed precision, early stopping (patience=10), ONNX export
+  - REST API: `POST /morphology/training/start|evaluate|export`, `GET /morphology/training/status`
+  - 50 tests passing (`tests/unit/test_morphology_cnn.py`)
+
+### Security
+- [x] API Token Management UI + API ✅ 2026-05-29
+  - `GET /system/token/status`, `POST /system/token/generate`, `POST /system/token/clear`
+  - `ApiSecuritySection` in `/settings`: status badge, one-time reveal, masked display, copy, confirm dialogs
+
+### Inference UI
+- [x] Batch Inference UI (`/inference/batch`) ✅ 2026-05-29
+  - Drag & drop multi-image upload, conf_threshold slider, model selector, tiled toggle
+  - Progress tracking, results table, JSON export, live queue stats cards
+
 ### Advanced
 - [ ] Multi-GPU distributed training support
 - [ ] Streaming dataset support (zarr/HDF5)
 - [ ] Temporal trichome tracking across video frames
 - [ ] Ollama local LLM integration for report narrative generation
+- [ ] CLI shell completions (bash/zsh/fish)
