@@ -97,6 +97,9 @@ nginx-local/nginx.pid
 # Frontend local env (contains local URLs, not for version control)
 frontend/.env.local
 
+# Claude Code local settings (contains personal paths and permissions)
+.claude/
+
 # Temp / cache
 tmp/
 temp/
