@@ -20,3 +20,11 @@
 - [[Architecture]]
 - [[API Reference|API-Reference]]
 - [[Troubleshooting]]
+
+## Advanced
+- [[Temporal Tracking|Temporal-Tracking]]
+- [[Streaming Datasets|Streaming-Datasets]]
+- [[Distributed Training|Distributed-Training]]
+- [[Ollama Integration|Ollama-Integration]]
+- [[Morphology CNN|Morphology-CNN]]
+- [[VLM Ensemble|VLM-Ensemble]]

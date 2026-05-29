@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Tag,
@@ -27,6 +27,8 @@ import {
   Wand2,
   Settings2,
   ChevronDown,
+  X,
+  StickyNote,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn, timeAgo, formatConfidence } from "@/lib/utils";
@@ -34,6 +36,15 @@ import { cn, timeAgo, formatConfidence } from "@/lib/utils";
 // ---------------------------------------------------------------------------
 // Shared types
 // ---------------------------------------------------------------------------
+
+interface VlmLabelEntry {
+  bbox?: { x_min: number; y_min: number; x_max: number; y_max: number };
+  label?: string;
+  confidence?: number;
+  maturity_stage?: string;
+}
+
+type StatusFilter = "all" | "pending_review" | "approved" | "rejected";
 
 interface ReviewItem {
   id: string;
@@ -52,6 +63,9 @@ interface ReviewItem {
   created_at?: string;
   vlm_backend?: string;
   status?: string;
+  vlm_labels?: VlmLabelEntry[];
+  dataset_id?: string | number;
+  reviewer_note?: string;
 }
 
 interface AnnotationStats {
@@ -156,37 +170,74 @@ function FractionBar({ clear, cloudy, amber }: { clear: number; cloudy: number; 
   );
 }
 
-function ReviewRow({ item, onApprove, onReject }: {
+/** Shared helper: maturity stage colours */
+function maturityColors(stage: string | undefined): { bg: string; text: string } {
+  if (stage === "amber") return { bg: "rgba(245,158,11,0.2)", text: "#f59e0b" };
+  if (stage === "cloudy") return { bg: "rgba(107,114,128,0.2)", text: "#9ca3af" };
+  if (stage === "clear") return { bg: "rgba(59,130,246,0.2)", text: "#60a5fa" };
+  return { bg: "rgba(168,85,247,0.2)", text: "#a855f7" };
+}
+
+function MaturityBadge({ stage }: { stage: string | undefined }) {
+  if (!stage) return null;
+  const { bg, text } = maturityColors(stage);
+  return (
+    <span className="text-[10px] px-1.5 py-0.5 rounded font-medium capitalize"
+      style={{ background: bg, color: text }}>
+      {stage}
+    </span>
+  );
+}
+
+function ReviewRow({
+  item,
+  onApprove,
+  onReject,
+  onOpenDetail,
+  isSelected,
+  isChecked,
+  onCheckChange,
+  showCheckbox,
+}: {
   item: ReviewItem;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onOpenDetail: (item: ReviewItem) => void;
+  isSelected: boolean;
+  isChecked: boolean;
+  onCheckChange: (id: string, checked: boolean) => void;
+  showCheckbox: boolean;
 }) {
   const norm = normalizeItem(item);
   const conf = norm.vlm_confidence ?? 0;
   const confColor = conf >= 0.7 ? "#22c55e" : conf >= 0.5 ? "#eab308" : "#ef4444";
 
   return (
-    <div className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
-      style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+    <div
+      className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer"
+      style={{
+        background: '#0d1117',
+        border: isSelected ? '1px solid rgba(59,130,246,0.5)' : '1px solid #21262d',
+        borderLeft: isSelected ? '3px solid #3b82f6' : '1px solid #21262d',
+      }}
+      onClick={() => onOpenDetail(item)}
+    >
+      {/* Checkbox — stopPropagation so clicking it doesn't open modal */}
+      {showCheckbox && (
+        <input
+          type="checkbox"
+          checked={isChecked}
+          onChange={(e) => { e.stopPropagation(); onCheckChange(item.id, e.target.checked); }}
+          onClick={(e) => e.stopPropagation()}
+          className="w-3.5 h-3.5 rounded flex-shrink-0"
+          style={{ accentColor: "#3b82f6" }}
+        />
+      )}
       <PriorityBadge priority={norm.review_priority ?? 0} />
       <div className="flex-1 min-w-0">
         <p className="text-sm truncate" style={{ color: '#8b949e' }}>{norm.filename}</p>
         <div className="flex items-center gap-3 mt-1">
-          {norm.maturity_stage && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium capitalize"
-              style={{
-                background: norm.maturity_stage === "amber" ? "rgba(245,158,11,0.2)"
-                  : norm.maturity_stage === "cloudy" ? "rgba(107,114,128,0.2)"
-                  : norm.maturity_stage === "clear" ? "rgba(59,130,246,0.2)"
-                  : "rgba(168,85,247,0.2)",
-                color: norm.maturity_stage === "amber" ? "#f59e0b"
-                  : norm.maturity_stage === "cloudy" ? "#9ca3af"
-                  : norm.maturity_stage === "clear" ? "#60a5fa"
-                  : "#a855f7",
-              }}>
-              {norm.maturity_stage}
-            </span>
-          )}
+          <MaturityBadge stage={norm.maturity_stage} />
           {norm.vlm_backend && (
             <span className="text-[10px]" style={{ color: '#484f58' }}>{norm.vlm_backend}</span>
           )}
@@ -195,6 +246,15 @@ function ReviewRow({ item, onApprove, onReject }: {
               <AlertTriangle className="w-3 h-3" />
               <span className="text-[10px]">{norm.hallucination_flags!.length} flags</span>
             </div>
+          )}
+          {norm.status && norm.status !== "pending_review" && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-medium capitalize"
+              style={{
+                background: norm.status === "approved" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                color: norm.status === "approved" ? "#22c55e" : "#ef4444",
+              }}>
+              {norm.status}
+            </span>
           )}
         </div>
       </div>
@@ -214,13 +274,309 @@ function ReviewRow({ item, onApprove, onReject }: {
       <span className="text-[10px] w-14 text-right" style={{ color: '#484f58' }}>
         {norm.queued_at ? timeAgo(new Date(norm.queued_at!).getTime() / 1000) : "—"}
       </span>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}>
         <button onClick={() => onApprove(item.id)} className="p-1.5 rounded" style={{ color: '#484f58' }} title="Approve">
           <CheckCircle2 className="w-3.5 h-3.5 hover:text-green-400" />
         </button>
         <button onClick={() => onReject(item.id)} className="p-1.5 rounded" style={{ color: '#484f58' }} title="Reject">
           <XCircle className="w-3.5 h-3.5 hover:text-red-400" />
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ReviewDetailModal
+// ---------------------------------------------------------------------------
+
+function ReviewDetailModal({
+  item,
+  onClose,
+  onApprove,
+  onReject,
+}: {
+  item: ReviewItem;
+  onClose: () => void;
+  onApprove: (id: string, note: string) => void;
+  onReject: (id: string, note: string) => void;
+}) {
+  const norm = normalizeItem(item);
+  const [reviewerNote, setReviewerNote] = useState(item.reviewer_note ?? "");
+  const [imgError, setImgError] = useState(false);
+  const [imgDimensions, setImgDimensions] = useState<{ w: number; h: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  const imageUrl = item.image_path
+    ? `/api/v1/datasets/images/${encodeURIComponent(item.image_path)}`
+    : null;
+
+  const conf = norm.vlm_confidence ?? 0;
+  const confColor = conf >= 0.7 ? "#22c55e" : conf >= 0.5 ? "#eab308" : "#ef4444";
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const handleImgLoad = () => {
+    if (imgRef.current) {
+      setImgDimensions({
+        w: imgRef.current.naturalWidth,
+        h: imgRef.current.naturalHeight,
+      });
+    }
+  };
+
+  const labels: VlmLabelEntry[] = item.vlm_labels ?? [];
+  const labelsWithBoxes = labels.filter((l) => l.bbox);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.85)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden"
+        style={{ background: "#0d1117", border: "1px solid #30363d" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
+          style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}>
+          <div className="flex items-center gap-2">
+            <Brain className="w-4 h-4 text-purple-400" />
+            <h2 className="text-sm font-semibold text-white truncate max-w-lg">{norm.filename}</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: "#484f58" }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Left: image preview */}
+          <div className="flex-[3] relative bg-black/40 flex items-center justify-center overflow-hidden"
+            style={{ borderRight: "1px solid #21262d" }}>
+            {!imageUrl || imgError ? (
+              <div className="flex flex-col items-center gap-3" style={{ color: "#484f58" }}>
+                <div className="w-20 h-20 rounded-xl flex items-center justify-center"
+                  style={{ background: "#161b22", border: "1px solid #21262d" }}>
+                  <Tag className="w-8 h-8 opacity-30" />
+                </div>
+                <p className="text-xs">{imgError ? "Image not available" : "No image path"}</p>
+                <p className="text-[10px] font-mono text-center max-w-xs break-all">{norm.filename}</p>
+              </div>
+            ) : (
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  ref={imgRef}
+                  src={imageUrl}
+                  alt={norm.filename ?? "Review image"}
+                  className="max-w-full max-h-full object-contain"
+                  onError={() => setImgError(true)}
+                  onLoad={handleImgLoad}
+                  style={{ display: "block" }}
+                />
+                {/* Bounding box overlay */}
+                {imgDimensions && labelsWithBoxes.length > 0 && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    style={{ overflow: "hidden" }}
+                  >
+                    {/* We render boxes as a percentage-based overlay on a container that matches the rendered image size */}
+                    {labelsWithBoxes.map((lbl, idx) => {
+                      const bbox = lbl.bbox!;
+                      const { bg: _, text } = maturityColors(lbl.maturity_stage ?? lbl.label);
+                      const leftPct = (bbox.x_min / imgDimensions.w) * 100;
+                      const topPct = (bbox.y_min / imgDimensions.h) * 100;
+                      const widthPct = ((bbox.x_max - bbox.x_min) / imgDimensions.w) * 100;
+                      const heightPct = ((bbox.y_max - bbox.y_min) / imgDimensions.h) * 100;
+                      return (
+                        <div
+                          key={idx}
+                          className="absolute"
+                          style={{
+                            left: `${leftPct}%`,
+                            top: `${topPct}%`,
+                            width: `${widthPct}%`,
+                            height: `${heightPct}%`,
+                            border: `2px solid ${text}`,
+                            borderRadius: "2px",
+                          }}
+                        >
+                          {(lbl.label || lbl.maturity_stage) && (
+                            <span
+                              className="absolute top-0 left-0 text-[9px] px-1 leading-tight font-medium"
+                              style={{ background: `${text}30`, color: text, whiteSpace: "nowrap" }}
+                            >
+                              {lbl.label ?? lbl.maturity_stage}
+                              {lbl.confidence !== undefined ? ` ${Math.round(lbl.confidence * 100)}%` : ""}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right: details + actions */}
+          <div className="flex-[2] flex flex-col overflow-y-auto min-w-0">
+            <div className="flex-1 p-5 space-y-4 overflow-y-auto">
+              {/* Meta */}
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-white truncate">{norm.filename}</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  {norm.vlm_backend && (
+                    <>
+                      <span style={{ color: "#484f58" }}>VLM Backend</span>
+                      <span className="font-mono truncate" style={{ color: "#8b949e" }}>{norm.vlm_backend}</span>
+                    </>
+                  )}
+                  {item.dataset_id !== undefined && (
+                    <>
+                      <span style={{ color: "#484f58" }}>Dataset ID</span>
+                      <span className="font-mono" style={{ color: "#8b949e" }}>{item.dataset_id}</span>
+                    </>
+                  )}
+                  <span style={{ color: "#484f58" }}>Priority</span>
+                  <span><PriorityBadge priority={norm.review_priority ?? 0} /></span>
+                </div>
+              </div>
+
+              {/* Confidence */}
+              <div>
+                <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>VLM Confidence</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+                    <div className="h-full rounded-full" style={{ width: `${conf * 100}%`, background: confColor }} />
+                  </div>
+                  <span className="text-sm font-mono font-bold" style={{ color: confColor }}>
+                    {formatConfidence(conf)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Maturity */}
+              {norm.maturity_stage && (
+                <div>
+                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>Maturity Stage</p>
+                  <MaturityBadge stage={norm.maturity_stage} />
+                </div>
+              )}
+
+              {/* Fraction bar */}
+              {(norm.clear_fraction! + norm.cloudy_fraction! + norm.amber_fraction!) > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>Trichome Fractions</p>
+                  <FractionBar clear={norm.clear_fraction!} cloudy={norm.cloudy_fraction!} amber={norm.amber_fraction!} />
+                  <div className="flex justify-between text-[10px] mt-1.5 font-mono" style={{ color: "#484f58" }}>
+                    <span className="text-blue-400">Clear {Math.round((norm.clear_fraction ?? 0) * 100)}%</span>
+                    <span className="text-gray-400">Cloudy {Math.round((norm.cloudy_fraction ?? 0) * 100)}%</span>
+                    <span className="text-amber-400">Amber {Math.round((norm.amber_fraction ?? 0) * 100)}%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Hallucination flags */}
+              {(norm.hallucination_flags?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase font-medium mb-1.5 flex items-center gap-1" style={{ color: "#484f58" }}>
+                    <AlertTriangle className="w-3 h-3 text-yellow-400" />
+                    Hallucination Flags
+                  </p>
+                  <ul className="space-y-1">
+                    {norm.hallucination_flags!.map((flag, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0 mt-1" />
+                        <span className="text-[11px]" style={{ color: "#e6edf3" }}>{flag}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* VLM Labels */}
+              {labels.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>
+                    VLM Labels ({labels.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {labels.slice(0, 5).map((lbl, i) => {
+                      const labelConf = lbl.confidence ?? 0;
+                      const { text } = maturityColors(lbl.maturity_stage ?? lbl.label);
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="text-[11px] truncate flex-1 font-mono" style={{ color: "#e6edf3" }}>
+                            {lbl.label ?? lbl.maturity_stage ?? `label-${i + 1}`}
+                          </span>
+                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+                            <div className="h-full rounded-full" style={{ width: `${labelConf * 100}%`, background: text }} />
+                          </div>
+                          <span className="text-[10px] font-mono w-8 text-right" style={{ color: text }}>
+                            {Math.round(labelConf * 100)}%
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {labels.length > 5 && (
+                      <p className="text-[10px]" style={{ color: "#484f58" }}>+{labels.length - 5} more</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Reviewer note */}
+              <div>
+                <label className="text-[10px] uppercase font-medium mb-1.5 flex items-center gap-1 block" style={{ color: "#484f58" }}>
+                  <StickyNote className="w-3 h-3" />
+                  Reviewer Note (optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={reviewerNote}
+                  onChange={(e) => setReviewerNote(e.target.value)}
+                  placeholder="Add a note for this review decision…"
+                  className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none resize-none"
+                  style={{
+                    background: "#161b22",
+                    border: "1px solid #21262d",
+                    color: "#e6edf3",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex-shrink-0 p-4 space-y-2" style={{ borderTop: "1px solid #21262d" }}>
+              <button
+                onClick={() => { onApprove(item.id, reviewerNote); onClose(); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all"
+                style={{ background: "rgba(34,197,94,0.2)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}
+              >
+                <CheckCircle2 className="w-4 h-4" /> Approve
+              </button>
+              <button
+                onClick={() => { onReject(item.id, reviewerNote); onClose(); }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all"
+                style={{ background: "rgba(239,68,68,0.2)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)" }}
+              >
+                <XCircle className="w-4 h-4" /> Reject
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1078,6 +1434,12 @@ export default function AnnotationPage() {
   const [importingId, setImportingId] = useState<number | null>(null);
   const [importResults, setImportResults] = useState<Record<number, string>>({});
 
+  // HITL queue enhanced state
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number>(-1);
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  const [detailItem, setDetailItem] = useState<ReviewItem | null>(null);
+
   // Shared: datasets
   const { data: datasetsData = [] } = useQuery<Dataset[]>({
     queryKey: ["datasets"],
@@ -1085,10 +1447,13 @@ export default function AnnotationPage() {
     staleTime: 60_000,
   });
 
-  // HITL data
+  // HITL data — includes status filter param
   const { data: queueData, isLoading: queueLoading, refetch: refetchQueue } = useQuery({
-    queryKey: ["annotation-queue"],
-    queryFn: () => api.get("/annotation/queue").then((r) => r.data),
+    queryKey: ["annotation-queue", statusFilter],
+    queryFn: () => {
+      const params = statusFilter !== "all" ? `?status=${statusFilter}` : "";
+      return api.get(`/annotation/queue${params}`).then((r) => r.data);
+    },
     refetchInterval: 10_000,
     staleTime: 5_000,
   });
@@ -1101,14 +1466,20 @@ export default function AnnotationPage() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: (itemId: string) =>
-      api.put(`/annotation/queue/${itemId}`, { status: "approved" }).then((r) => r.data),
+    mutationFn: ({ id, note }: { id: string; note?: string }) =>
+      api.put(`/annotation/queue/${id}`, {
+        status: "approved",
+        ...(note ? { reviewer_note: note } : {}),
+      }).then((r) => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["annotation-queue"] }),
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (itemId: string) =>
-      api.put(`/annotation/queue/${itemId}`, { status: "rejected" }).then((r) => r.data),
+    mutationFn: ({ id, note }: { id: string; note?: string }) =>
+      api.put(`/annotation/queue/${id}`, {
+        status: "rejected",
+        ...(note ? { reviewer_note: note } : {}),
+      }).then((r) => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["annotation-queue"] }),
   });
 
@@ -1120,6 +1491,92 @@ export default function AnnotationPage() {
     (a, b) => ((b.review_priority ?? b.priority ?? 0) - (a.review_priority ?? a.priority ?? 0))
   );
   const jobs: AnnotationJob[] = Array.isArray(jobsData) ? jobsData : jobsData?.jobs ?? [];
+
+  // Derived helpers
+  const pendingItems = sortedItems.filter((it) => !it.status || it.status === "pending_review");
+  const allPendingChecked = pendingItems.length > 0 && pendingItems.every((it) => checkedIds.has(it.id));
+  const someChecked = checkedIds.size > 0;
+
+  const handleApproveWithNote = useCallback((id: string, note: string) => {
+    approveMutation.mutate({ id, note });
+  }, [approveMutation]);
+
+  const handleRejectWithNote = useCallback((id: string, note: string) => {
+    rejectMutation.mutate({ id, note });
+  }, [rejectMutation]);
+
+  const handleApproveSimple = useCallback((id: string) => {
+    approveMutation.mutate({ id });
+  }, [approveMutation]);
+
+  const handleRejectSimple = useCallback((id: string) => {
+    rejectMutation.mutate({ id });
+  }, [rejectMutation]);
+
+  const handleBulkApprove = useCallback(() => {
+    checkedIds.forEach((id) => approveMutation.mutate({ id }));
+    setCheckedIds(new Set());
+  }, [checkedIds, approveMutation]);
+
+  const handleBulkReject = useCallback(() => {
+    checkedIds.forEach((id) => rejectMutation.mutate({ id }));
+    setCheckedIds(new Set());
+  }, [checkedIds, rejectMutation]);
+
+  const handleCheckChange = useCallback((id: string, checked: boolean) => {
+    setCheckedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllPending = useCallback((checked: boolean) => {
+    if (checked) {
+      setCheckedIds(new Set(pendingItems.map((it) => it.id)));
+    } else {
+      setCheckedIds(new Set());
+    }
+  }, [pendingItems]);
+
+  // Keyboard shortcuts for queue tab
+  useEffect(() => {
+    if (hitlTab !== "queue") return;
+
+    const handler = (e: KeyboardEvent) => {
+      // Don't fire if typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return;
+
+      if (e.key === "Escape") {
+        if (detailItem) setDetailItem(null);
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "j") {
+        e.preventDefault();
+        setSelectedItemIndex((prev) => Math.min(prev + 1, sortedItems.length - 1));
+      } else if (e.key === "ArrowUp" || e.key === "k") {
+        e.preventDefault();
+        setSelectedItemIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === "Enter") {
+        if (selectedItemIndex >= 0 && selectedItemIndex < sortedItems.length) {
+          setDetailItem(sortedItems[selectedItemIndex]);
+        }
+      } else if (e.key === "a" && !detailItem) {
+        if (selectedItemIndex >= 0 && selectedItemIndex < sortedItems.length) {
+          approveMutation.mutate({ id: sortedItems[selectedItemIndex].id });
+        }
+      } else if (e.key === "r" && !detailItem) {
+        if (selectedItemIndex >= 0 && selectedItemIndex < sortedItems.length) {
+          rejectMutation.mutate({ id: sortedItems[selectedItemIndex].id });
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [hitlTab, detailItem, selectedItemIndex, sortedItems, approveMutation, rejectMutation]);
 
   // Label Studio data
   const { data: lsStatus, refetch: refetchLsStatus } = useQuery<LSStatus>({
@@ -1298,14 +1755,92 @@ export default function AnnotationPage() {
           <>
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {hitlTab === "queue" && (
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg mb-4"
+                <div className="space-y-3">
+                  {/* HITL invariant notice */}
+                  <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg"
                     style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
                     <FlaskConical className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs" style={{ color: 'rgba(191,219,254,0.8)' }}>
                       <strong>Human-in-loop enforced:</strong> VLM auto-labels require human approval before entering the training dataset.
                     </p>
                   </div>
+
+                  {/* Status filter */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-medium flex-shrink-0" style={{ color: "#484f58" }}>Filter:</span>
+                    <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "#161b22", border: "1px solid #21262d" }}>
+                      {(["all", "pending_review", "approved", "rejected"] as const).map((f) => {
+                        const labels: Record<StatusFilter, string> = {
+                          all: "All",
+                          pending_review: "Pending",
+                          approved: "Approved",
+                          rejected: "Rejected",
+                        };
+                        return (
+                          <button
+                            key={f}
+                            onClick={() => { setStatusFilter(f); setSelectedItemIndex(-1); setCheckedIds(new Set()); }}
+                            className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
+                            style={{
+                              background: statusFilter === f ? "#0d1117" : "transparent",
+                              color: statusFilter === f ? "#e6edf3" : "#484f58",
+                            }}
+                          >
+                            {labels[f]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-[10px] ml-auto" style={{ color: "#484f58" }}>
+                      {sortedItems.length} item{sortedItems.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  {/* Bulk action bar */}
+                  {someChecked && (
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg"
+                      style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)" }}>
+                      <span className="text-xs font-medium text-blue-300">{checkedIds.size} selected</span>
+                      <button
+                        onClick={handleBulkApprove}
+                        className="px-2.5 py-1 rounded text-xs font-medium"
+                        style={{ background: "rgba(34,197,94,0.2)", color: "#22c55e" }}>
+                        Approve all
+                      </button>
+                      <button
+                        onClick={handleBulkReject}
+                        className="px-2.5 py-1 rounded text-xs font-medium"
+                        style={{ background: "rgba(239,68,68,0.2)", color: "#ef4444" }}>
+                        Reject all
+                      </button>
+                      <button
+                        onClick={() => setCheckedIds(new Set())}
+                        className="text-[11px] ml-auto"
+                        style={{ color: "#484f58" }}>
+                        Clear selection
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Select all pending header row */}
+                  {sortedItems.length > 0 && (
+                    <div className="flex items-center gap-3 px-4 py-1">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={allPendingChecked}
+                          onChange={(e) => handleSelectAllPending(e.target.checked)}
+                          className="w-3.5 h-3.5 rounded"
+                          style={{ accentColor: "#3b82f6" }}
+                        />
+                        <span className="text-[10px] uppercase font-medium" style={{ color: "#484f58" }}>
+                          Select all pending ({pendingItems.length})
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Queue list */}
                   {queueLoading ? (
                     <div className="flex items-center justify-center py-16">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
@@ -1317,11 +1852,28 @@ export default function AnnotationPage() {
                       <p className="text-xs mt-1">Run VLM auto-labeling or import from Label Studio to populate</p>
                     </div>
                   ) : (
-                    sortedItems.map((item) => (
-                      <ReviewRow key={item.id} item={item}
-                        onApprove={(id) => approveMutation.mutate(id)}
-                        onReject={(id) => rejectMutation.mutate(id)} />
-                    ))
+                    <div className="space-y-2">
+                      {sortedItems.map((item, idx) => (
+                        <ReviewRow
+                          key={item.id}
+                          item={item}
+                          onApprove={handleApproveSimple}
+                          onReject={handleRejectSimple}
+                          onOpenDetail={setDetailItem}
+                          isSelected={selectedItemIndex === idx}
+                          isChecked={checkedIds.has(item.id)}
+                          onCheckChange={handleCheckChange}
+                          showCheckbox={someChecked}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Keyboard shortcut legend */}
+                  {sortedItems.length > 0 && (
+                    <p className="text-center text-[10px] pt-1" style={{ color: "#30363d" }}>
+                      ↑↓ navigate · <kbd className="font-mono">a</kbd> approve · <kbd className="font-mono">r</kbd> reject · <kbd className="font-mono">Enter</kbd> details · click row to inspect
+                    </p>
                   )}
                 </div>
               )}
@@ -1474,6 +2026,15 @@ export default function AnnotationPage() {
 
       {tasksProjectId !== null && (
         <TasksDrawer projectId={tasksProjectId} onClose={() => setTasksProjectId(null)} />
+      )}
+
+      {detailItem !== null && (
+        <ReviewDetailModal
+          item={detailItem}
+          onClose={() => setDetailItem(null)}
+          onApprove={handleApproveWithNote}
+          onReject={handleRejectWithNote}
+        />
       )}
     </div>
   );

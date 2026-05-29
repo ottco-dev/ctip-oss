@@ -14,6 +14,12 @@ import fineTuning from './pages/fine-tuning';
 import architecture from './pages/architecture';
 import apiReference from './pages/api-reference';
 import troubleshooting from './pages/troubleshooting';
+import temporalTracking from './pages/temporal-tracking';
+import streamingDatasets from './pages/streaming-datasets';
+import distributedTraining from './pages/distributed-training';
+import ollamaIntegration from './pages/ollama-integration';
+import morphologyCnn from './pages/morphology-cnn';
+import vlmEnsemble from './pages/vlm-ensemble';
 
 /** All wiki pages in display order. */
 export const WIKI_PAGES: WikiPage[] = [
@@ -34,6 +40,13 @@ export const WIKI_PAGES: WikiPage[] = [
   architecture,
   apiReference,
   troubleshooting,
+  // advanced section (reference)
+  temporalTracking,
+  streamingDatasets,
+  distributedTraining,
+  ollamaIntegration,
+  morphologyCnn,
+  vlmEnsemble,
 ];
 
 export const WIKI_PAGE_MAP: Record<string, WikiPage> = Object.fromEntries(
