@@ -164,16 +164,24 @@ cmd_start() {
 
     # ── Backend ──────────────────────────────────────────────────────────────
     inf "Starting backend (FastAPI :$BACKEND_PORT)…"
+    # Launch via sg docker so the process inherits docker group membership.
+    # Required for containers API (docker ps / docker compose) to work without sudo.
     # shellcheck disable=SC1090
     source "$VENV"
-    python -m uvicorn backend.main:app \
-        --host 0.0.0.0 \
-        --port "$BACKEND_PORT" \
-        --reload \
-        --reload-dir "$REPO/backend" \
-        --reload-dir "$REPO/training" \
-        --reload-dir "$REPO/shared" \
-        >> "$BACKEND_LOG" 2>&1 &
+    PYTHON="$REPO/.venv/bin/python"
+    if id -nG "$USER" 2>/dev/null | grep -qw docker && ! id -G 2>/dev/null | grep -qw "$(getent group docker | cut -d: -f3)"; then
+        # User is in docker group but current session doesn't have it — use sg
+        sg docker -c "$PYTHON -m uvicorn backend.main:app --host 0.0.0.0 --port $BACKEND_PORT --reload --reload-dir $REPO/backend --reload-dir $REPO/training --reload-dir $REPO/shared >> $BACKEND_LOG 2>&1 &"
+    else
+        $PYTHON -m uvicorn backend.main:app \
+            --host 0.0.0.0 \
+            --port "$BACKEND_PORT" \
+            --reload \
+            --reload-dir "$REPO/backend" \
+            --reload-dir "$REPO/training" \
+            --reload-dir "$REPO/shared" \
+            >> "$BACKEND_LOG" 2>&1 &
+    fi
     wait_port $BACKEND_PORT "Backend" 20
 
     # ── Frontend ─────────────────────────────────────────────────────────────
