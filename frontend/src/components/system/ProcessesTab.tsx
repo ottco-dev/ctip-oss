@@ -267,8 +267,38 @@ function ContainersPanel() {
   const [confirmRm, setConfirmRm] = useState<string | null>(null);
   const [rmPending, setRmPending] = useState(false);
 
+  // Docker daemon modal
+  const [daemonModalDismissed, setDaemonModalDismissed] = useState(false);
+  const [startingDaemon, setStartingDaemon] = useState(false);
+  const [daemonStartMsg, setDaemonStartMsg] = useState<string | null>(null);
+
   // Request notification permission on mount
   useEffect(() => { requestNotifPermission(); }, []);
+
+  const { data: daemonStatus, refetch: refetchDaemon } = useQuery({
+    queryKey: ["docker-daemon"],
+    queryFn: () => api.get("/containers/daemon").then((r) => r.data),
+    refetchInterval: 15_000,
+    retry: false,
+  });
+
+  const daemonOffline = daemonStatus && !daemonStatus.available;
+
+  const handleStartDaemon = async () => {
+    setStartingDaemon(true);
+    setDaemonStartMsg(null);
+    try {
+      const r = await api.post("/containers/daemon/start");
+      setDaemonStartMsg(r.data.message);
+      if (r.data.started) {
+        setTimeout(() => { refetchDaemon(); setDaemonModalDismissed(true); }, 1500);
+      }
+    } catch {
+      setDaemonStartMsg("Request failed — try running the command manually.");
+    } finally {
+      setStartingDaemon(false);
+    }
+  };
 
   const { data: containers = [], isLoading, refetch } = useQuery<ContainerSummary[]>({
     queryKey: ["containers"],
@@ -476,6 +506,78 @@ function ContainersPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {/* Docker daemon offline modal */}
+      {daemonOffline && !daemonModalDismissed && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 100,
+            background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div style={{
+            background: "#161b22", border: "1px solid #30363d", borderRadius: 12,
+            padding: "28px 32px", maxWidth: 440, width: "90%",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <AlertCircle className="w-5 h-5" style={{ color: "#f59e0b", flexShrink: 0 }} />
+              <span style={{ fontSize: 16, fontWeight: 700, color: "#e6edf3" }}>
+                Docker daemon offline
+              </span>
+            </div>
+            <p style={{ fontSize: 13, color: "#8b949e", marginBottom: 16, lineHeight: 1.6 }}>
+              {daemonStatus?.error ?? "Could not connect to the Docker daemon."}
+            </p>
+
+            {daemonStatus?.fix && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: "#484f58", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {daemonStatus.kind === "permission" ? "Fix — add user to docker group" : daemonStatus.kind === "stopped" ? "Start docker" : "Reference"}
+                </div>
+                <code style={{
+                  display: "block", background: "#0d1117", border: "1px solid #21262d",
+                  borderRadius: 6, padding: "8px 12px", fontSize: 12,
+                  color: "#79c0ff", fontFamily: "monospace", wordBreak: "break-all",
+                }}>
+                  {daemonStatus.fix}
+                </code>
+              </div>
+            )}
+
+            {daemonStartMsg && (
+              <p style={{ fontSize: 12, color: daemonStartMsg.includes("started") ? "#4ade80" : "#f87171", marginBottom: 12 }}>
+                {daemonStartMsg}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDaemonModalDismissed(true)}
+                style={{
+                  padding: "6px 14px", fontSize: 13, borderRadius: 6, cursor: "pointer",
+                  background: "transparent", border: "1px solid #30363d", color: "#8b949e",
+                }}
+              >
+                Dismiss
+              </button>
+              {daemonStatus?.kind === "stopped" && (
+                <button
+                  onClick={handleStartDaemon}
+                  disabled={startingDaemon}
+                  style={{
+                    padding: "6px 14px", fontSize: 13, borderRadius: 6, cursor: startingDaemon ? "not-allowed" : "pointer",
+                    background: "var(--accent)", border: "none", color: "#fff",
+                    opacity: startingDaemon ? 0.6 : 1,
+                  }}
+                >
+                  {startingDaemon ? "Starting…" : "Start Docker"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* In-app toast */}
       {toast && (
         <ComposeToast

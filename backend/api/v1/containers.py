@@ -141,6 +141,37 @@ def _docker(*args: str, timeout: int = 30) -> tuple[bool, str]:
         return False, "docker not found"
 
 
+def _check_daemon() -> dict[str, Any]:
+    """Check Docker daemon availability. Returns status dict for the /daemon endpoint."""
+    ok, out = _docker("info", timeout=5)
+    if ok:
+        return {"available": True, "error": None, "fix": None, "kind": None}
+
+    out_lower = out.lower()
+    if "permission denied" in out_lower or "connect: permission denied" in out_lower:
+        return {
+            "available": False,
+            "error": "Permission denied accessing Docker socket.",
+            "kind": "permission",
+            "fix": "sudo usermod -aG docker $USER && newgrp docker",
+        }
+    if "cannot connect" in out_lower or "connection refused" in out_lower or "is the docker daemon running" in out_lower:
+        return {
+            "available": False,
+            "error": "Docker daemon is not running.",
+            "kind": "stopped",
+            "fix": "sudo systemctl start docker",
+        }
+    if "docker not found" in out_lower:
+        return {
+            "available": False,
+            "error": "Docker is not installed.",
+            "kind": "not_installed",
+            "fix": "https://docs.docker.com/engine/install/",
+        }
+    return {"available": False, "error": out or "Unknown docker error", "kind": "unknown", "fix": None}
+
+
 def _compose(*args: str, timeout: int = 60) -> tuple[bool, str]:
     cmd = [
         "docker", "compose",
@@ -199,6 +230,34 @@ class ComposeConfig(BaseModel):
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@router.get("/daemon")
+async def get_daemon_status() -> dict[str, Any]:
+    """Check whether the Docker daemon is reachable from this process."""
+    return await asyncio.to_thread(_check_daemon)
+
+
+@router.post("/daemon/start")
+async def start_daemon() -> dict[str, Any]:
+    """
+    Attempt to start the Docker daemon via systemctl.
+    Works only when the backend process has passwordless sudo for systemctl,
+    or when the host is configured to allow it.
+    Returns {started, message}.
+    """
+    try:
+        r = subprocess.run(
+            ["sudo", "-n", "systemctl", "start", "docker"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if r.returncode == 0:
+            return {"started": True, "message": "Docker daemon started."}
+        return {"started": False, "message": (r.stderr or r.stdout).strip() or "systemctl start docker failed."}
+    except subprocess.TimeoutExpired:
+        return {"started": False, "message": "systemctl timed out."}
+    except Exception as exc:
+        return {"started": False, "message": str(exc)}
+
 
 @router.get("", response_model=list[ContainerSummary])
 async def list_containers(all: bool = True) -> list[ContainerSummary]:
