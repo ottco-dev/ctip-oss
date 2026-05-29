@@ -1,6 +1,6 @@
 # Pending Work
 
-Last updated: 2026-05-29 (VLM ensemble API + 42 tests; Morphology CNN trainer + 50 tests; Token Management UI + API; Batch Inference UI; Annotation VlmConfigPanel; 1303 unit tests passing)
+Last updated: 2026-05-29 (Full sprint: DDP trainer, Ollama LLM, temporal tracking, streaming datasets, CLI completions, TensorRT export; 1650 unit tests passing)
 
 ---
 
@@ -117,8 +117,27 @@ Last updated: 2026-05-29 (VLM ensemble API + 42 tests; Morphology CNN trainer + 
   - Progress tracking, results table, JSON export, live queue stats cards
 
 ### Advanced
-- [ ] Multi-GPU distributed training support
-- [ ] Streaming dataset support (zarr/HDF5)
-- [ ] Temporal trichome tracking across video frames
-- [ ] Ollama local LLM integration for report narrative generation
-- [ ] CLI shell completions (bash/zsh/fish)
+- [x] Multi-GPU distributed training (DDP + torchrun launcher) ✅ 2026-05-29
+  - `training/distributed/`: DDPTrainer, DistributedLauncher, DistributedConfig
+  - NCCL→gloo fallback, SyncBN, AMP, gradient accumulation, rank-0 checkpointing
+  - REST API: GET/POST /training/distributed/status|start|jobs|stop — 64 tests
+- [x] Streaming dataset support (zarr/HDF5) ✅ 2026-05-29
+  - `shared/datasets/streaming/`: ZarrDataset, HDF5Dataset, DatasetConverter
+  - YOLO→zarr, YOLO→hdf5, zarr↔hdf5 round-trip; thread-safe h5py file handles
+  - REST API: POST /datasets/convert, GET /datasets/streaming/stats — 60 tests
+- [x] Temporal trichome tracking across video frames ✅ 2026-05-29
+  - `video_pipeline/tracking/`: SORT (Kalman+Hungarian), TrackingSession
+  - TENTATIVE→CONFIRMED state machine; trajectory export for frontend overlay
+  - REST API: 5 endpoints under /video/tracking/ — 87 tests
+- [x] Ollama local LLM integration for report narrative generation ✅ 2026-05-29
+  - `vlm_labeling/providers/local/ollama_provider.py`: narrative generation
+  - THC safety: 15 forbidden cannabinoid keys stripped from all prompts
+  - REST API: /ollama/status|models|pull|narrative|config — 65 tests
+- [x] CLI shell completions (bash/zsh/fish) ✅ 2026-05-29
+  - `trichome completions install|show|uninstall`; auto-detect shell
+  - RC file patching; --dry-run; fish completions dir — 40 tests
+- [x] TensorRT ONNX export pipeline ✅ 2026-05-29
+  - `inference/tensorrt_engine/exporter.py`: .pt→ONNX→.engine full pipeline
+  - Graceful degradation without ultralytics/TRT/onnxruntime
+  - `trichome convert onnx|tensorrt|validate` CLI — 31 tests
+- [ ] TensorRT E2E engine build (requires YOLO11s .pt weights — hardware gated)
