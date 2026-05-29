@@ -133,6 +133,12 @@ class Settings(BaseSettings):
     wandb_api_key: str = ""
     wandb_project: str = "trichome-detection"
 
+    # ── OLLAMA (local LLM for report narrative generation) ────────────
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2:3b"
+    ollama_temperature: float = 0.3
+    ollama_max_tokens: int = 1024
+
     # ── VLM LABELING ─────────────────────────────────────────────────
     default_vlm_backend: str = "moondream"
     vlm_min_confidence: float = 0.40

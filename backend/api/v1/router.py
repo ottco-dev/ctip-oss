@@ -19,6 +19,8 @@ from backend.api.v1 import (
     settings,
     tensorrt,
     morphology_training,
+    dataset_streaming,
+    distributed_training,
 )
 
 router = APIRouter()
@@ -39,6 +41,8 @@ router.include_router(experiments.router)
 router.include_router(settings.router)
 router.include_router(tensorrt.router)
 router.include_router(morphology_training.router)
+router.include_router(dataset_streaming.router)
+router.include_router(distributed_training.router)
 
 # ── Optional sub-service routers ───────────────────────────────────
 
@@ -72,6 +76,12 @@ except Exception:
 try:
     from backend.api.v1.vlm_providers import router as vlm_providers_router
     router.include_router(vlm_providers_router)
+except Exception:
+    pass
+
+try:
+    from backend.api.v1.ollama import router as ollama_router
+    router.include_router(ollama_router)
 except Exception:
     pass
 
@@ -122,5 +132,11 @@ except Exception:
 try:
     from analytics.api.router import router as analytics_router
     router.include_router(analytics_router)
+except Exception:
+    pass
+
+try:
+    from backend.api.v1.tracking import router as tracking_router
+    router.include_router(tracking_router)
 except Exception:
     pass
