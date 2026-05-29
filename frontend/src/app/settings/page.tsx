@@ -18,6 +18,9 @@ import {
   Save,
   RefreshCw,
   Sliders,
+  Key,
+  Copy,
+  Trash2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -613,6 +616,264 @@ function SecuritySection({ settings }: { settings: PlatformSettings }) {
   );
 }
 
+// ── API Security Section ──────────────────────────────────────────────────────
+
+interface TokenStatus {
+  enabled: boolean;
+  token_preview: string | null;
+  created_hint: string | null;
+}
+
+function ApiSecuritySection() {
+  const qc = useQueryClient();
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  const tokenQuery = useQuery<TokenStatus>({
+    queryKey: ['system', 'token-status'],
+    queryFn: () => api.get('/system/token/status').then(r => r.data),
+    staleTime: 10_000,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: () => api.post('/system/token/generate').then(r => r.data),
+    onSuccess: (data: { token: string; warning: string }) => {
+      setNewToken(data.token);
+      setCopied(false);
+      qc.invalidateQueries({ queryKey: ['system', 'token-status'] });
+    },
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: () => api.post('/system/token/clear').then(r => r.data),
+    onSuccess: () => {
+      setNewToken(null);
+      setCopied(false);
+      setConfirmClear(false);
+      qc.invalidateQueries({ queryKey: ['system', 'token-status'] });
+    },
+  });
+
+  const handleCopy = async () => {
+    if (!newToken) return;
+    try {
+      await navigator.clipboard.writeText(newToken);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // fallback for non-secure context
+    }
+  };
+
+  const status = tokenQuery.data;
+
+  return (
+    <SectionCard icon={Key} title="API Security">
+      <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Auth status badge */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+          background: status?.enabled ? 'rgba(34,197,94,0.08)' : 'rgba(245,158,11,0.08)',
+          border: `1px solid ${status?.enabled ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
+          borderRadius: 8,
+        }}>
+          {status?.enabled
+            ? <CheckCircle size={16} color="#22c55e" />
+            : <AlertTriangle size={16} color="#f59e0b" />
+          }
+          <span style={{ fontSize: 13, color: 'var(--text)', flex: 1 }}>
+            {status?.enabled
+              ? 'Token authentication enabled'
+              : 'Authentication disabled — development mode'}
+          </span>
+          {status?.enabled && (
+            <span style={{
+              fontSize: 10, padding: '2px 7px', borderRadius: 99,
+              background: 'rgba(34,197,94,0.12)', color: '#22c55e',
+              border: '1px solid rgba(34,197,94,0.3)',
+              fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+            }}>
+              active
+            </span>
+          )}
+        </div>
+
+        {/* Masked token preview */}
+        {status?.enabled && status.token_preview && (
+          <div style={{
+            padding: '10px 14px',
+            background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8,
+          }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
+              Current token (masked)
+            </div>
+            <code style={{
+              fontFamily: 'monospace', fontSize: 13, color: 'var(--text)',
+              letterSpacing: 1,
+            }}>
+              {status.token_preview}
+            </code>
+          </div>
+        )}
+
+        {/* Newly generated token — shown only once */}
+        {newToken && (
+          <div style={{
+            padding: '12px 14px',
+            background: 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.4)',
+            borderRadius: 8,
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              marginBottom: 8, color: '#f59e0b', fontSize: 12, fontWeight: 600,
+            }}>
+              <AlertTriangle size={14} />
+              Copy now — this is shown only once
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <code style={{
+                flex: 1, fontFamily: 'monospace', fontSize: 12,
+                padding: '7px 10px', borderRadius: 6,
+                background: 'var(--bg)', border: '1px solid var(--border)',
+                color: 'var(--text)', wordBreak: 'break-all',
+                userSelect: 'all',
+              }}>
+                {newToken}
+              </code>
+              <button
+                onClick={handleCopy}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '7px 12px', borderRadius: 6, flexShrink: 0,
+                  background: copied ? 'rgba(34,197,94,0.15)' : 'var(--border)',
+                  color: copied ? '#22c55e' : 'var(--text)',
+                  border: `1px solid ${copied ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`,
+                  cursor: 'pointer', fontSize: 12, fontWeight: 600,
+                }}
+              >
+                <Copy size={13} />
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => generateMutation.mutate()}
+            disabled={generateMutation.isPending}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', borderRadius: 7,
+              background: 'var(--accent)', color: '#fff',
+              border: 'none', cursor: generateMutation.isPending ? 'not-allowed' : 'pointer',
+              fontSize: 13, fontWeight: 600,
+              opacity: generateMutation.isPending ? 0.7 : 1,
+            }}
+          >
+            {generateMutation.isPending
+              ? <RefreshCw size={14} className="animate-spin" />
+              : <Key size={14} />
+            }
+            {generateMutation.isPending ? 'Generating…' : 'Generate new token'}
+          </button>
+
+          {status?.enabled && !confirmClear && (
+            <button
+              onClick={() => setConfirmClear(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', borderRadius: 7,
+                background: 'transparent', color: '#ef4444',
+                border: '1px solid rgba(239,68,68,0.4)',
+                cursor: 'pointer', fontSize: 13, fontWeight: 600,
+              }}
+            >
+              <Trash2 size={14} />
+              Remove token
+            </button>
+          )}
+
+          {confirmClear && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ fontSize: 12, color: '#ef4444' }}>
+                Confirm disable auth?
+              </span>
+              <button
+                onClick={() => clearMutation.mutate()}
+                disabled={clearMutation.isPending}
+                style={{
+                  padding: '7px 14px', borderRadius: 7, fontSize: 12, fontWeight: 700,
+                  background: '#ef4444', color: '#fff', border: 'none',
+                  cursor: clearMutation.isPending ? 'not-allowed' : 'pointer',
+                  opacity: clearMutation.isPending ? 0.7 : 1,
+                }}
+              >
+                {clearMutation.isPending ? 'Removing…' : 'Yes, remove'}
+              </button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                style={{
+                  padding: '7px 14px', borderRadius: 7, fontSize: 12,
+                  background: 'var(--border)', color: 'var(--text)', border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Error states */}
+        {generateMutation.isError && (
+          <div style={{
+            padding: '8px 12px', borderRadius: 7, fontSize: 12,
+            background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+            border: '1px solid rgba(239,68,68,0.3)',
+          }}>
+            Generate failed: {(generateMutation.error as Error)?.message}
+          </div>
+        )}
+        {clearMutation.isError && (
+          <div style={{
+            padding: '8px 12px', borderRadius: 7, fontSize: 12,
+            background: 'rgba(239,68,68,0.1)', color: '#ef4444',
+            border: '1px solid rgba(239,68,68,0.3)',
+          }}>
+            Clear failed: {(clearMutation.error as Error)?.message}
+          </div>
+        )}
+
+        {/* Informational note */}
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>
+          Token is written to{' '}
+          <code style={{ fontFamily: 'monospace', background: 'var(--bg)', padding: '1px 5px', borderRadius: 3 }}>
+            .env
+          </code>{' '}
+          as{' '}
+          <code style={{ fontFamily: 'monospace', background: 'var(--bg)', padding: '1px 5px', borderRadius: 3 }}>
+            API_TOKEN
+          </code>
+          {' '}and takes effect immediately (no restart required). All API requests must include{' '}
+          <code style={{ fontFamily: 'monospace', background: 'var(--bg)', padding: '1px 5px', borderRadius: 3 }}>
+            Authorization: Bearer &lt;token&gt;
+          </code>{' '}
+          or{' '}
+          <code style={{ fontFamily: 'monospace', background: 'var(--bg)', padding: '1px 5px', borderRadius: 3 }}>
+            X-API-Key: &lt;token&gt;
+          </code>
+          .
+        </p>
+      </div>
+    </SectionCard>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -706,6 +967,8 @@ export default function SettingsPage() {
           <StorageSection settings={s} />
 
           <SecuritySection settings={s} />
+
+          <ApiSecuritySection />
 
           {patchMutation.isSuccess && (
             <div style={{

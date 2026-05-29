@@ -2,24 +2,28 @@
 backend.api.v1.system — System health, GPU stats, and queue status endpoints.
 
 Endpoints:
-    GET /system/health      — Application health check
-    GET /system/gpu         — GPU/VRAM/utilization stats
-    GET /system/queue       — Background job queue status
-    GET /system/info        — Full system info (GPU + queue + settings)
-    GET /system/services    — Live health check for all CTIP services
-    GET /system/logs        — Tail recent backend log lines
+    GET /system/health           — Application health check
+    GET /system/gpu              — GPU/VRAM/utilization stats
+    GET /system/queue            — Background job queue status
+    GET /system/info             — Full system info (GPU + queue + settings)
+    GET /system/services         — Live health check for all CTIP services
+    GET /system/logs             — Tail recent backend log lines
+    GET /system/token/status     — API token auth status + masked preview
+    POST /system/token/generate  — Generate a new random API token
+    POST /system/token/clear     — Remove API token (disable auth)
 """
 
 from __future__ import annotations
 
 import os
 import platform
+import secrets
 import socket
 import time
 from collections import deque
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -281,3 +285,78 @@ async def tail_logs(limit: int = Query(default=50, le=200)) -> dict[str, Any]:
                 pass
 
     return {"timestamp": time.time(), "count": len(entries), "entries": entries}
+
+
+# ---------------------------------------------------------------------------
+# API Token management
+# ---------------------------------------------------------------------------
+
+def _mask_token(token: str) -> str:
+    """Return a masked token showing only first 4 and last 4 characters."""
+    if len(token) <= 8:
+        return "*" * len(token)
+    return token[:4] + "*" * (len(token) - 8) + token[-4:]
+
+
+@router.get("/token/status")
+async def token_status() -> dict[str, Any]:
+    """
+    Return current API token authentication status.
+
+    Returns whether token auth is enabled and a masked preview of the token
+    (first 4 + last 4 characters only — never exposes the full token).
+    """
+    from backend.config import get_settings
+
+    settings = get_settings()
+    token = settings.api_token
+    enabled = bool(token)
+
+    return {
+        "enabled": enabled,
+        "token_preview": _mask_token(token) if enabled else None,
+        "created_hint": None,
+    }
+
+
+@router.post("/token/generate")
+async def token_generate() -> dict[str, Any]:
+    """
+    Generate a new 64-char hex API token and persist it to .env.
+
+    The full token is returned exactly once — it cannot be retrieved again
+    via this API (only a masked preview is available via /token/status).
+
+    After writing, the settings cache is cleared so the new token is active
+    immediately without a server restart.
+    """
+    from backend.config import get_settings
+    from backend.utils.env_file import write_env_key
+
+    new_token = secrets.token_hex(32)  # 64-character hex string
+    write_env_key("API_TOKEN", new_token)
+    get_settings.cache_clear()
+
+    return {
+        "token": new_token,
+        "warning": "Copy now — not shown again",
+    }
+
+
+@router.post("/token/clear")
+async def token_clear() -> dict[str, Any]:
+    """
+    Remove the API token from .env, effectively disabling authentication.
+
+    Clears the settings cache so the change is active immediately.
+    """
+    from backend.config import get_settings
+    from backend.utils.env_file import write_env_key
+
+    write_env_key("API_TOKEN", "")
+    get_settings.cache_clear()
+
+    return {
+        "enabled": False,
+        "message": "API token removed — authentication disabled",
+    }

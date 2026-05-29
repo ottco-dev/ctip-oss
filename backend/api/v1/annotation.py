@@ -104,6 +104,14 @@ class AutoLabelRequest(BaseModel):
     max_samples: int = 100
     batch_size: int = 50  # alias accepted from frontend
     confidence_threshold: float = 0.40
+    # VLM Configuration panel fields (Aufgabe 2)
+    provider_id: str | None = None         # remote VLM provider (overrides vlm_backend when set)
+    model_id: str | None = None            # specific model within the provider
+    prompt_name: str | None = None         # named prompt preset
+    custom_system_prompt: str | None = None
+    custom_user_prompt: str | None = None
+    ensemble_mode: bool = False
+    ensemble_providers: list[str] | None = None  # provider IDs for ensemble
 
 
 class QueueStats(BaseModel):

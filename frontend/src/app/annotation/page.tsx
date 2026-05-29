@@ -24,6 +24,9 @@ import {
   Upload,
   AlertCircle,
   Database,
+  Wand2,
+  Settings2,
+  ChevronDown,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn, timeAgo, formatConfidence } from "@/lib/utils";
@@ -224,6 +227,372 @@ function ReviewRow({ item, onApprove, onReject }: {
 }
 
 // ---------------------------------------------------------------------------
+// VLM Config Panel types
+// ---------------------------------------------------------------------------
+
+interface VlmProvider {
+  provider_id: string;
+  name: string;
+  tier: string;
+  available: boolean;
+  has_api_key: boolean;
+  models: string[];
+  default_model: string;
+  is_active: boolean;
+}
+
+interface VlmPromptPreset {
+  name: string;
+  label: string;
+  description: string;
+  is_default: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// VLM Configuration Panel
+// ---------------------------------------------------------------------------
+
+interface VlmConfig {
+  providerId: string | null;
+  modelId: string | null;
+  promptName: string;
+  customSystemPrompt: string;
+  customUserPrompt: string;
+  ensembleMode: boolean;
+  ensembleProviders: string[];
+}
+
+function VlmConfigPanel({
+  config,
+  onChange,
+}: {
+  config: VlmConfig;
+  onChange: (next: VlmConfig) => void;
+}) {
+  const [open, setOpen] = useState(true);
+
+  const { data: providers = [], isLoading: providersLoading } = useQuery<VlmProvider[]>({
+    queryKey: ["vlm-providers"],
+    queryFn: () => api.get("/vlm/providers").then((r) => r.data),
+    staleTime: 60_000,
+  });
+
+  const { data: providerModels } = useQuery<{ models: string[]; default: string }>({
+    queryKey: ["vlm-provider-models", config.providerId],
+    queryFn: () =>
+      api.get(`/vlm/providers/${config.providerId}/models`).then((r) => r.data),
+    enabled: !!config.providerId,
+    staleTime: 60_000,
+  });
+
+  const { data: prompts = [] } = useQuery<VlmPromptPreset[]>({
+    queryKey: ["vlm-prompts"],
+    queryFn: () => api.get("/vlm/providers/prompts").then((r) => r.data),
+    staleTime: 300_000,
+  });
+
+  const availableModels: string[] = providerModels?.models ?? [];
+
+  // When provider changes, reset model
+  const handleProviderChange = (pid: string) => {
+    onChange({ ...config, providerId: pid || null, modelId: null });
+  };
+
+  const tierColor = (tier: string) => {
+    if (tier === "free") return "#4ade80";
+    if (tier === "freemium") return "#60a5fa";
+    return "#f59e0b";
+  };
+
+  const tierLabel = (tier: string) => tier.toUpperCase();
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{ border: "1px solid #21262d" }}
+    >
+      {/* Header / toggle */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
+        style={{ background: "#161b22" }}
+      >
+        <div className="flex items-center gap-2">
+          <Settings2 className="w-3.5 h-3.5 text-purple-400" />
+          <span className="text-xs font-semibold text-white">VLM Configuration</span>
+        </div>
+        <ChevronDown
+          className="w-3.5 h-3.5 transition-transform"
+          style={{ color: "#484f58", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        />
+      </button>
+
+      {open && (
+        <div className="px-4 py-3 space-y-4" style={{ background: "#0d1117" }}>
+          {/* Provider selector */}
+          <div>
+            <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+              Provider
+            </label>
+            {providersLoading ? (
+              <div className="flex items-center gap-2 text-xs" style={{ color: "#484f58" }}>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading providers…
+              </div>
+            ) : (
+              <select
+                value={config.providerId ?? ""}
+                onChange={(e) => handleProviderChange(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
+                style={{
+                  background: "#161b22",
+                  border: "1px solid #21262d",
+                  color: config.providerId ? "#e6edf3" : "#484f58",
+                }}
+              >
+                <option value="">Use default (vlm_backend field)</option>
+                {providers.map((p) => (
+                  <option key={p.provider_id} value={p.provider_id}>
+                    {p.name} [{tierLabel(p.tier)}]{!p.available ? " — needs key" : ""}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Provider status badge */}
+            {config.providerId && (() => {
+              const prov = providers.find((p) => p.provider_id === config.providerId);
+              if (!prov) return null;
+              return (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                    style={{
+                      background: `${tierColor(prov.tier)}20`,
+                      color: tierColor(prov.tier),
+                    }}
+                  >
+                    {tierLabel(prov.tier)}
+                  </span>
+                  {prov.available ? (
+                    <span className="text-[10px] text-green-400">Available</span>
+                  ) : (
+                    <span className="text-[10px] text-red-400">Needs API key</span>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Model selector */}
+          {config.providerId && availableModels.length > 0 && (
+            <div>
+              <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+                Model
+              </label>
+              <select
+                value={config.modelId ?? ""}
+                onChange={(e) => onChange({ ...config, modelId: e.target.value || null })}
+                className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
+                style={{
+                  background: "#161b22",
+                  border: "1px solid #21262d",
+                  color: config.modelId ? "#e6edf3" : "#484f58",
+                }}
+              >
+                <option value="">
+                  {providerModels?.default
+                    ? `Default: ${providerModels.default}`
+                    : "Default model"}
+                </option>
+                {availableModels.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Prompt preset */}
+          <div>
+            <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+              Prompt Preset
+            </label>
+            <select
+              value={config.promptName}
+              onChange={(e) => onChange({ ...config, promptName: e.target.value })}
+              className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
+              style={{
+                background: "#161b22",
+                border: "1px solid #21262d",
+                color: "#e6edf3",
+              }}
+            >
+              {prompts.length > 0 ? (
+                prompts.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.label}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="maturity_classification">
+                    Maturity Classification (default)
+                  </option>
+                  <option value="morphology_classification">
+                    Morphology Classification
+                  </option>
+                  <option value="trichome_detection_count">
+                    Trichome Detection Count
+                  </option>
+                  <option value="custom">Custom…</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          {/* Custom prompt fields */}
+          {config.promptName === "custom" && (
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] mb-1 block" style={{ color: "#484f58" }}>
+                  System Prompt
+                </label>
+                <textarea
+                  rows={3}
+                  value={config.customSystemPrompt}
+                  onChange={(e) =>
+                    onChange({ ...config, customSystemPrompt: e.target.value })
+                  }
+                  placeholder="You are an expert trichome analysis AI…"
+                  className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none resize-y font-mono"
+                  style={{
+                    background: "#161b22",
+                    border: "1px solid #21262d",
+                    color: "#e6edf3",
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] mb-1 block" style={{ color: "#484f58" }}>
+                  User Prompt Template
+                </label>
+                <textarea
+                  rows={3}
+                  value={config.customUserPrompt}
+                  onChange={(e) =>
+                    onChange({ ...config, customUserPrompt: e.target.value })
+                  }
+                  placeholder="Analyse this trichome microscopy image and…"
+                  className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none resize-y font-mono"
+                  style={{
+                    background: "#161b22",
+                    border: "1px solid #21262d",
+                    color: "#e6edf3",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Ensemble toggle */}
+          <div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium" style={{ color: "#8b949e" }}>
+                  Ensemble Mode
+                </p>
+                <p className="text-[10px]" style={{ color: "#484f58" }}>
+                  {config.ensembleMode ? "Multi-Provider" : "Single Provider"}
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  onChange({
+                    ...config,
+                    ensembleMode: !config.ensembleMode,
+                    ensembleProviders: [],
+                  })
+                }
+                className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
+                style={{ background: config.ensembleMode ? "#7c3aed" : "#21262d" }}
+                role="switch"
+                aria-checked={config.ensembleMode}
+              >
+                <span
+                  className={cn(
+                    "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform",
+                    config.ensembleMode ? "translate-x-4" : "translate-x-0.5",
+                  )}
+                />
+              </button>
+            </div>
+
+            {/* Ensemble warning */}
+            {config.ensembleMode && (
+              <div
+                className="flex items-start gap-2 px-2.5 py-2 rounded-lg mt-2"
+                style={{
+                  background: "rgba(234,179,8,0.08)",
+                  border: "1px solid rgba(234,179,8,0.2)",
+                }}
+              >
+                <AlertTriangle className="w-3 h-3 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] leading-relaxed" style={{ color: "rgba(253,224,71,0.85)" }}>
+                  Ensemble mode sends each image to multiple providers. May incur API costs.
+                </p>
+              </div>
+            )}
+
+            {/* Multi-select checkboxes for ensemble providers */}
+            {config.ensembleMode && providers.length > 0 && (
+              <div className="mt-2 space-y-1.5">
+                <p className="text-[10px]" style={{ color: "#484f58" }}>
+                  Select providers for ensemble:
+                </p>
+                {providers.map((p) => (
+                  <label
+                    key={p.provider_id}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={config.ensembleProviders.includes(p.provider_id)}
+                      onChange={(e) => {
+                        const next = e.target.checked
+                          ? [...config.ensembleProviders, p.provider_id]
+                          : config.ensembleProviders.filter(
+                              (id) => id !== p.provider_id,
+                            );
+                        onChange({ ...config, ensembleProviders: next });
+                      }}
+                      className="rounded"
+                      style={{ accentColor: "#7c3aed" }}
+                    />
+                    <span className="text-xs" style={{ color: p.available ? "#8b949e" : "#484f58" }}>
+                      {p.name}
+                    </span>
+                    <span
+                      className="ml-auto text-[9px] px-1 py-0.5 rounded font-medium"
+                      style={{
+                        background: `${tierColor(p.tier)}15`,
+                        color: tierColor(p.tier),
+                      }}
+                    >
+                      {tierLabel(p.tier)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Auto-label panel (right sidebar of HITL tab)
 // ---------------------------------------------------------------------------
 
@@ -233,9 +602,41 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
   const [batchSize, setBatchSize] = useState(50);
   const [datasetId, setDatasetId] = useState<number | null>(null);
 
+  // VLM Config state
+  const [vlmConfig, setVlmConfig] = useState<VlmConfig>({
+    providerId: null,
+    modelId: null,
+    promptName: "maturity_classification",
+    customSystemPrompt: "",
+    customUserPrompt: "",
+    ensembleMode: false,
+    ensembleProviders: [],
+  });
+
+  const buildPayload = () => ({
+    dataset_id: String(datasetId),
+    vlm_backend: backend,
+    max_samples: batchSize,
+    batch_size: batchSize,
+    // VLM config fields
+    ...(vlmConfig.providerId ? { provider_id: vlmConfig.providerId } : {}),
+    ...(vlmConfig.modelId ? { model_id: vlmConfig.modelId } : {}),
+    prompt_name: vlmConfig.promptName !== "custom" ? vlmConfig.promptName : undefined,
+    ...(vlmConfig.promptName === "custom" && vlmConfig.customSystemPrompt
+      ? { custom_system_prompt: vlmConfig.customSystemPrompt }
+      : {}),
+    ...(vlmConfig.promptName === "custom" && vlmConfig.customUserPrompt
+      ? { custom_user_prompt: vlmConfig.customUserPrompt }
+      : {}),
+    ensemble_mode: vlmConfig.ensembleMode,
+    ...(vlmConfig.ensembleMode && vlmConfig.ensembleProviders.length > 0
+      ? { ensemble_providers: vlmConfig.ensembleProviders }
+      : {}),
+  });
+
   const startMutation = useMutation({
     mutationFn: () =>
-      api.post("/annotation/auto-label", { dataset_id: String(datasetId), vlm_backend: backend, max_samples: batchSize, batch_size: batchSize }).then((r) => r.data),
+      api.post("/annotation/auto-label", buildPayload()).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["annotation-queue"] });
       queryClient.invalidateQueries({ queryKey: ["annotation-jobs"] });
@@ -260,28 +661,33 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
         </select>
       </div>
 
-      {/* VLM Backend */}
-      <div>
-        <label className="text-xs mb-1.5 block" style={{ color: '#484f58' }}>VLM Backend</label>
-        <div className="flex gap-1.5">
-          {[
-            { id: "moondream", label: "Moondream", vram: "2.1 GB" },
-            { id: "florence2", label: "Florence-2", vram: "3.5 GB" },
-            { id: "qwen2vl", label: "Qwen2-VL", vram: "5.5 GB" },
-          ].map((m) => (
-            <button key={m.id} onClick={() => setBackend(m.id)}
-              className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all border text-center"
-              style={{
-                background: backend === m.id ? 'rgba(168,85,247,0.2)' : 'transparent',
-                border: backend === m.id ? '1px solid rgba(168,85,247,0.4)' : '1px solid #21262d',
-                color: backend === m.id ? '#c084fc' : '#484f58',
-              }}>
-              <div>{m.label}</div>
-              <div className="text-[9px] opacity-70">{m.vram}</div>
-            </button>
-          ))}
+      {/* VLM Configuration panel */}
+      <VlmConfigPanel config={vlmConfig} onChange={setVlmConfig} />
+
+      {/* VLM Backend (legacy fallback — visible when no remote provider is chosen) */}
+      {!vlmConfig.providerId && (
+        <div>
+          <label className="text-xs mb-1.5 block" style={{ color: '#484f58' }}>VLM Backend (local)</label>
+          <div className="flex gap-1.5">
+            {[
+              { id: "moondream", label: "Moondream", vram: "2.1 GB" },
+              { id: "florence2", label: "Florence-2", vram: "3.5 GB" },
+              { id: "qwen2vl", label: "Qwen2-VL", vram: "5.5 GB" },
+            ].map((m) => (
+              <button key={m.id} onClick={() => setBackend(m.id)}
+                className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all border text-center"
+                style={{
+                  background: backend === m.id ? 'rgba(168,85,247,0.2)' : 'transparent',
+                  border: backend === m.id ? '1px solid rgba(168,85,247,0.4)' : '1px solid #21262d',
+                  color: backend === m.id ? '#c084fc' : '#484f58',
+                }}>
+                <div>{m.label}</div>
+                <div className="text-[9px] opacity-70">{m.vram}</div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Batch size */}
       <div>
@@ -305,7 +711,7 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
         {startMutation.isPending ? (
           <><Loader2 className="w-4 h-4 animate-spin" />Labeling…</>
         ) : (
-          <><Brain className="w-4 h-4" />Start Auto-Label</>
+          <><Wand2 className="w-4 h-4" />Run Auto-Label</>
         )}
       </button>
 
@@ -960,9 +1366,9 @@ export default function AnnotationPage() {
             </div>
 
             {/* Auto-label sidebar */}
-            <div className="w-72 flex-shrink-0 overflow-y-auto" style={{ borderLeft: '1px solid #21262d' }}>
+            <div className="w-80 flex-shrink-0 overflow-y-auto" style={{ borderLeft: '1px solid #21262d' }}>
               <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #21262d' }}>
-                <Brain className="w-4 h-4 text-purple-400" />
+                <Wand2 className="w-4 h-4 text-purple-400" />
                 <h2 className="text-sm font-semibold text-white">Auto-Label</h2>
               </div>
               <AutoLabelPanel datasets={datasets} />

@@ -18,6 +18,7 @@ from backend.api.v1 import (
     model_tests,
     settings,
     tensorrt,
+    morphology_training,
 )
 
 router = APIRouter()
@@ -37,6 +38,7 @@ router.include_router(labelstudio.router)
 router.include_router(experiments.router)
 router.include_router(settings.router)
 router.include_router(tensorrt.router)
+router.include_router(morphology_training.router)
 
 # ── Optional sub-service routers ───────────────────────────────────
 
@@ -70,6 +72,12 @@ except Exception:
 try:
     from backend.api.v1.vlm_providers import router as vlm_providers_router
     router.include_router(vlm_providers_router)
+except Exception:
+    pass
+
+try:
+    from backend.api.v1.vlm_ensemble import router as vlm_ensemble_router
+    router.include_router(vlm_ensemble_router)
 except Exception:
     pass
 

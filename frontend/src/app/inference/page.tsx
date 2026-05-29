@@ -10,9 +10,10 @@
 
 import React, { useCallback, useState, Suspense } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Upload, Loader2, Cpu, AlertTriangle, Zap, Workflow } from "lucide-react";
+import { Upload, Loader2, Cpu, AlertTriangle, Zap, Workflow, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { ImageViewer } from "@/components/shared/ImageViewer";
 import type { AnnotationBox } from "@/components/shared/ImageViewer";
@@ -575,6 +576,23 @@ function InferencePageInner() {
             {label}
           </button>
         ))}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Batch mode link */}
+        <Link
+          href="/inference/batch"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all mb-0.5"
+          style={{
+            background: "rgba(59,130,246,0.12)",
+            border: "1px solid rgba(59,130,246,0.25)",
+            color: "#60a5fa",
+          }}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          Open Batch Mode
+        </Link>
       </div>
 
       {/* ── Tab content ── */}

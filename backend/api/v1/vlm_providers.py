@@ -289,6 +289,43 @@ async def list_provider_models(provider_id: str) -> dict[str, Any]:
     }
 
 
+@router.get("/prompts", response_model=list[dict])
+async def list_vlm_prompts() -> list[dict]:
+    """
+    Return the catalogue of available VLM prompt presets.
+
+    These presets control what the VLM is asked to classify / count.
+    The frontend uses this list to populate the Prompt Preset selector in the
+    VLM Configuration panel on the Annotation page.
+    """
+    return [
+        {
+            "name": "maturity_classification",
+            "label": "Maturity Classification (default)",
+            "description": "Classify trichomes as clear, cloudy or amber.",
+            "is_default": True,
+        },
+        {
+            "name": "morphology_classification",
+            "label": "Morphology Classification",
+            "description": "Classify trichomes as bulbous, sessile or stalked.",
+            "is_default": False,
+        },
+        {
+            "name": "trichome_detection_count",
+            "label": "Trichome Detection Count",
+            "description": "Count total trichomes visible in the image.",
+            "is_default": False,
+        },
+        {
+            "name": "custom",
+            "label": "Custom…",
+            "description": "Provide your own system and user prompt.",
+            "is_default": False,
+        },
+    ]
+
+
 @router.post("/{provider_id}/configure")
 async def configure_provider(
     provider_id: str,
