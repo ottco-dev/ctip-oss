@@ -6,17 +6,25 @@ Endpoints:
     GET /system/gpu         — GPU/VRAM/utilization stats
     GET /system/queue       — Background job queue status
     GET /system/info        — Full system info (GPU + queue + settings)
+    GET /system/services    — Live health check for all CTIP services
+    GET /system/logs        — Tail recent backend log lines
 """
 
 from __future__ import annotations
 
+import os
 import platform
+import socket
 import time
+from collections import deque
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 router = APIRouter(prefix="/system", tags=["system"])
+
+# In-memory ring buffer for log lines (max 500); populated by request logger
+_log_ring: deque[dict] = deque(maxlen=500)
 
 
 def _get_gpu_stats() -> dict[str, Any]:
@@ -191,3 +199,85 @@ async def system_info() -> dict[str, Any]:
             "vram_limit_gb": settings.vram_limit_gb,
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Service health
+# ---------------------------------------------------------------------------
+
+_SERVICES = [
+    {"name": "FastAPI Backend",   "port": 8000, "path": "/api/v1/system/health", "profile": None},
+    {"name": "Next.js Frontend",  "port": 3000, "path": "/",                     "profile": None},
+    {"name": "nginx Proxy",       "port": 3001, "path": "/",                     "profile": None},
+    {"name": "MLflow",            "port": 3004, "path": "/",                     "profile": None},
+    {"name": "Label Studio",      "port": 3005, "path": "/",                     "profile": "annotation"},
+    {"name": "CVAT",              "port": 3006, "path": "/",                     "profile": "annotation"},
+]
+
+
+def _tcp_reachable(host: str, port: int, timeout: float = 0.5) -> bool:
+    """Return True if a TCP connection to host:port succeeds within timeout."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+@router.get("/services")
+async def service_health() -> dict[str, Any]:
+    """
+    Live TCP health check for all CTIP services.
+
+    Uses a short timeout so the endpoint stays fast (~3 s worst case).
+    """
+    results = []
+    for svc in _SERVICES:
+        up = _tcp_reachable("127.0.0.1", svc["port"])
+        results.append({
+            "name": svc["name"],
+            "port": svc["port"],
+            "status": "running" if up else "stopped",
+            "profile": svc["profile"],
+            "url": f"http://localhost:{svc['port']}{svc['path']}",
+        })
+    return {"timestamp": time.time(), "services": results}
+
+
+# ---------------------------------------------------------------------------
+# Log ring — populated externally by request_logger middleware
+# ---------------------------------------------------------------------------
+
+def push_log_entry(entry: dict) -> None:
+    """Called by the request logger middleware to append a log line."""
+    _log_ring.append(entry)
+
+
+@router.get("/logs")
+async def tail_logs(limit: int = Query(default=50, le=200)) -> dict[str, Any]:
+    """
+    Return the most recent `limit` backend log entries from the in-memory ring.
+
+    Supplements with recent lines from logs/backend.log on disk when available.
+    """
+    entries: list[dict] = list(_log_ring)[-limit:]
+
+    # Supplement from on-disk log if ring is sparse
+    if len(entries) < limit:
+        log_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "..", "logs", "backend.log"
+        )
+        log_path = os.path.normpath(log_path)
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, "r", errors="replace") as f:
+                    lines = f.readlines()
+                disk_entries = [
+                    {"level": "INFO", "msg": l.rstrip(), "ts": None}
+                    for l in lines[-(limit - len(entries)):]
+                ]
+                entries = disk_entries + entries
+            except OSError:
+                pass
+
+    return {"timestamp": time.time(), "count": len(entries), "entries": entries}

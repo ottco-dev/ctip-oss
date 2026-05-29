@@ -192,6 +192,19 @@ const api = axios.create({
 });
 ```
 
+### Page structure (consolidated tabs)
+
+Multiple related views are merged into single pages with URL-driven tab state (`?tab=<name>`):
+
+| URL | Tabs | Old routes (redirect) |
+|-----|------|-----------------------|
+| `/training` | Runs · Experiments | `/experiments` → `/training?tab=experiments` |
+| `/inference` | Workbench · Pipeline Builder | `/model-tests` → `/inference?tab=pipeline` |
+| `/evaluation` | Calibration · Benchmarks | `/analytics`, `/benchmarks` → `/evaluation?tab=…` |
+| `/system` | Status · Processes · Setup | `/processes`, `/setup` → `/system?tab=…` |
+
+Tab state is read via `useSearchParams()` (inside a `<Suspense>` boundary) and written via `router.replace()` — browser back/forward navigates between tabs without a full page reload.
+
 ---
 
 ## VLM auto-labeling architecture

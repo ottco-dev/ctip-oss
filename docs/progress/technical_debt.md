@@ -1,6 +1,50 @@
 # Technical Debt Register
 
-Last updated: 2026-05-27 (.env crash fixes; containers REPO_ROOT bug; background task in-memory store)
+Last updated: 2026-05-29 (Moondream bitsandbytes incompatibility resolved; accelerate pinned)
+
+## RESOLVED
+
+### ~~TDB-019~~: SchemaEnforcer instantiation in all 6 remote provider files ✅ FIXED 2026-05-28
+- All remote provider files had `_SCHEMA_ENFORCER = SchemaEnforcer()` without required `schema` arg
+- Also called `enforce_maturity(dict)` which doesn't exist and takes raw text not dict
+- Fix: removed enforcer entirely from providers — schema validation is pipeline-level (HallucinationFilter)
+
+### ~~TDB-020~~: OpenAI provider PROMPT_REGISTRY access pattern ✅ FIXED 2026-05-28
+- `PROMPT_REGISTRY.get("key", {}).get("prompt")` assumes dict but returns `PromptTemplate` object
+- Also used wrong key `"image_quality_screen"` (correct: `"image_quality"`)
+- Fix: `_get_user_prompt()` helper accesses `.user_prompt_template` with isinstance guard
+
+### ~~TDB-021~~: HuggingFace provider forced API key ✅ FIXED 2026-05-28
+- Raised `ValueError` on empty token, preventing anonymous tier usage
+- Fix: removed mandatory check; `is_available = True` always (anonymous rate-limited access)
+
+### ~~TDB-018~~: Docker build fails — OSError: License file does not exist: LICENSE ✅ FIXED 2026-05-28
+- hatchling requires LICENSE, README.md, and all declared packages at build time
+- Fix: dep-cache layer COPYs pyproject.toml + LICENSE + README.md; `create_pkg_stubs.py` creates empty `__init__.py` stubs for all 19 packages before `uv pip install "[all,dev]"`
+- Also fixed: CUDA mismatch (cu130 vs 12.8), flash-attn soft-fail, SAM2 git install
+
+### ~~TDB-023~~: Moondream2 bitsandbytes incompatibility ✅ RESOLVED 2026-05-29
+- moondream2 uses `F.linear(x, w.weight, w.bias)` directly, bypassing bitsandbytes module forward
+- 4-bit/8-bit quantization → `RuntimeError: Half and Byte dtype mismatch`
+- accelerate 1.13.0 also broken: `dispatch_model→model.to()` on bnb models raises ValueError
+- Fix: `quantization='none'` (FP16, ~4.2 GB); accelerate pinned to 0.26.1
+- VRAM budget OK: 4.2 GB moondream + 1.5 GB YOLO < 8 GB; semaphore ensures exclusivity
+
+## ACTIVE
+
+### ~~TDB-022~~: Active VLM provider setting is ephemeral ✅ RESOLVED 2026-05-29
+- Root cause: `_get_active_provider_id()` called `get_settings()` which is `@lru_cache(maxsize=1)` —
+  even after `.env` write, the cached Settings object had the old value
+- Fix 1: `_get_active_provider_id()` and `_get_active_model()` now read `os.environ` first
+  (always up-to-date after the write); fall back to `get_settings()` only if not in env
+- Fix 2: Both `set_active_provider` and `configure_provider` call `get_settings.cache_clear()`
+  after `write_env_keys()` — ensures next cold read gets fresh `.env` values after restart
+- Fix needed: persist to `.env` file or SQLite settings table
+
+### TDB-023: Modal training submission is a stub
+- `ModalBackend.run_training_job()` returns failure with documentation pointer
+- Real implementation requires dataset upload to Modal Volumes + training script
+- Deferred until training-outsource feature is prioritized
 
 ## RESOLVED
 
@@ -88,7 +132,7 @@ Last updated: 2026-05-27 (.env crash fixes; containers REPO_ROOT bug; background
 
 ### ~~TDB-015~~: `REPO_ROOT = parents[4]` in `containers.py` ✅ FIXED 2026-05-27
 - `backend/api/v1/containers.py` was 3 directories deep, not 4
-- Resolved to `/home/ottcouture` instead of `/home/ottcouture/trichome-analysis`
+- Resolved to home directory instead of `/path/to/trichome-analysis`
 - All `docker compose` operations failed with `[Errno 2] No such file or directory`
 - Fixed: `parents[3]`
 

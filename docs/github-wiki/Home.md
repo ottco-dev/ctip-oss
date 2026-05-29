@@ -26,6 +26,12 @@ Supporting services:
     └── MLflow      (:3004)  — experiment tracking
 ```
 
+## New to CTIP?
+
+The **[[End-to-End Guide|Workflow-Guide]]** walks through every step from raw microscopy images to a verified, benchmarked detection pipeline — with interactive checklists and per-step tips. It is also available as an interactive page inside the app: **Guide** in the sidebar.
+
+---
+
 ## Quick start (5 minutes)
 
 ```bash

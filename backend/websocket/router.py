@@ -67,7 +67,7 @@ async def ws_training(
     except WebSocketDisconnect:
         logger.info("Training WS disconnected", client_id=cid)
     finally:
-        await ws_manager.disconnect(cid)
+        await ws_manager.disconnect(cid, websocket)
 
 
 @router.websocket("/ws/jobs")
@@ -88,7 +88,7 @@ async def ws_jobs(
     except WebSocketDisconnect:
         pass
     finally:
-        await ws_manager.disconnect(cid)
+        await ws_manager.disconnect(cid, websocket)
 
 
 @router.websocket("/ws/system")
@@ -136,7 +136,7 @@ async def ws_system(
         pass
     finally:
         stats_task.cancel()
-        await ws_manager.disconnect(cid)
+        await ws_manager.disconnect(cid, websocket)
 
 
 @router.websocket("/ws/global")
@@ -157,7 +157,7 @@ async def ws_global(
     except WebSocketDisconnect:
         pass
     finally:
-        await ws_manager.disconnect(cid)
+        await ws_manager.disconnect(cid, websocket)
 
 
 # ── Log streaming for process monitoring tray ────────────────────
@@ -300,4 +300,4 @@ async def ws_logs(
         pass
     finally:
         log_push_task.cancel()
-        await ws_manager.disconnect(cid)
+        await ws_manager.disconnect(cid, websocket)

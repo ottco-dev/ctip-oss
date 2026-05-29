@@ -127,8 +127,8 @@ class TrainingConfig:
     cache: str = "disk"
     """Cache mode: 'ram', 'disk', or False. 'disk' for 16GB RAM."""
 
-    # Output
-    project: str = "runs/detect"
+    # Output — computed at class definition to avoid Ultralytics double-nesting relative to its CWD
+    project: str = str(Path(__file__).resolve().parents[2] / "runs" / "detect")
     name: str = ""
     """Run name. Auto-generated if empty."""
 
@@ -137,7 +137,7 @@ class TrainingConfig:
 
     # Experiment tracking
     use_mlflow: bool = True
-    mlflow_tracking_uri: str = "http://localhost:5000"
+    mlflow_tracking_uri: str = "http://localhost:3004"
     mlflow_experiment_name: str = "trichome-detection"
 
     use_wandb: bool = False
@@ -364,6 +364,25 @@ class YOLOTrainer:
 
         model = YOLO(self._config.model_pt)
 
+        # Remove Ultralytics' built-in MLflow callbacks — we manage MLflow
+        # ourselves in _start_mlflow_run/_log_mlflow_final to avoid double-
+        # tracking and port conflicts.
+        try:
+            import os
+            from ultralytics import settings as ult_settings
+            # Disable Ultralytics' own MLflow integration — we manage MLflow tracking
+            # ourselves. Without this, Ultralytics re-registers MLflow callbacks
+            # after our callback-stripping and tries to write to /mlflow (root).
+            ult_settings.update({"mlflow": False})
+            os.environ["MLFLOW_TRACKING_URI"] = self._config.mlflow_tracking_uri
+            for event in list(model.callbacks.keys()):
+                model.callbacks[event] = [
+                    cb for cb in model.callbacks[event]
+                    if getattr(cb, "__module__", "").find("mlflow") == -1
+                ]
+        except Exception:
+            pass
+
         # Register epoch callback for WebSocket streaming
         if self._on_epoch_end is not None:
             self._register_epoch_callback(model)
@@ -379,8 +398,13 @@ class YOLOTrainer:
         train_result = model.train(**train_kwargs)
         t_end = time.perf_counter()
 
-        # Extract metrics from ultralytics result
-        run_dir = Path(train_kwargs["project"]) / train_kwargs["name"]
+        # Resolve run_dir from the Ultralytics result object (absolute path).
+        # Falling back to constructing it from kwargs is unreliable because
+        # Ultralytics may resolve the relative project path from a different CWD.
+        try:
+            run_dir = Path(train_result.save_dir).resolve()
+        except Exception:
+            run_dir = (Path(train_kwargs["project"]) / train_kwargs["name"]).resolve()
         best_model = run_dir / "weights" / "best.pt"
         last_model = run_dir / "weights" / "last.pt"
         results_csv = run_dir / "results.csv"
@@ -527,10 +551,8 @@ class YOLOTrainer:
                 "best_recall": result.best_recall,
                 "training_time_s": result.training_time_s,
             })
-
-            if result.best_model_path and Path(result.best_model_path).exists():
-                mlflow.log_artifact(result.best_model_path, "model")
-
+            # Model file is already saved by Ultralytics in runs/detect/<name>/weights/
+            # Skipping log_artifact to avoid artifact-store permission issues.
             mlflow.end_run()
 
         except Exception as e:

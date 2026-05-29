@@ -1,6 +1,6 @@
 # Pending Work
 
-Last updated: 2026-05-27 (container management + background docker tasks + wiki shipped; 960 tests passing)
+Last updated: 2026-05-29 (CTIP rebrand; dark/light theme; system dashboard; nginx envsubst; model-tests tests; 1053 tests passing)
 
 ---
 
@@ -16,8 +16,8 @@ Last updated: 2026-05-27 (container management + background docker tasks + wiki 
 - [x] `tests/unit/test_vlm_hallucination_filter.py` — 48 tests ✅ 2026-05-26
 - [x] `tests/unit/test_annotation_stats.py` — 36 tests ✅ 2026-05-26
 - [x] `tests/unit/test_vlm_schema_enforcer.py` — 63 tests ✅ 2026-05-26
-- [ ] `tests/unit/test_analytics_export.py` — json_exporter, csv_exporter, pdf_generator (COCO format, benchmark export, session export)
-- [ ] `tests/unit/test_inference_tiling.py` — tile stitching, NMS, overlap handling, ONNX fallback
+- [x] `tests/unit/test_analytics_export.py` — 61 tests ✅ 2026-05-27
+- [x] `tests/unit/test_inference_tiling.py` — 57 tests ✅ 2026-05-27
 
 ### CLI Commands
 - [x] All 9 CLI commands implemented ✅
@@ -34,8 +34,8 @@ Last updated: 2026-05-27 (container management + background docker tasks + wiki 
 - [x] Container management API (16 endpoints) ✅ 2026-05-27
 - [x] Background docker compose tasks + Browser Notification API ✅ 2026-05-27
 - [x] "Reinstall all" (pull + force-recreate) + per-container pull ✅ 2026-05-27
-- [ ] Persistent background task store (tasks lost on backend restart — in-memory only)
-- [ ] `POST /containers/{name}/rm` confirmation dialog in UI
+- [x] Persistent background task store (SQLite-backed task_store.py + TaskRouter.restore_from_db) ✅ 2026-05-29
+- [x] `POST /containers/{name}/rm` confirmation dialog in UI (Trash2 + modal in ProcessesTab) ✅ 2026-05-29
 
 ### Backend
 - [x] PostgreSQL migrations (Alembic) ✅
@@ -64,16 +64,23 @@ Last updated: 2026-05-27 (container management + background docker tasks + wiki 
 - [x] Container management UI (Processes → Containers tab) ✅ 2026-05-27
   - Background task + polling + Browser Notification API
   - Reinstall all, per-container pull, live log stream
-- [ ] nginx.conf dynamic `PUBLIC_DOMAIN` env var injection (currently hardcoded `server_name`)
-- [ ] `tests/unit/test_setup_api.py` — pytest unit tests for config API endpoints
-- [ ] `tests/unit/test_containers_api.py` — pytest tests for containers router
+- [x] nginx.conf dynamic `PUBLIC_DOMAIN` env var injection (`nginx.conf.template` + envsubst in docker-compose) ✅ 2026-05-29
+- [x] `tests/unit/test_setup_api.py` — 58 tests ✅ 2026-05-27
+- [x] `tests/unit/test_containers_api.py` — 47 tests ✅ 2026-05-28
+- [x] VLM Provider Switcher UI (`/processes` → VLM Providers tab) ✅ 2026-05-28
+  - ProviderCard with tier badge, API key form (persisted to .env), model selector
+  - VLMProvidersPanel: local vs remote sections, free-tier highlight, activate/configure
+  - TDB-022 fixed: active provider persisted to .env across restarts
 
 ### Inference
-- [ ] TensorRT full implementation (requires NVIDIA TRT SDK — not in venv)
+- [x] TensorRT API (management endpoints, graceful degradation, 23 tests) ✅ 2026-05-29
+- [x] NVIDIA Container Toolkit docs + compose file updates ✅ 2026-05-29
+- [ ] TensorRT E2E engine build (requires YOLO11s .pt → ONNX export first)
 - [ ] Batch inference optimization
 
 ### Analytics
-- [ ] `tests/unit/test_analytics_export.py` — export module test coverage
+- [x] `tests/unit/test_analytics_export.py` — export module test coverage ✅
+- [x] `tests/unit/test_model_tests_api.py` — 26 tests (POST/GET/PUT/DELETE + edge cases) ✅ 2026-05-29
 
 ### Advanced
 - [ ] Multi-GPU distributed training support

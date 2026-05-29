@@ -2,15 +2,19 @@
 backend.api.v1.training — Training control endpoints.
 
 Endpoints:
-    POST /training/start         — Start YOLO training job
-    POST /training/stop/{run_id} — Request training stop
-    GET  /training/runs          — List all runs
-    GET  /training/runs/{run_id} — Get run details + metrics
-    GET  /training/runs/{run_id}/metrics — Get per-epoch metrics
+    POST /training/start                  — Start YOLO training job
+    POST /training/stop/{run_id}          — Request training stop
+    GET  /training/runs                   — List all runs
+    GET  /training/runs/{run_id}          — Get run details + metrics
+    GET  /training/runs/{run_id}/metrics  — Get per-epoch metrics
+    GET  /training/ls-datasets            — List Label Studio projects for dataset selection
+    POST /training/prepare-ls-dataset     — Export LS project → YOLO dataset.yaml
 """
 
 from __future__ import annotations
 
+import asyncio
+import os
 import time
 import uuid
 from typing import Any
@@ -22,6 +26,7 @@ from sqlmodel import Session, select
 from backend.database import get_session
 from backend.models.experiment import Experiment, Run, Metric
 from backend.models.job import BackgroundJob
+from backend.models.model_registry import RegisteredModel
 from backend.tasks.task_router import task_router
 from backend.websocket.manager import ws_manager
 from shared.logging.logger import get_logger
@@ -173,6 +178,19 @@ async def start_training(
     Submits to the GPU task queue. If another GPU task is running,
     this job will wait until the GPU is free.
     """
+    # Resolve dataset name → absolute YAML path when caller passes a bare name
+    from pathlib import Path as _PPath
+    from backend.config import get_settings as _get_settings
+    _datasets_root = _PPath(_get_settings().data_root) / "datasets"
+    if "/" not in request.data_yaml and not request.data_yaml.endswith(".yaml"):
+        candidate = _datasets_root / request.data_yaml / "dataset.yaml"
+        if candidate.exists():
+            request.data_yaml = str(candidate)
+    elif not _PPath(request.data_yaml).is_absolute():
+        candidate = _datasets_root / request.data_yaml
+        if candidate.exists():
+            request.data_yaml = str(candidate)
+
     # Get or create experiment
     experiment = db.exec(
         select(Experiment).where(Experiment.name == request.experiment_name)
@@ -201,8 +219,10 @@ async def start_training(
     # Define training coroutine
     async def run_training():
         from training.pipelines.yolo_trainer import YOLOTrainer, TrainingConfig
+        from backend.config import get_settings
 
         config = TrainingConfig(
+            mlflow_tracking_uri=get_settings().mlflow_tracking_uri,
             model_variant=request.model_variant,
             data_yaml=request.data_yaml,
             epochs=request.epochs,
@@ -230,10 +250,26 @@ async def start_training(
         )
 
         async def epoch_callback(epoch: int, metrics: dict) -> None:
-            # Broadcast to WebSocket subscribers
+            # Broadcast metrics to WebSocket subscribers
             await ws_manager.send_training_update(epoch, metrics, run_uuid)
 
-            # Log metrics to DB
+            # Broadcast human-readable log line for the live log panel
+            map50 = metrics.get("metrics/mAP50(B)", metrics.get("val_map50", 0.0))
+            box_loss = metrics.get("train/box_loss", metrics.get("train_loss", 0.0))
+            cls_loss = metrics.get("train/cls_loss", 0.0)
+            precision = metrics.get("metrics/precision(B)", 0.0)
+            recall = metrics.get("metrics/recall(B)", 0.0)
+            total = request.epochs
+            line = (
+                f"[{epoch:>4}/{total}]  "
+                f"box={box_loss:.4f}  cls={cls_loss:.4f}  "
+                f"mAP50={map50:.4f}  P={precision:.3f}  R={recall:.3f}"
+            )
+            level = "success" if map50 > 0.5 else "info"
+            await ws_manager.send_training_log(run_uuid, line, level)
+
+            # Log metrics to DB + update live epoch/mAP50 on the Run row
+            map50_val = metrics.get("metrics/mAP50(B)", metrics.get("val_map50", 0.0))
             with Session(db.bind) as new_session:
                 for key, value in metrics.items():
                     metric = Metric(
@@ -243,23 +279,89 @@ async def start_training(
                         value=float(value),
                     )
                     new_session.add(metric)
+                # Keep the run row fresh so the dashboard table shows live progress
+                db_run = new_session.get(Run, run.id)
+                if db_run:
+                    db_run.best_epoch = epoch
+                    if map50_val > db_run.best_map50:
+                        db_run.best_map50 = map50_val
+                    new_session.add(db_run)
                 new_session.commit()
 
-        # Sync callback adapter (trainer calls sync callback)
+        # Capture the running event loop before the thread starts so sync_callback
+        # can schedule coroutines back onto it from the worker thread.
         import asyncio
+        _loop = asyncio.get_event_loop()
 
         def sync_callback(epoch: int, metrics: dict) -> None:
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.ensure_future(epoch_callback(epoch, metrics))
+                asyncio.run_coroutine_threadsafe(epoch_callback(epoch, metrics), _loop)
             except Exception:
                 pass
 
-        trainer = YOLOTrainer(config, on_epoch_end=sync_callback)
-        result = trainer.train()
+        # Mark run as running in DB (request session is closed — use fresh session)
+        with Session(db.bind) as s:
+            db_run = s.get(Run, run.id)
+            if db_run:
+                db_run.status = "running"
+                db_run.started_at = time.time()
+                db_run.total_epochs = request.epochs
+                s.add(db_run)
+                s.commit()
 
-        # Update run record with results
+        # Emit start log
+        await ws_manager.send_training_log(
+            run_uuid,
+            f"Training started  model={request.model_variant}  epochs={request.epochs}"
+            f"  imgsz={request.imgsz}  batch={request.batch_size}",
+            "info",
+        )
+        await ws_manager.send_training_log(
+            run_uuid,
+            f"Dataset: {request.data_yaml}",
+            "info",
+        )
+        await ws_manager.send_training_log(
+            run_uuid,
+            f"{'─' * 72}",
+            "dim",
+        )
+        await ws_manager.send_training_log(
+            run_uuid,
+            f"{'Epoch':>10}  {'box_loss':>10}  {'cls_loss':>10}  "
+            f"{'mAP50':>8}  {'P':>6}  {'R':>6}",
+            "header",
+        )
+
+        trainer = YOLOTrainer(config, on_epoch_end=sync_callback)
+        try:
+            result = await asyncio.to_thread(trainer.train)
+        except Exception as exc:
+            await ws_manager.send_training_log(run_uuid, f"ERROR: {exc}", "error")
+            with Session(db.bind) as s:
+                db_run = s.get(Run, run.id)
+                if db_run:
+                    db_run.status = "failed"
+                    db_run.finished_at = time.time()
+                    s.add(db_run)
+                    s.commit()
+            raise
+
+        await ws_manager.send_training_log(run_uuid, f"{'─' * 72}", "dim")
+        await ws_manager.send_training_log(
+            run_uuid,
+            f"Training complete — best mAP50={result.best_map50:.4f} @ epoch {result.best_epoch}",
+            "success",
+        )
+        await ws_manager.send_training_log(
+            run_uuid,
+            f"Best model: {result.best_model_path}",
+            "info",
+        )
+
+        # Update run record with results and auto-register in model registry
+        import json as _json
+        from pathlib import Path as _Path
         with Session(db.bind) as new_session:
             db_run = new_session.get(Run, run.id)
             if db_run:
@@ -275,6 +377,38 @@ async def start_training(
                 db_run.mlflow_run_id = result.mlflow_run_id
                 db_run.finished_at = time.time()
                 new_session.add(db_run)
+
+                # Auto-register best model in the model registry if it exists
+                if result.best_model_path and _Path(result.best_model_path).exists():
+                    existing = new_session.exec(
+                        select(RegisteredModel).where(
+                            RegisteredModel.training_run_uuid == run_uuid
+                        )
+                    ).first()
+                    if not existing:
+                        file_size_mb = _Path(result.best_model_path).stat().st_size / (1024 * 1024)
+                        model_name = f"{request.model_variant} — {request.experiment_name} (mAP50={result.best_map50:.3f})"
+                        reg = RegisteredModel(
+                            name=model_name,
+                            model_type="detection",
+                            framework="ultralytics",
+                            variant=request.model_variant,
+                            file_path=result.best_model_path,
+                            file_size_mb=round(file_size_mb, 2),
+                            metrics_json=_json.dumps({
+                                "map50": result.best_map50,
+                                "map50_95": result.best_map50_95,
+                                "precision": result.best_precision,
+                                "recall": result.best_recall,
+                                "epochs": result.total_epochs_completed,
+                            }),
+                            vram_required_gb=1.5 if "n" in request.model_variant else (2.5 if "s" in request.model_variant else 4.0),
+                            training_run_uuid=run_uuid,
+                            is_active=True,
+                            description=f"Trained on {request.data_yaml.split('/')[-2] if '/' in request.data_yaml else request.data_yaml}",
+                        )
+                        new_session.add(reg)
+
                 new_session.commit()
 
         return result.to_dict()
@@ -348,7 +482,7 @@ async def list_runs(
             total_epochs=r.total_epochs,
             started_at=r.started_at,
             finished_at=r.finished_at,
-            duration_s=r.duration_s,
+            duration_s=r.get_duration_s(),
         )
         for r in runs
     ]
@@ -429,6 +563,218 @@ async def get_job(
     if not job:
         raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
     return job.to_dict()
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# LABEL STUDIO DATASET INTEGRATION
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def _ls_host() -> str:
+    from backend.config import get_settings
+    return get_settings().label_studio_url.rstrip("/")
+
+
+def _ls_token() -> str:
+    from backend.config import get_settings
+    return get_settings().label_studio_api_key
+
+
+class LSDataset(BaseModel):
+    project_id: int
+    title: str
+    task_count: int
+    annotation_count: int
+    prediction_count: int
+    description: str = ""
+    label_config: str = ""
+
+
+class PrepareDatasetRequest(BaseModel):
+    project_id: int
+    use_predictions: bool = Field(
+        default=False,
+        description=(
+            "If True, export YOLO pre-annotations as training data. "
+            "If False (default), only human-confirmed annotations are used."
+        ),
+    )
+    train_ratio: float = Field(default=0.70, ge=0.3, le=0.9)
+    val_ratio: float = Field(default=0.15, ge=0.05, le=0.4)
+    seed: int = Field(default=42)
+
+
+class PrepareDatasetResponse(BaseModel):
+    dataset_yaml: str
+    dataset_dir: str
+    total_tasks: int
+    exported_tasks: int
+    skipped_tasks: int
+    train_count: int
+    val_count: int
+    test_count: int
+    classes: list[str]
+    warnings: list[str]
+
+
+class PrepareDatasetStartedResponse(BaseModel):
+    prepare_id: str
+    status: str = "started"
+    message: str
+
+
+@router.get("/ls-datasets", response_model=list[LSDataset])
+async def list_ls_datasets() -> list[LSDataset]:
+    """
+    List all Label Studio projects available as training datasets.
+
+    Returns project metadata including task count and annotation count.
+    """
+    import requests as _requests
+
+    token = _ls_token()
+    host = _ls_host()
+
+    if not token:
+        raise HTTPException(
+            status_code=503,
+            detail="LABEL_STUDIO_API_KEY not configured in .env",
+        )
+
+    try:
+        r = _requests.get(
+            f"{host}/api/projects/",
+            headers={"Authorization": f"Token {token}"},
+            timeout=10,
+        )
+        r.raise_for_status()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Cannot reach Label Studio at {host}: {exc}",
+        ) from exc
+
+    datasets = []
+    for p in r.json().get("results", []):
+        if p.get("task_number", 0) == 0:
+            continue
+        datasets.append(
+            LSDataset(
+                project_id=p["id"],
+                title=p.get("title", ""),
+                task_count=p.get("task_number", 0),
+                annotation_count=p.get("num_tasks_with_annotations", 0),
+                prediction_count=p.get("total_predictions_number", 0),
+                description=p.get("description", ""),
+                label_config=p.get("label_config", ""),
+            )
+        )
+    return datasets
+
+
+@router.post("/prepare-ls-dataset", response_model=PrepareDatasetStartedResponse)
+async def prepare_ls_dataset(req: PrepareDatasetRequest) -> PrepareDatasetStartedResponse:
+    """
+    Start a Label Studio → YOLO dataset export as a background task.
+
+    Returns immediately with a `prepare_id`. Progress is streamed to all
+    WebSocket /ws/training subscribers as `training_log` messages.
+    When complete, a `dataset_ready` WS event is broadcast with the full result.
+
+    Set `use_predictions=True` to use YOLO pre-annotations (no human review required).
+    """
+    from training.pipelines.ls_dataset_exporter import ExportConfig, export_ls_project
+
+    prepare_id = str(uuid.uuid4())
+    loop = asyncio.get_event_loop()
+
+    def _sync_log(line: str, level: str = "info") -> None:
+        asyncio.run_coroutine_threadsafe(
+            ws_manager.send_training_log(prepare_id, line, level),
+            loop,
+        )
+
+    config = ExportConfig(
+        project_id=req.project_id,
+        ls_host=_ls_host(),
+        ls_token=_ls_token(),
+        use_predictions=req.use_predictions,
+        train_ratio=req.train_ratio,
+        val_ratio=req.val_ratio,
+        seed=req.seed,
+        progress_callback=_sync_log,
+    )
+
+    async def _export_task() -> None:
+        await ws_manager.send_training_log(prepare_id, "═" * 60, "dim")
+        await ws_manager.send_training_log(
+            prepare_id,
+            f"Dataset Preparation  ·  Project {req.project_id}",
+            "header",
+        )
+        await ws_manager.send_training_log(
+            prepare_id,
+            f"Split: {req.train_ratio:.0%} train / {req.val_ratio:.0%} val / "
+            f"{1 - req.train_ratio - req.val_ratio:.0%} test  (seed={req.seed})",
+            "dim",
+        )
+        try:
+            result = await asyncio.to_thread(export_ls_project, config)
+        except (ValueError, RuntimeError) as exc:
+            await ws_manager.send_training_log(prepare_id, f"ERROR: {exc}", "error")
+            await ws_manager.broadcast_to_topic("training", {
+                "type": "dataset_ready",
+                "prepare_id": prepare_id,
+                "success": False,
+                "error": str(exc),
+            })
+            return
+        except Exception as exc:
+            logger.exception("LS dataset export failed: %s", exc)
+            await ws_manager.send_training_log(prepare_id, f"ERROR: {exc}", "error")
+            await ws_manager.broadcast_to_topic("training", {
+                "type": "dataset_ready",
+                "prepare_id": prepare_id,
+                "success": False,
+                "error": str(exc),
+            })
+            return
+
+        await ws_manager.send_training_log(prepare_id, "─" * 60, "dim")
+        await ws_manager.send_training_log(
+            prepare_id,
+            f"Export complete — {result.exported_tasks} tasks exported, "
+            f"{result.skipped_tasks} skipped",
+            "success",
+        )
+        await ws_manager.send_training_log(
+            prepare_id,
+            f"Train: {result.train_count}  Val: {result.val_count}  Test: {result.test_count}",
+            "info",
+        )
+        await ws_manager.send_training_log(
+            prepare_id,
+            f"Classes: {', '.join(result.classes)}",
+            "info",
+        )
+        await ws_manager.send_training_log(
+            prepare_id,
+            f"YAML: {result.dataset_yaml}",
+            "dim",
+        )
+
+        await ws_manager.broadcast_to_topic("training", {
+            "type": "dataset_ready",
+            "prepare_id": prepare_id,
+            "success": True,
+            **result.to_dict(),
+        })
+
+    asyncio.create_task(_export_task())
+
+    return PrepareDatasetStartedResponse(
+        prepare_id=prepare_id,
+        message="Export started. Watch the Training Log for live progress.",
+    )
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

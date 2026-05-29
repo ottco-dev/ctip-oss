@@ -1,10 +1,10 @@
 # Base image: Python 3.12 + CUDA 12.1 + common ML system libraries
 # Build target for all trichome analysis services
 
-FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
 
 LABEL maintainer="trichome-analysis"
-LABEL description="Base image: Python 3.12 + CUDA 12.1 + system libs"
+LABEL description="Base image: Python 3.12 + CUDA 12.8 + system libs"
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive

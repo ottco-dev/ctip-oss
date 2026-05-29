@@ -78,13 +78,14 @@ services:
     depends_on:
       mlflow:
         condition: service_healthy
+    runtime: nvidia
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [gpu, video, compute, utility]
         limits:
           memory: 8G                  # leave headroom for VRAM spill-over
     healthcheck:

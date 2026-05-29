@@ -83,7 +83,7 @@ Homebrew nginx runs as your user (not root):
 
 \`\`\`bash
 # Fix hardcoded paths in nginx config
-sed -i '' "s|/home/ottcouture/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
+sed -i '' "s|/path/to/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
 
 # Start nginx
 nginx -c "$(pwd)/nginx-local/nginx.conf"
@@ -195,7 +195,7 @@ VRAM_LIMIT_GB="8.0"     # MPS teilt RAM — bei 16 GB Mac ~8–10 GB nutzbar
 
 \`\`\`bash
 # Hardkodierte Pfade anpassen
-sed -i '' "s|/home/ottcouture/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
+sed -i '' "s|/path/to/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
 nginx -c "$(pwd)/nginx-local/nginx.conf"
 \`\`\`
 
@@ -275,7 +275,7 @@ VRAM_LIMIT_GB="8.0"
 ## 5. Iniciar
 
 \`\`\`bash
-sed -i '' "s|/home/ottcouture/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
+sed -i '' "s|/path/to/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
 cp .env.example .env && ./scripts/dev-start.sh
 # http://localhost:3001
 \`\`\`

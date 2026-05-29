@@ -2,6 +2,332 @@
 
 ---
 
+## 2026-05-29 — TensorRT Management API; NVIDIA Container Toolkit; Settings Page; Compute Backend
+
+### WHAT WAS IMPLEMENTED
+
+**TensorRT Management API (`backend/api/v1/tensorrt.py`):**
+- `GET /tensorrt/status` — TRT availability, version strings (trt + pycuda), CUDA check, engine list; graceful 200 when TRT not installed
+- `GET /tensorrt/engines` — lists all `.engine` files in `models/engines/` with size + mtime
+- `GET /tensorrt/inspect/{engine_name}` — I/O tensor names, shapes, dtypes via `inspect_engine()`
+- `POST /tensorrt/build` — validates ONNX path, creates build job, fires `_run_build` in thread pool; returns job_id immediately
+- `GET /tensorrt/build/{job_id}` — polls in-memory `_build_jobs` dict (queued/running/completed/failed)
+- `POST /tensorrt/infer` — loads TensorRTRunner, runs single-image inference, unloads; returns detections + timing breakdown
+- All non-status endpoints return HTTP 503 with install instructions when TRT unavailable
+- Registered in `backend/api/v1/router.py`
+
+**`tests/unit/test_tensorrt_api.py` — 23 tests, all passing:**
+- Status: unavailable/installed/lists engines/no engines
+- List engines, inspect (TRT required/not found/ok)
+- Build: TRT required/ONNX not found/queues job/default name/conflict/overwrite
+- Build poll: unknown/existing job
+- Infer: TRT required/not found/invalid image/success with mock
+
+**NVIDIA Container Toolkit — all Docker Compose files updated:**
+- `docker/docker-compose.yml`: `runtime: nvidia`, `NVIDIA_VISIBLE_DEVICES=all`, `NVIDIA_DRIVER_CAPABILITIES=compute,utility`, capabilities `[gpu, video, compute, utility]`
+- `docker/docker-compose.inference.yml`: `runtime: nvidia`, capabilities expanded
+- `docker/docker-compose.training.yml`: capabilities expanded to `[gpu, video, compute, utility]`
+
+**`docs/deployment/nvidia_container_toolkit.md` — NEW:**
+- Ubuntu 22.04/24.04 + WSL2 installation steps
+- Verification commands
+- Docker Compose configuration reference (both `runtime: nvidia` and `deploy.resources` approaches)
+- TensorRT in containers (base image selection, pip install, engine build via API)
+- ulimits for TRT engine builds (memlock=-1, stack=64MB)
+- Troubleshooting table (5 error scenarios)
+- RTX 4060 reference card (VRAM, compute capability, FP16 speedup, TRT workspace limits)
+
+### VERIFICATION
+- `GET /tensorrt/status` → `available: true, trt_version: "10.14.1.48", pycuda_version: "2026.1"` ✅
+- 23 unit tests pass ✅
+- Docker Compose files validated (both legacy runtime + modern deploy.resources) ✅
+
+---
+
+## 2026-05-29 — TDB-022 Fix; Compute Backend Settings (NVIDIA/AMD/CPU); Settings Page
+
+### WHAT WAS IMPLEMENTED
+
+**TDB-022 Fix (`backend/api/v1/vlm_providers.py`):**
+- `_get_active_provider_id()` / `_get_active_model()` now read `os.environ` first (always live),
+  fall back to `get_settings()` — avoids stale lru_cache reads
+- `set_active_provider` + `configure_provider`: call `get_settings.cache_clear()` after `.env` write
+
+**Compute Backend System (`backend/api/v1/settings.py`, `backend/utils/compute.py`):**
+- `GET /settings` — all editable platform settings
+- `PATCH /settings` — partial update, persists to .env + clears settings cache
+- `GET /settings/compute` — hardware detection (NVIDIA/AMD ROCm/MPS/CPU) + configured backend
+- `POST /settings/compute` — switch compute backend; saves to .env + clears cache
+- `backend/utils/compute.py`: `get_torch_device()` — canonical device resolution used by all inference components
+- `MoondreamConfig.device` now uses `_default_device()` → `get_torch_device()` instead of hardcoded "cuda:0"
+- `backend/config.py`: `compute_backend: str = "auto"` field added
+
+**Frontend Settings Page (`frontend/src/app/settings/page.tsx`):**
+- Compute backend selector: Auto / NVIDIA CUDA / AMD ROCm / Apple MPS / CPU-only
+- Hardware summary: device name, VRAM, SM compute capability, detected availability badges
+- ROCm install hint shown when ROCm selected but not detected
+- VLM Settings: default backend radio + confidence threshold
+- Performance: VRAM limit + GPU queue depth
+- Logging: log level toggle + MLflow URI
+- Storage: read-only path overview
+- Security: API token status
+- All sections collapsible; all writes persist to .env immediately
+
+**Sidebar:** Added Settings link with `SlidersHorizontal` icon
+
+**TypeScript fixes (`annotation/page.tsx`):** `ReviewRow` onApprove/onReject: `number` → `string`
+
+### VERIFICATION
+- `GET /settings/compute` → RTX 4060 detected, CUDA available, ROCm=false ✅
+- `POST /settings/compute {backend: "cpu"}` → resolved_device = "cpu" ✅
+- `POST /settings/compute {backend: "auto"}` → resolved_device = "cuda:0" ✅
+- `npx tsc --noEmit` → 0 errors ✅
+
+---
+
+## 2026-05-29 — VLM Auto-Label + Label Studio Integration Fixes; Moondream FP16 Fix
+
+### WHAT WAS IMPLEMENTED / FIXED
+
+**Moondream2 model loading fix (`vlm_labeling/moondream/moondream_labeler.py`):**
+- Root cause: bitsandbytes 4-bit/8-bit quantization incompatible with moondream2's custom `F.linear(x, w.weight, w.bias)` calls (bypasses bitsandbytes module interception → Half×Byte dtype error)
+- Fix: default `quantization='none'` (FP16), removed bitsandbytes paths; fits in 8 GB VRAM (semaphore ensures exclusive GPU access)
+- Secondary fix: accelerate downgraded to 0.26.1 (1.13.0 called `dispatch_model→model.to()` on single-device bnb models)
+- End-to-end verified: 3-image auto-label job completes in ~13.6s, items appear in annotation queue
+
+**Label Studio auto-connect fix (`backend/api/v1/labelstudio.py`):**
+- Root cause: `os.environ.get("LABEL_STUDIO_API_KEY")` returns empty — pydantic-settings doesn't populate `os.environ`
+- Fix: `_env_api_key()` / `_env_host()` now read from `get_settings()`, not `os.environ`
+- `get_ls_status()` auto-connects on startup when env credentials present
+- `connect_label_studio`: uses `_LS_CONFIG["api_key"]` (resolved) not `body.api_key` (potentially empty)
+- `list_ls_projects()`: allows access when `api_key` is present; updates `connected` on success
+
+**Annotation pipeline fixes (`backend/api/v1/annotation.py`):**
+- `trigger_auto_label`: added `job_uuid=str(uuid.uuid4())` (was causing `NOT NULL constraint failed`)
+- `list_annotation_jobs`: `_fmt_ts()` helper handles both `datetime` and `float` timestamps
+- `get_annotation_job`: queries by `job_uuid` not integer PK
+
+**Frontend fixes (`frontend/src/app/annotation/page.tsx`):**
+- `ReviewItem.id: string` (was `number`) — backend returns UUID strings
+- `approveMutation`/`rejectMutation` parameter types fixed
+- `AutoLabelPanel` sends correct `dataset_id`, `max_samples`, `batch_size` field names
+
+### WHY
+- bitsandbytes was intended to save VRAM but moondream2's non-standard linear implementation
+  makes it incompatible; FP16 is correct tradeoff on 8 GB VRAM with exclusive semaphore access
+- Label Studio env issue: pydantic-settings reads `.env` into Settings but never writes `os.environ`
+- job_uuid constraint: SQLite NOT NULL on PK-like field was silently failing; fixed at creation site
+
+### VERIFICATION
+- Moondream: `MoondreamLabeler(quantization='none').load()` → `assess_quality()` → valid JSON ~2.24s/img
+- Auto-label: `POST /annotation/auto-label` (3 imgs) → job completed → 3 items in queue ✅
+- Label Studio: `GET /labelstudio/status` → `connected: true, project_count: 4` ✅
+
+---
+
+## 2026-05-29 — CTIP Rebrand, Dark/Light Theme, System Dashboard, nginx envsubst, model-tests tests
+
+### WHAT WAS IMPLEMENTED
+
+**CTIP Rebrand + Dark/Light Theme:**
+- `frontend/src/styles/globals.css`: dual-theme CSS variable system (`[data-theme="dark"]` + `[data-theme="light"]`), sage green accent palette
+- `frontend/src/components/layout/ThemeProvider.tsx`: Zustand → `document.documentElement` sync + no-flash inline script
+- `frontend/src/app/layout.tsx`: title → CTIP, inline theme script in `<head>`, `<ThemeProvider>` wrapper
+- `frontend/src/components/layout/Sidebar.tsx`: `CtipLogo` SVG (trichome + microscope), "CTIP" brand, theme toggle (Sun/Moon)
+- `frontend/src/components/layout/TopBar.tsx`: CSS variable-driven styles
+- `frontend/tailwind.config.ts`: `darkMode: 'selector'`, all colors → CSS variables
+- `frontend/src/store/uiStore.ts`: `theme` field + `toggleTheme()`, key `ctip-ui-store`
+
+**System Dashboard (`frontend/src/components/system/SystemStatusTab.tsx`):**
+- Complete rewrite: `RingGauge`, `Sparkline`, `GpuPanel`, `QueuePanel`, `ServicesPanel`, `ConfigPanel`, `LogTerminal`
+- `backend/api/v1/system.py`: `GET /system/services` (TCP health check), `GET /system/logs` (ring buffer + disk fallback)
+
+**nginx Dynamic Domain:**
+- `docker/nginx/nginx.conf.template`: `server_name ${PUBLIC_DOMAIN} localhost _;`
+- `docker/docker-compose.yml`: nginx uses template + `envsubst '$$PUBLIC_DOMAIN'` command; `PUBLIC_DOMAIN` env var
+
+**Container rm Confirmation:**
+- `frontend/src/components/system/ProcessesTab.tsx`: Trash2 button + confirm modal per container
+
+**TaskRouter Restart Recovery:**
+- `backend/tasks/task_router.py`: `restore_from_db(db_session)` method
+- `backend/main.py`: called in lifespan startup after `create_all_tables()`
+
+**model-tests API Tests:**
+- `tests/unit/test_model_tests_api.py`: 26 tests, all passing — full CRUD coverage + edge cases
+
+### WHY
+- CTIP brand: professional scientific platform identity; dark/light mode for different lab environments
+- System dashboard: users need real-time GPU/CPU/queue visibility for monitoring long training runs
+- nginx template: enables deployment to custom domains without editing config files
+- Container rm dialog: prevent accidental data loss from misclick
+- TaskRouter restore: jobs submitted just before restart would disappear from UI without this
+- model-tests tests: API had no test coverage; prevents regression on test graph persistence
+
+### WHAT REMAINS
+- TDB-023: Modal training submission (real implementation)
+- TensorRT E2E (requires weights)
+- Batch inference optimization
+
+---
+
+## 2026-05-28 — Label Studio Full Setup + Dataset Import
+
+### WHAT WAS IMPLEMENTED
+
+**Label Studio Docker fixes (`docker/docker-compose.annotation.yml`):**
+- Corrected env var names: `LOCAL_FILES_SERVING_ENABLED` + `LOCAL_FILES_DOCUMENT_ROOT` (removed `LABEL_STUDIO_` prefix — LS 1.23 uses unprefixed names)
+- Added absolute bind mount: `/path/to/trichome-analysis/data` → `/ctip-data:ro`
+- Document root set to `/ctip-data` — images served at `/data/local-files/?d=<relative path>`
+
+**Setup script (`scripts/setup/setup_label_studio.py`):**
+- Creates/updates 3 projects with full labeling config (4 classes + maturity + quality + notes)
+- Converts YOLO `.txt` annotations → Label Studio rectanglelabels pre-annotations
+- Batched task import (50 tasks/batch) with error handling
+- `--dry-run`, `--clear-existing`, `--dataset` flags
+
+**LocalFilesImportStorage objects (LS API):**
+- Storage [1] project=2 (CTIP Combined) → `/ctip-data/datasets/ctip_combined`
+- Storage [2] project=3 (CTIP Synthetic) → `/ctip-data/datasets/ctip_synthetic`
+- Storage [3] project=4 (Cystolith Cannabis) → `/ctip-data/datasets/cystolith_cannabis`
+- Required for LS 1.23 `/data/local-files/` permission check
+
+**Symlink → Hardlink conversion (ctip_combined):**
+- 470 symlinks converted to hardlinks (Docker cannot follow symlinks outside mount root)
+- `ctip_combined/images/` and `ctip_combined/labels/` now fully dereferenceable
+
+### PROJECTS CREATED
+
+| ID | Name | Tasks | Pre-Annotations |
+|----|------|-------|-----------------|
+| 2  | CTIP Combined | 270 | 270 |
+| 3  | CTIP Synthetic | 200 | 200 |
+| 4  | Cystolith Cannabis (Real) | 70 | 70 |
+
+### ACCESS
+- URL: http://<LAN-IP>:3005 (direct) or http://localhost:3005
+- API Key: in `.env` → `LABEL_STUDIO_API_KEY`
+- PAT: in `.env` → `LABEL_STUDIO_PAT`
+
+---
+
+## 2026-05-28 — VLM Provider Switcher UI + Port-Conflict Dialog + test_containers_api + TDB-022 fix
+
+### WHAT WAS IMPLEMENTED
+
+**VLM Provider Switcher UI (`frontend/src/app/processes/page.tsx`):**
+- New `"vlm"` tab in Processes page tab bar
+- `VLMProvidersPanel`: fetches `GET /vlm/providers` + `GET /vlm/providers/active`
+  - Local providers section (purple header) + remote API providers section (blue header)
+  - Free-tier banner highlighting Groq/Google (no CC needed)
+- `ProviderCard`: per-provider card with:
+  - Status dot (green=available, amber=key missing, grey=offline)
+  - `TierBadge`: free/freemium/paid/local with color coding
+  - Active badge + green border when selected
+  - VRAM, cost-per-1k-tokens, RPM, free_tier_note shown inline
+  - Multi-model selector (dropdown when >1 model available)
+  - Activate button → `POST /vlm/providers/active` (with model override)
+  - API key form (collapsible via Key button): password input + eye toggle + save → `POST /vlm/providers/{id}/configure` (persists to .env)
+  - External link to signup URL
+- TypeScript: 0 errors
+
+**Port-conflict dialog (`frontend/src/app/processes/page.tsx`):**
+- `TaskStatus` extended to include `"port_conflict"`
+- `PortConflictInfo` model, `BgTaskStatus.port_conflict` field
+- `pollTask()` detects `status === "port_conflict"` → stops poll → opens modal
+- Orange warning modal: shows conflicting port, env_var, service name
+- User types new port → `PATCH /containers/compose/ports` → retry reinstall
+- Orange "⚠ Port conflict — fix" badge in task panel
+
+**`backend/api/v1/containers.py` — Port management:**
+- `_PORT_REGISTRY`: maps service names → (env_var, default, label, derived_vars)
+- `GET /compose/ports`: lists all 6 service ports with current values from .env
+- `PATCH /compose/ports`: validates range (1024–65535), updates .env + derived vars (e.g. MLFLOW_TRACKING_URI)
+- `_detect_port_conflict()`: regex against docker output
+- `_run_reinstall_bg()` uses `--ignore-buildable` to skip locally-built images
+
+**`backend/utils/env_file.py` (NEW):**
+- `read_env_file()`, `write_env_key()`, `write_env_keys()` — shared between containers.py and vlm_providers.py
+- Preserves comments, ordering, all unrelated keys
+
+**TDB-022 fixed (`backend/api/v1/vlm_providers.py`):**
+- `POST /vlm/providers/active` now persists `ACTIVE_VLM_PROVIDER` + `ACTIVE_VLM_MODEL` to .env
+- `POST /vlm/providers/{id}/configure` persists API key to .env
+
+**`tests/unit/test_containers_api.py` (NEW — 47 tests):**
+- `TestReadEnvFile`, `TestWriteEnvKey`, `TestDetectPortConflict`
+- `TestListContainers`, `TestContainerLifecycle`, `TestContainerLogs`
+- `TestComposeConfig`, `TestComposeUpDown`, `TestBackgroundTasks`
+- `TestPortEndpoints`, `TestPerContainerPull`
+
+### WHY
+- Users switching VLM providers needed a UI (was API-only, no frontend)
+- Port conflicts during reinstall blocked setup silently (now surfaced as dialog)
+- .env persistence for provider selection survived restarts (TDB-022)
+- test_containers_api closes the gap in endpoint coverage
+
+### TEST COUNT
+**Total: 1027 passing, 6 skipped, 0 failing**
+
+---
+
+## 2026-05-28 — Remote VLM Providers + Remote Compute + Docker Fix + Tests
+
+### WHAT WAS IMPLEMENTED
+
+**Docker build chain fixed (6 iterations):**
+- `docker/dev/Dockerfile.dev`: base image → `nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04`
+- `docker/dev/create_pkg_stubs.py`: self-maintaining script that creates empty `__init__.py` stubs for all packages in pyproject.toml; fixes hatchling build-wheel failures
+- Pre-installs torch cu128 before main `uv pip install` to prevent cu130 pull
+- flash-attn made optional (soft-fail `|| echo`)
+- SAM2 installed via git URL (not on PyPI)
+- Build succeeds: `trichome-backend:dev` 38.2 GB, CUDA 12.8, torch 2.11.0+cu128
+
+**Remote VLM provider system (`vlm_labeling/providers/`):**
+- `base.py`: `VLMProvider` ABC, `VLMProviderInfo`, `VLMResponse`, `ProviderCapabilities`, `image_to_base64()`, `image_to_pil()`
+- `remote/openai_provider.py`: GPT-4o/4o-mini, pay-per-token
+- `remote/anthropic_provider.py`: Claude 3.5 Haiku/Sonnet, markdown-fence stripping
+- `remote/google_provider.py`: Gemini 1.5 Flash, **FREE tier** (15 RPM, 1500 RPD)
+- `remote/together_provider.py`: Llama-3.2-Vision, cheapest paid option
+- `remote/groq_provider.py`: Llama-3.2-Vision, **FREE tier** (7k tokens/min, 14.4k RPD)
+- `remote/hf_provider.py`: HuggingFace Inference API, anonymous access supported
+- `local/moondream_provider.py`: wraps existing `MoondreamLabeler`
+- `local/qwen_provider.py`: wraps existing `QwenVLLabeler`
+- `provider_registry.py`: `ProviderRegistry` + `get_active_provider()` + `get_registry()` singleton
+
+**Remote compute backends (`services/remote_compute/`):**
+- `base.py`: `RemoteComputeBackend` ABC, `GpuTier`, `RemoteTaskResult`, `ComputeBackendInfo`
+- `modal_backend.py`: Modal serverless GPU ($30/month free credit, ~27h A10G)
+- `replicate_backend.py`: Replicate pay-per-prediction (SAM2, VLM, YOLO)
+- `registry.py`: `list_backends()`, `get_compute_backend()` factory
+
+**API endpoints:**
+- `backend/api/v1/vlm_providers.py`: `GET /vlm/providers`, `GET /vlm/providers/active`, `POST /vlm/providers/active`, `POST /vlm/providers/test`, `GET /vlm/providers/{id}/models`, `POST /vlm/providers/{id}/configure`
+- `backend/api/v1/remote_compute.py`: `GET /remote-compute/backends`, `POST /remote-compute/backends/test`, `POST /remote-compute/infer`, `POST /remote-compute/sam2`
+
+**Bug fixes:**
+- All 6 provider files: removed bogus `SchemaEnforcer()` instantiation (missing required `schema` arg) and `enforce_maturity()` call (method doesn't exist). Schema validation is pipeline-level, not provider-level.
+- `openai_provider.py`: fixed `PROMPT_REGISTRY.get(...).get("prompt")` → `_get_user_prompt()` helper that reads `user_prompt_template` from `PromptTemplate` objects. Fixed key `"image_quality_screen"` → `"image_quality"`.
+- `hf_provider.py`: removed mandatory API key requirement; anonymous access is supported.
+
+**Tests (`tests/unit/test_vlm_providers.py`):**
+- 56 tests covering: `VLMResponse`, `VLMProviderInfo`, `ProviderCapabilities`, `image_to_base64`, `image_to_pil`, all 6 remote provider classes (constructor validation, mock API calls, error handling, markdown stripping, JSON extraction fallback), `ProviderRegistry` (list/get/configure/singleton), `RemoteComputeRegistry` (list/get/availability/error paths, training stubs)
+- All 56 pass; 924 existing tests unaffected
+
+### WHY
+- Cross-platform Docker build required hatchling-compatible stub pattern
+- Remote VLMs bypass 8GB VRAM constraint for large model inference
+- Free tiers (Groq, Google) enable zero-cost development and testing
+- Modal serverless enables outsourcing YOLO training that exceeds local VRAM
+
+### WHAT STILL REMAINS
+- Frontend provider selector UI (settings page)
+- Persist active provider to .env (currently in-memory env var only)
+- Modal training submission (requires dataset upload to Modal Volumes — documented placeholder)
+- `tests/unit/test_containers_api.py` (pending from earlier backlog)
+
+---
+
 ## 2026-05-27 — OS-Style Setup Wizard + Backend Config API + Public README
 
 ### WHAT WAS IMPLEMENTED
@@ -1204,9 +1530,9 @@ New UI elements:
 **`DATA_ROOT="/mnt/data/trichome"`** → `"./data"` in `.env`
 - `/mnt/data` is not mounted → `PermissionError` on `Settings.ensure_dirs()` → backend crash
 
-**uvicorn working directory** — must be started from `cd /home/ottcouture/trichome-analysis`
+**uvicorn working directory** — must be started from `cd /path/to/trichome-analysis`
 - `.env` is loaded with `env_file=".env"` (relative path) — resolves from CWD at startup
-- Fixed by using explicit `cd /home/ottcouture/trichome-analysis` before `sg docker -c ...`
+- Fixed by using explicit `cd /path/to/trichome-analysis` before `sg docker -c ...`
 
 ### WHAT REMAINS
 - Persistent background task store (tasks lost on backend restart — in-memory only)
@@ -1259,3 +1585,59 @@ Files added:
 
 ### WHAT REMAINS
 - Push to GitHub (needs new PAT — old one was auto-revoked after force-push)
+
+## 2026-05-28 — Model Test Builder (frontend + backend)
+
+### Backend (already complete from prior session)
+- `backend/api/v1/model_tests.py` — SQLModel `ModelTest` table, CRUD endpoints `/model-tests`
+- `backend/api/v1/inference.py` — `model_id` parameter in `/detect` for registry model lookup
+- `backend/database.py` — `ModelTest` table registered in `create_all_tables()`
+
+### Frontend
+- `frontend/src/app/model-tests/page.tsx` — React Flow canvas with 5 custom node types:
+  - `imageInput` — file upload zone, emits image data downstream
+  - `model` — registry model selector + conf/iou/tiled sliders; calls `/inference/detect`
+  - `filter` — confidence threshold + class whitelist filter
+  - `detectionOutput` — canvas overlay rendering bounding boxes with class colours
+  - `statsOutput` — per-class count + avg confidence bar chart
+- Left palette with drag-to-canvas node creation
+- Topological pipeline execution (Kahn's algorithm)
+- Save/load: graph JSON → `POST /model-tests` → UUID → `?test=<uuid>` URL param
+- Share button copies shareable URL to clipboard
+- Saved test list in sidebar with delete support
+- `frontend/src/components/layout/Sidebar.tsx` — added "Model Tests" nav entry (`TestTube2` icon)
+- `frontend/next.config.js` — added `transpilePackages: ['@xyflow/react', '@xyflow/system']`
+
+### Build
+- `next build` passes cleanly — 65.9 kB page bundle
+
+## 2026-05-28 — Page Consolidation + Interactive Guide
+
+### Page merges completed
+- `training/page.tsx` → tabbed: Runs | Experiments (`?tab=runs|experiments`)
+- `inference/page.tsx` → tabbed: Workbench | Pipeline Builder (`?tab=workbench|pipeline`)
+- `evaluation/page.tsx` (new) → tabbed: Calibration | Benchmarks (`?tab=calibration|benchmarks`)
+- `system/page.tsx` → tabbed: Status | Processes | Setup (`?tab=status|processes|setup`) [in progress]
+- `components/inference/ModelTestBuilder.tsx` → extracted React Flow builder component
+
+### Redirect stubs created
+- `experiments/page.tsx` → `/training?tab=experiments`
+- `model-tests/page.tsx` → `/inference?tab=pipeline`
+- `analytics/page.tsx` → `/evaluation?tab=calibration`
+- `benchmarks/page.tsx` → `/evaluation?tab=benchmarks`
+- `processes/page.tsx` → `/system?tab=processes` [pending]
+- `setup/page.tsx` → `/system?tab=setup` [pending]
+
+### Sidebar
+- Removed: Experiments, Model Tests, Calibration, Benchmarks
+- Added: Evaluation (FlaskConical), Guide (MapPin)
+- Sidebar count: 16 → 11 entries
+
+### Interactive Guide
+- `guide/page.tsx` — 7-step interactive workflow: Images → Dataset → Labeling → Training → Verification → Benchmarking → Pipeline Builder
+- Per-step: description, interactive checklist, tips/warnings/info blocks, "Go there" link button
+- Progress tracker with global completion state
+- `docs/github-wiki/Workflow-Guide.md` — static wiki version
+- `docs/github-wiki/_Sidebar.md` — added Workflow-Guide link
+- `docs/github-wiki/Home.md` — added guide mention
+- `docs/github-wiki/Architecture.md` — added page consolidation table

@@ -1,5 +1,5 @@
 /**
- * useTrainingStatus — Live training metrics via WebSocket.
+ * useTrainingStatus — Live training metrics + log lines via WebSocket.
  */
 
 'use client';
@@ -7,23 +7,30 @@
 import { useCallback } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { useTrainingStore } from '@/store/trainingStore';
-import type { WsTrainingMetrics } from '@/lib/types';
+import type { WsTrainingMetrics, WsTrainingLog, WsDatasetReady } from '@/lib/types';
 
-let trainingClientCounter = 0;
-const TRAINING_CLIENT_ID = `training-${++trainingClientCounter}`;
+const TRAINING_CLIENT_ID = 'training-log';
 
 export function useTrainingStatus() {
-  const { activeRunUuid, currentEpoch, totalEpochs, liveMetrics, bestMap50, addMetrics, setStatus } =
-    useTrainingStore();
+  const {
+    activeRunUuid, currentEpoch, totalEpochs, liveMetrics, bestMap50,
+    addMetrics, setStatus, addLogLine, setDatasetReady,
+  } = useTrainingStore();
 
   const handleMessage = useCallback(
     (data: unknown) => {
-      const msg = data as WsTrainingMetrics;
+      const msg = data as { type: string };
       if (msg.type === 'training_metrics') {
-        addMetrics(msg.epoch, msg.metrics);
+        const m = msg as WsTrainingMetrics;
+        addMetrics(m.epoch, m.metrics);
+      } else if (msg.type === 'training_log') {
+        const log = msg as WsTrainingLog;
+        addLogLine({ ts: log._ts ?? Date.now() / 1000, line: log.line, level: log.level, run_id: log.run_id });
+      } else if (msg.type === 'dataset_ready') {
+        setDatasetReady(msg as WsDatasetReady);
       }
     },
-    [addMetrics],
+    [addMetrics, addLogLine, setDatasetReady],
   );
 
   const { connected } = useWebSocket('/ws/training', TRAINING_CLIENT_ID, {

@@ -53,7 +53,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [gpu, video, compute, utility]
     # Default: wait for explicit train command
     entrypoint: ["tail", "-f", "/dev/null"]
 

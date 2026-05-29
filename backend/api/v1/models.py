@@ -54,6 +54,8 @@ class ModelResponse(BaseModel):
     is_downloaded: bool
     is_active: bool
     created_at: str | None
+    file_size_bytes: int | None = None
+    training_run_uuid: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -63,10 +65,18 @@ class ModelResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 def _to_response(m: RegisteredModel) -> ModelResponse:
+    import pathlib
     metrics = {}
     if m.metrics_json:
         try:
             metrics = json.loads(m.metrics_json)
+        except Exception:
+            pass
+
+    file_size_bytes = None
+    if m.file_path:
+        try:
+            file_size_bytes = pathlib.Path(m.file_path).stat().st_size
         except Exception:
             pass
 
@@ -81,9 +91,11 @@ def _to_response(m: RegisteredModel) -> ModelResponse:
         metrics=metrics,
         description=getattr(m, "description", None),
         source_url=getattr(m, "source_url", None),
-        is_downloaded=bool(m.file_path),
+        is_downloaded=bool(m.file_path and pathlib.Path(m.file_path).exists()),
         is_active=bool(getattr(m, "is_active", False)),
         created_at=str(m.created_at) if hasattr(m, "created_at") else None,
+        file_size_bytes=file_size_bytes,
+        training_run_uuid=getattr(m, "training_run_uuid", None),
     )
 
 
@@ -265,3 +277,66 @@ async def download_model(
         "job_uuid": job.job_uuid,
         "model_id": model_id,
     }
+
+
+@router.post("/backfill-from-runs", response_model=dict)
+def backfill_from_training_runs(
+    session: Session = Depends(get_session),
+) -> dict:
+    """
+    Scan all completed training runs and register any that are missing from
+    the model registry. Safe to call multiple times (idempotent).
+    """
+    import json as _json
+    import pathlib
+    from backend.models.experiment import Run
+
+    completed_runs = session.exec(
+        select(Run).where(Run.status == "completed")
+    ).all()
+
+    registered = 0
+    skipped = 0
+
+    for run in completed_runs:
+        if not run.best_model_path or not pathlib.Path(run.best_model_path).exists():
+            skipped += 1
+            continue
+
+        existing = session.exec(
+            select(RegisteredModel).where(
+                RegisteredModel.training_run_uuid == run.run_uuid
+            )
+        ).first()
+        if existing:
+            skipped += 1
+            continue
+
+        file_size_mb = pathlib.Path(run.best_model_path).stat().st_size / (1024 * 1024)
+        model_name = f"{run.model_variant} (mAP50={run.best_map50:.3f}, run {run.run_uuid[:8]})"
+        reg = RegisteredModel(
+            name=model_name,
+            model_type="detection",
+            framework="ultralytics",
+            variant=run.model_variant or "",
+            file_path=run.best_model_path,
+            file_size_mb=round(file_size_mb, 2),
+            metrics_json=_json.dumps({
+                "map50": run.best_map50,
+                "map50_95": run.best_map50_95,
+                "precision": run.best_precision,
+                "recall": run.best_recall,
+                "epochs": run.total_epochs,
+            }),
+            vram_required_gb=1.5 if "n" in (run.model_variant or "") else (
+                2.5 if "s" in (run.model_variant or "") else 4.0
+            ),
+            training_run_uuid=run.run_uuid,
+            is_active=True,
+            description=f"Auto-registered from completed training run {run.run_uuid[:8]}",
+        )
+        session.add(reg)
+        registered += 1
+
+    session.commit()
+    return {"registered": registered, "skipped": skipped}

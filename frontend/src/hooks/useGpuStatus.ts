@@ -4,13 +4,12 @@
 
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { useSystemStore } from '@/store/systemStore';
 import type { WsGpuStats, GpuStats } from '@/lib/types';
 
-let clientIdCounter = 0;
-const GPU_CLIENT_ID = `gpu-monitor-${++clientIdCounter}`;
+const GPU_CLIENT_ID = 'gpu-monitor';
 
 export function useGpuStatus() {
   const { gpu, cpuRam, wsConnected, setGpuStats, setCpuRam, setWsConnected } =

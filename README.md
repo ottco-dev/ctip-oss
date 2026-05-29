@@ -888,7 +888,7 @@ trichome report --input results.json --format pdf --output report.pdf
 
 ```env
 # Paths
-TRICHOME_ROOT=/home/ottcouture/trichome-analysis
+TRICHOME_ROOT=/path/to/trichome-analysis
 DATA_ROOT=/mnt/data/trichome
 MODELS_ROOT=/mnt/models/trichome
 
@@ -1810,7 +1810,7 @@ trichome report   --input ergebnisse.json --format pdf --output bericht.pdf
 
 ```env
 # Pfade
-TRICHOME_ROOT=/home/ottcouture/trichome-analysis
+TRICHOME_ROOT=/path/to/trichome-analysis
 DATA_ROOT=/mnt/data/trichome
 MODELS_ROOT=/mnt/models/trichome
 
@@ -2730,7 +2730,7 @@ trichome report   --input resultados.json --format pdf --output informe.pdf
 
 ```env
 # Rutas
-TRICHOME_ROOT=/home/ottcouture/trichome-analysis
+TRICHOME_ROOT=/path/to/trichome-analysis
 DATA_ROOT=/mnt/data/trichome
 MODELS_ROOT=/mnt/models/trichome
 

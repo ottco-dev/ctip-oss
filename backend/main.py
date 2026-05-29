@@ -63,6 +63,41 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     create_all_tables()
     logger.info("Database tables initialized")
 
+    # Restore GPU task history from DB (marks any in-flight jobs as failed)
+    try:
+        from backend.database import get_session
+        from backend.tasks.task_router import task_router
+        with next(get_session()) as db:
+            restored = await task_router.restore_from_db(db)
+            logger.info("TaskRouter: job history restored from DB", count=restored)
+    except Exception as exc:
+        logger.warning("TaskRouter DB restore failed (non-fatal)", error=str(exc))
+
+    # Initialize persistent background task store (SQLite)
+    try:
+        from backend.api.v1.containers import _TASK_DB
+        from backend.tasks.task_store import get_task_store
+        task_store = get_task_store(_TASK_DB)
+        await task_store.initialize()
+        logger.info("Background task store initialized", db=str(_TASK_DB))
+
+        # Periodic expiry loop — runs every 6h
+        async def task_expiry_loop() -> None:
+            import asyncio as _aio
+            while True:
+                await _aio.sleep(6 * 3600)
+                try:
+                    n = await task_store.expire()
+                    if n:
+                        logger.info("Task store: expired old tasks", count=n)
+                except Exception as exc:
+                    logger.warning("Task expiry failed", error=str(exc))
+
+        expiry_task = asyncio.create_task(task_expiry_loop())
+        app.state.expiry_task = expiry_task
+    except Exception as exc:
+        logger.warning("Task store initialization failed (non-fatal)", error=str(exc))
+
     # Start GPU stats broadcaster (background task)
     import asyncio
     from backend.websocket.manager import ws_manager
@@ -122,6 +157,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
     # ── SHUTDOWN ─────────────────────────────────────────────────
+    if hasattr(app.state, "expiry_task"):
+        app.state.expiry_task.cancel()
     if hasattr(app.state, "gpu_task"):
         app.state.gpu_task.cancel()
     if hasattr(app.state, "heartbeat_task"):

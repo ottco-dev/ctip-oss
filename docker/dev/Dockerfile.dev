@@ -1,8 +1,12 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # docker/dev/Dockerfile.dev
 #
-# Full development image: CUDA 12.1 + PyTorch + all project deps + dev tools.
+# Full development image: CUDA 12.8 + PyTorch (cu128) + all project deps + dev tools.
 # Includes hot-reload, Jupyter, profilers, and test runners.
+#
+# PyTorch wheels: cu128 (CUDA 12.8) from download.pytorch.org/whl/cu128
+# flash-attn: optional — installed if a prebuilt wheel exists, skipped otherwise.
+# SAM2: installed from Meta's GitHub (not on PyPI).
 #
 # Build:
 #   docker build -f docker/dev/Dockerfile.dev -t trichome-dev .
@@ -12,7 +16,7 @@
 #     -v $(pwd):/workspace trichome-dev
 # ──────────────────────────────────────────────────────────────────────────────
 
-FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu22.04
 
 ARG PYTHON_VERSION=3.12
 ARG DEBIAN_FRONTEND=noninteractive
@@ -39,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    ninja-build \
     nodejs \
     npm \
     python${PYTHON_VERSION} \
@@ -58,11 +63,36 @@ RUN ln -s /usr/bin/python${PYTHON_VERSION} /usr/local/bin/python3 \
 # ── Workspace ─────────────────────────────────────────────────────
 WORKDIR /workspace
 
-# Cache dependency layer separately
-COPY pyproject.toml .
-RUN uv pip install --system ".[all,dev]"
+# ── PyTorch (CUDA 12.8 wheels) — must be first ───────────────────
+# Pre-install with the cu128 index so uv never pulls cu130+ wheels
+# which would mismatch the CUDA 12.8 toolkit used for extension compilation.
+RUN uv pip install --system \
+    --index-url https://download.pytorch.org/whl/cu128 \
+    "torch>=2.3.0" "torchvision>=0.18.0" "torchaudio>=2.3.0"
 
-# Install extra dev tools not in pyproject.toml
+# ── Dependency caching layer ──────────────────────────────────────
+# hatchling requires LICENSE + README.md alongside pyproject.toml.
+# create_pkg_stubs.py creates empty __init__.py stubs for all packages listed
+# under [tool.hatch.build.targets.wheel.packages] so hatchling can build a
+# valid wheel at this stage. COPY . . below overwrites them with real source.
+COPY pyproject.toml LICENSE README.md ./
+COPY docker/dev/create_pkg_stubs.py ./create_pkg_stubs.py
+RUN python3 create_pkg_stubs.py \
+    && uv pip install --system ".[all,dev]" \
+    && rm create_pkg_stubs.py
+
+# ── Non-PyPI / CUDA-compiled extras ──────────────────────────────
+# SAM2 (segment-anything-2) — Meta GitHub, not on PyPI
+RUN uv pip install --system \
+    git+https://github.com/facebookresearch/segment-anything-2.git
+
+# flash-attn — optional kernel optimisation for VLM attention layers.
+# Requires matching CUDA toolkit + prebuilt wheel for this cu/torch combo.
+# Soft-fail: models use standard attention if flash-attn is unavailable.
+RUN uv pip install --system flash-attn --no-build-isolation \
+    || echo "WARNING: flash-attn not available for this CUDA/torch combination (optional, skipping)"
+
+# ── Dev tools (not in pyproject.toml) ───────────────────────────
 RUN uv pip install --system \
     ipython \
     jupyter \
@@ -77,7 +107,7 @@ RUN uv pip install --system \
 # ── Project source ────────────────────────────────────────────────
 COPY . .
 
-# ── CLI entry point ───────────────────────────────────────────────
+# ── CLI entry point (editable install over real source tree) ──────
 RUN uv pip install --system -e ".[all,dev]"
 
 # ── Environment ───────────────────────────────────────────────────

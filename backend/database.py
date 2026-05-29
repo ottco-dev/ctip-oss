@@ -54,6 +54,7 @@ def create_all_tables() -> None:
     """
     # Import all models to register with SQLModel metadata
     from backend.models import experiment, dataset, job, model_registry, session  # noqa: F401
+    from backend.api.v1 import model_tests  # noqa: F401 — registers ModelTest table
     SQLModel.metadata.create_all(engine)
 
 

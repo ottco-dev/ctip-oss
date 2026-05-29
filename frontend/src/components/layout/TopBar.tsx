@@ -3,6 +3,7 @@
 import { Wifi, WifiOff, Thermometer, Zap } from 'lucide-react';
 import { cn, formatVram } from '@/lib/utils';
 import { useGpuStatus } from '@/hooks/useGpuStatus';
+import { useUiStore } from '@/store/uiStore';
 
 interface TopBarProps {
   title?: string;
@@ -13,11 +14,14 @@ export function TopBar({ title }: TopBarProps) {
     useGpuStatus();
 
   return (
-    <header className="flex items-center justify-between h-14 px-4 bg-surface border-b border-border shrink-0">
-      {/* Page title */}
+    <header
+      className="flex items-center justify-between h-14 px-4 shrink-0"
+      style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}
+    >
+      {/* Page title / breadcrumb */}
       <div className="flex items-center gap-2">
         {title && (
-          <h1 className="text-sm font-semibold text-text-primary">{title}</h1>
+          <h1 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</h1>
         )}
       </div>
 

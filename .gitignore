@@ -90,6 +90,13 @@ docker/secrets/
 .ipynb_checkpoints/
 *.ipynb
 
+# Local nginx (generated from nginx-local/nginx.conf.template — contains absolute paths)
+nginx-local/nginx.conf
+nginx-local/nginx.pid
+
+# Frontend local env (contains local URLs, not for version control)
+frontend/.env.local
+
 # Temp / cache
 tmp/
 temp/

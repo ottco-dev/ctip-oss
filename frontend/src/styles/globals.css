@@ -5,7 +5,9 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* ── Dark mode (default) ───────────────────────── */
+  :root,
+  [data-theme="dark"] {
     --background: #080b10;
     --surface: #0d1117;
     --panel: #161b22;
@@ -14,19 +16,39 @@
     --text-primary: #e6edf3;
     --text-secondary: #8b949e;
     --text-muted: #484f58;
-    --accent: #238636;
-    --accent-hover: #2ea043;
+    --accent: #4a7c45;
+    --accent-hover: #5a8c54;
+    --accent-subtle: rgba(74, 124, 69, 0.15);
+    --accent-text: #6db866;
+    color-scheme: dark;
+  }
+
+  /* ── Light mode ────────────────────────────────── */
+  [data-theme="light"] {
+    --background: #f5f8f4;
+    --surface: #ffffff;
+    --panel: #eef3ed;
+    --border: #cfdece;
+    --border-muted: #b8cdb6;
+    --text-primary: #1c2d1a;
+    --text-secondary: #4a6b47;
+    --text-muted: #7a9b77;
+    --accent: #4a7c45;
+    --accent-hover: #3d6b39;
+    --accent-subtle: rgba(74, 124, 69, 0.12);
+    --accent-text: #3d6b39;
+    color-scheme: light;
   }
 
   html {
     @apply antialiased;
-    color-scheme: dark;
   }
 
   body {
     background-color: var(--background);
     color: var(--text-primary);
     font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   * {
@@ -86,12 +108,12 @@
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium
            transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed;
-    background-color: #238636;
+    background-color: var(--accent);
     color: #ffffff;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background-color: #2ea043;
+    background-color: var(--accent-hover);
   }
 
   .btn-secondary {

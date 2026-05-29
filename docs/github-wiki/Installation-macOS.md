@@ -80,7 +80,7 @@ Homebrew nginx runs as your user (not root):
 
 ```bash
 # Fix hardcoded paths in nginx config
-sed -i '' "s|/home/ottcouture/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
+sed -i '' "s|/path/to/trichome-analysis|$HOME/ctip-oss|g" nginx-local/nginx.conf
 
 # Start nginx
 nginx -c "$(pwd)/nginx-local/nginx.conf"

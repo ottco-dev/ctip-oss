@@ -118,14 +118,26 @@ vlm = [
     "sentencepiece>=0.2.0",
     "einops>=0.8.0",
     "timm>=1.0.0",
-    "flash-attn>=2.5.0",  # requires CUDA
+    # flash-attn is NOT on PyPI as a stable wheel for all CUDA/PyTorch combos.
+    # Installed separately in Dockerfile after PyTorch:
+    #   pip install flash-attn --no-build-isolation
 ]
 sam = [
     "segment-anything>=1.0",
-    "segment-anything-2>=0.1.0",
+    # segment-anything-2 (SAM2) is NOT on PyPI — installed via git in Dockerfile:
+    #   pip install git+https://github.com/facebookresearch/segment-anything-2.git
 ]
 grounding_dino = [
     "groundingdino-py>=0.1.0",
+]
+# ── Remote VLM provider SDKs ──────────────────────────────────────────────────
+# All optional — install only what you need based on which provider you use.
+# Free options: groq, google (gemini-1.5-flash), huggingface
+remote_vlm = [
+    "openai>=1.35.0",                    # OpenAI GPT-4o / Together AI (same SDK)
+    "anthropic>=0.28.0",                 # Anthropic Claude
+    "google-generativeai>=0.7.0",        # Google Gemini
+    "groq>=0.9.0",                       # Groq (Llama, Mixtral — free tier)
 ]
 annotation = [
     "cvat-sdk>=2.14.0",
@@ -147,7 +159,7 @@ dev = [
     "nbconvert>=7.16.0",
 ]
 all = [
-    "trichome-analysis[vlm,sam,grounding_dino,annotation,dev]",
+    "trichome-analysis[vlm,sam,grounding_dino,annotation,remote_vlm,dev]",
 ]
 
 [project.scripts]

@@ -34,6 +34,8 @@ import numpy as np
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from backend.config import get_settings
+from backend.database import get_session
+from sqlmodel import Session
 
 router = APIRouter(prefix="/inference", tags=["inference"])
 
@@ -121,6 +123,7 @@ def _run_detection(
     iou_threshold: float,
     model_variant: str,
     use_tiled: bool,
+    model_path_override: str | None = None,
 ) -> tuple[list[DetectionBox], float]:
     """
     Core detection logic — no GPU semaphore here.
@@ -138,8 +141,9 @@ def _run_detection(
         from detection.domain.detector import DetectionConfig
         from detection.infrastructure.yolo_backend import YOLODetector
 
+        resolved_path = model_path_override or f"{model_variant}.pt"
         config = DetectionConfig(
-            model_path=f"{model_variant}.pt",
+            model_path=resolved_path,
             conf_threshold=conf_threshold,
             iou_threshold=iou_threshold,
         )
@@ -182,8 +186,10 @@ async def detect_image(
     conf_threshold: Annotated[float, Form()] = 0.35,
     iou_threshold: Annotated[float, Form()] = 0.45,
     model_variant: Annotated[str, Form()] = "yolo11s",
+    model_id: Annotated[int | None, Form()] = None,
     use_tiled: Annotated[bool, Form()] = False,
     _slot: None = Depends(_gpu_slot),
+    db: Session = Depends(get_session),
 ) -> DetectionResponse:
     """
     Run trichome detection on a single uploaded image.
@@ -199,14 +205,26 @@ async def detect_image(
     image = await _read_image(file)
     h, w = image.shape[:2]
 
-    boxes, elapsed_ms = _run_detection(image, conf_threshold, iou_threshold, model_variant, use_tiled)
+    # Resolve registered model path if model_id supplied
+    model_path_override: str | None = None
+    display_variant = model_variant
+    if model_id is not None:
+        from backend.models.model_registry import RegisteredModel
+        reg = db.get(RegisteredModel, model_id)
+        if reg and reg.file_path:
+            model_path_override = reg.file_path
+            display_variant = reg.variant or model_variant
+
+    boxes, elapsed_ms = _run_detection(
+        image, conf_threshold, iou_threshold, display_variant, use_tiled, model_path_override
+    )
 
     return DetectionResponse(
         detections=boxes,
         inference_time_ms=round(elapsed_ms, 2),
         image_width=w,
         image_height=h,
-        model_variant=model_variant,
+        model_variant=display_variant,
         conf_threshold=conf_threshold,
         num_detections=len(boxes),
     )

@@ -60,9 +60,15 @@ class WebSocketManager:
         await websocket.accept()
         async with self._lock:
             if client_id in self._connections:
-                # Update topics for existing connection
-                _, topics = self._connections[client_id]
-                topics.add(topic)
+                # Replace stale entry — old websocket may be closed after a
+                # backend reload/reconnect cycle; keep the fresh socket.
+                old_ws, old_topics = self._connections[client_id]
+                topics = old_topics | {topic}
+                self._connections[client_id] = (websocket, topics)
+                try:
+                    await old_ws.close(1000)
+                except Exception:
+                    pass
             else:
                 self._connections[client_id] = (websocket, {topic})
 
@@ -81,9 +87,19 @@ class WebSocketManager:
             "timestamp": time.time(),
         })
 
-    async def disconnect(self, client_id: str) -> None:
-        """Remove a connection."""
+    async def disconnect(self, client_id: str, websocket: WebSocket | None = None) -> None:
+        """
+        Remove a connection.
+
+        If `websocket` is provided, only removes the entry when the stored
+        socket matches — this prevents a stale handler's cleanup from evicting
+        a newer connection registered under the same client_id.
+        """
         async with self._lock:
+            if websocket is not None:
+                conn = self._connections.get(client_id)
+                if conn is None or conn[0] is not websocket:
+                    return  # Already replaced by a newer connection
             self._connections.pop(client_id, None)
         logger.info("WebSocket disconnected", client_id=client_id)
 
@@ -220,6 +236,20 @@ class WebSocketManager:
             "progress": progress,
             "progress_pct": progress * 100,
             "message": message,
+        })
+
+    async def send_training_log(
+        self,
+        run_id: str,
+        line: str,
+        level: str = "info",
+    ) -> None:
+        """Convenience: broadcast a single training log line to /ws/training subscribers."""
+        await self.broadcast_to_topic("training", {
+            "type": "training_log",
+            "run_id": run_id,
+            "line": line,
+            "level": level,
         })
 
     async def send_gpu_stats(self, stats: dict[str, Any]) -> None:

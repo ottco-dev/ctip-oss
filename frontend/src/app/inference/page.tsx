@@ -1,23 +1,24 @@
 "use client";
 
 /**
- * Inference Workbench — single-image trichome detection with live overlays.
+ * Inference — tabbed page combining:
+ *   - Workbench: single-image trichome detection with live overlays
+ *   - Pipeline Builder: visual node-based pipeline editor (React Flow)
  *
- * - Drop or click to upload a JPG / PNG / TIFF microscopy image
- * - Configurable model variant (yolo11n/s/m/l) and confidence threshold
- * - POST /api/v1/inference/detect → DetectionResponse
- * - Bounding-box overlay rendered by the shared <ImageViewer> (zoom + pan built-in)
- * - Results panel: KPI cards, per-class breakdown, raw JSON toggle
+ * Tab state is persisted via ?tab=workbench|pipeline query param.
  */
 
-import React, { useCallback, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { Upload, Loader2, Cpu, AlertTriangle } from "lucide-react";
+import React, { useCallback, useState, Suspense } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Upload, Loader2, Cpu, AlertTriangle, Zap, Workflow } from "lucide-react";
 import { useDropzone } from "react-dropzone";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { ImageViewer } from "@/components/shared/ImageViewer";
 import type { AnnotationBox } from "@/components/shared/ImageViewer";
 import { cn, formatConfidence, getConfidenceColor } from "@/lib/utils";
+import { ModelTestBuilder } from "@/components/inference/ModelTestBuilder";
+import "@xyflow/react/dist/style.css";
 
 // ---------------------------------------------------------------------------
 // API types
@@ -250,21 +251,41 @@ function DropzonePlaceholder({
 }
 
 // ---------------------------------------------------------------------------
-// Main page
+// Workbench tab content
 // ---------------------------------------------------------------------------
 
-export default function InferencePage() {
+interface RegisteredModel {
+  id: number;
+  name: string;
+  variant: string;
+  file_path: string | null;
+  metrics: Record<string, number>;
+  is_active: boolean;
+}
+
+function WorkbenchTab() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [confThreshold, setConfThreshold] = useState(0.35);
   const [modelVariant, setModelVariant] = useState("yolo11s");
+  const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+
+  const { data: registeredModels = [] } = useQuery<RegisteredModel[]>({
+    queryKey: ["registered-models"],
+    queryFn: () => api.get("/models").then((r) => r.data),
+    staleTime: 30_000,
+  });
 
   const detectMutation = useMutation<DetectionResponse, Error, File>({
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("conf_threshold", String(confThreshold));
-      formData.append("model_variant", modelVariant);
+      if (selectedModelId) {
+        formData.append("model_id", String(selectedModelId));
+      } else {
+        formData.append("model_variant", modelVariant);
+      }
       const response = await api.post("/inference/detect", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -313,18 +334,36 @@ export default function InferencePage() {
 
           <div className="flex-1" />
 
-          {/* Model selector */}
+          {/* Model selector — registered models first, fallback to hardcoded variants */}
           <select
-            value={modelVariant}
-            onChange={(e) => setModelVariant(e.target.value)}
-            className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:border-blue-500/60"
+            value={selectedModelId !== null ? `id:${selectedModelId}` : modelVariant}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val.startsWith("id:")) {
+                setSelectedModelId(Number(val.slice(3)));
+                setModelVariant("");
+              } else {
+                setSelectedModelId(null);
+                setModelVariant(val);
+              }
+            }}
+            className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:border-blue-500/60 max-w-xs"
             style={{ background: "#0d1117", border: "1px solid #21262d", color: "#8b949e" }}
           >
-            {["yolo11n", "yolo11s", "yolo11m", "yolo11l"].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
+            {registeredModels.length > 0 && (
+              <optgroup label="Trained models">
+                {registeredModels.map((m) => (
+                  <option key={m.id} value={`id:${m.id}`}>
+                    {m.name} {m.metrics.map50 ? `(mAP50 ${(m.metrics.map50 * 100).toFixed(1)}%)` : ""}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            <optgroup label="Base variants">
+              {["yolo11n", "yolo11s", "yolo11m", "yolo11l"].map((v) => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </optgroup>
           </select>
 
           {/* Confidence threshold */}
@@ -480,5 +519,92 @@ export default function InferencePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tab definitions
+// ---------------------------------------------------------------------------
+
+const TABS = [
+  { id: "workbench", label: "Workbench", icon: Zap },
+  { id: "pipeline", label: "Pipeline Builder", icon: Workflow },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
+// ---------------------------------------------------------------------------
+// Inner component that reads search params (must be inside Suspense)
+// ---------------------------------------------------------------------------
+
+function InferencePageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const rawTab = searchParams.get("tab");
+  const activeTab: TabId =
+    rawTab === "pipeline" ? "pipeline" : "workbench";
+
+  function switchTab(id: TabId) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", id);
+    // Strip pipeline-specific params when switching away
+    if (id !== "pipeline") params.delete("test");
+    router.replace(`/inference?${params.toString()}`);
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* ── Tab bar ── */}
+      <div
+        className="flex items-center gap-1 px-4 py-0 flex-shrink-0"
+        style={{ borderBottom: "1px solid #21262d", background: "#0d1117" }}
+      >
+        {TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => switchTab(id)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
+              activeTab === id
+                ? "border-blue-500 text-white"
+                : "border-transparent text-[#484f58] hover:text-[#8b949e]",
+            )}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Tab content ── */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {activeTab === "workbench" && <WorkbenchTab />}
+        {activeTab === "pipeline" && (
+          <div className="h-full w-full overflow-hidden">
+            <ModelTestBuilder />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page export — wraps inner component in Suspense for useSearchParams
+// ---------------------------------------------------------------------------
+
+export default function InferencePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center" style={{ color: "#484f58" }}>
+          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+          <span className="text-sm">Loading…</span>
+        </div>
+      }
+    >
+      <InferencePageInner />
+    </Suspense>
   );
 }

@@ -174,7 +174,7 @@ Always run Docker commands from the `docker/` subdirectory, or use absolute path
 ```bash
 cd docker && docker compose up -d
 # OR
-docker compose -f /home/ottcouture/trichome-analysis/docker/docker-compose.yml up -d
+docker compose -f /path/to/trichome-analysis/docker/docker-compose.yml up -d
 ```
 
 ---

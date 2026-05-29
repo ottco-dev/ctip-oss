@@ -1,9 +1,17 @@
-# Local nginx config for Trichome Analysis Platform
-# Mirrors docker/nginx/nginx.conf but targets localhost services instead of container hostnames
+# Local nginx config for CTIP — mirrors docker/nginx/nginx.conf but targets localhost services.
+#
+# DO NOT commit nginx.conf directly — it contains an absolute path.
+# Generate nginx.conf from this template:
+#
+#   export CTIP_ROOT=$(pwd)          # run from the repo root
+#   sed "s|__CTIP_ROOT__|$CTIP_ROOT|g" nginx-local/nginx.conf.template > nginx-local/nginx.conf
+#
+# Or on macOS/BSD:
+#   sed -i '' "s|__CTIP_ROOT__|$CTIP_ROOT|g" nginx-local/nginx.conf.template > nginx-local/nginx.conf
 
 worker_processes auto;
-error_log /home/ottcouture/trichome-analysis/logs/nginx-error.log warn;
-pid /home/ottcouture/trichome-analysis/nginx-local/nginx.pid;
+error_log __CTIP_ROOT__/logs/nginx-error.log warn;
+pid __CTIP_ROOT__/nginx-local/nginx.pid;
 
 events {
     worker_connections 1024;
@@ -18,7 +26,7 @@ http {
     log_format main '$remote_addr - $remote_user [$time_local] "$request" '
                     '$status $body_bytes_sent "$http_referer" '
                     '"$http_user_agent" rt=$request_time';
-    access_log /home/ottcouture/trichome-analysis/logs/nginx-access.log main;
+    access_log __CTIP_ROOT__/logs/nginx-access.log main;
 
     sendfile           on;
     tcp_nopush         on;
@@ -47,7 +55,7 @@ http {
 
         location = /health {
             access_log off;
-            return 200 '{"status":"ok","service":"trichome-nginx-local"}';
+            return 200 '{"status":"ok","service":"ctip-nginx-local"}';
             add_header Content-Type application/json;
         }
 
@@ -73,6 +81,30 @@ http {
             proxy_set_header X-Real-IP  $remote_addr;
             proxy_read_timeout 3600s;
             proxy_send_timeout 3600s;
+        }
+
+        # ── Label Studio annotation platform ──────────────────────────────────
+        location /annotation {
+            return 301 http://$host:3005/;
+        }
+
+        # Next.js dev-mode HMR websocket + page proxy
+        location /_next/webpack-hmr {
+            proxy_pass http://127.0.0.1:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade    $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+            proxy_set_header Host       $host;
+            proxy_read_timeout 3600s;
+        }
+
+        # Next.js JS/CSS chunks — never cache in dev
+        location /_next/static/ {
+            proxy_pass http://127.0.0.1:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            add_header Cache-Control "no-store, no-cache, must-revalidate" always;
+            add_header Pragma "no-cache" always;
         }
 
         location / {

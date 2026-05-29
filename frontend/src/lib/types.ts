@@ -243,4 +243,70 @@ export interface WsGpuStats {
   timestamp: number;
 }
 
-export type WsEvent = WsTrainingMetrics | WsJobUpdate | WsGpuStats;
+export type LogLevel = 'info' | 'success' | 'warning' | 'error' | 'dim' | 'header';
+
+export interface WsTrainingLog {
+  type: 'training_log';
+  run_id: string;
+  line: string;
+  level: LogLevel;
+  _ts: number;
+}
+
+export interface WsDatasetReady {
+  type: 'dataset_ready';
+  prepare_id: string;
+  success: boolean;
+  error?: string;
+  dataset_yaml?: string;
+  dataset_dir?: string;
+  total_tasks?: number;
+  exported_tasks?: number;
+  skipped_tasks?: number;
+  train_count?: number;
+  val_count?: number;
+  test_count?: number;
+  classes?: string[];
+  warnings?: string[];
+  _ts: number;
+}
+
+export type WsEvent = WsTrainingMetrics | WsJobUpdate | WsGpuStats | WsTrainingLog | WsDatasetReady;
+
+// ── LABEL STUDIO DATASET INTEGRATION ────────────────────────────
+
+export interface LSDataset {
+  project_id: number;
+  title: string;
+  task_count: number;
+  annotation_count: number;
+  prediction_count: number;
+  description: string;
+}
+
+export interface PrepareDatasetRequest {
+  project_id: number;
+  use_predictions: boolean;
+  train_ratio: number;
+  val_ratio: number;
+  seed: number;
+}
+
+export interface PrepareDatasetResponse {
+  dataset_yaml: string;
+  dataset_dir: string;
+  total_tasks: number;
+  exported_tasks: number;
+  skipped_tasks: number;
+  train_count: number;
+  val_count: number;
+  test_count: number;
+  classes: string[];
+  warnings: string[];
+}
+
+export interface PrepareDatasetStartedResponse {
+  prepare_id: string;
+  status: string;
+  message: string;
+}

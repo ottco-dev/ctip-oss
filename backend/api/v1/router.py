@@ -15,6 +15,9 @@ from backend.api.v1 import (
     experiments,  # TDB-008: extracted from inline block
     setup,
     containers,
+    model_tests,
+    settings,
+    tensorrt,
 )
 
 router = APIRouter()
@@ -29,8 +32,11 @@ router.include_router(video.router)
 router.include_router(reports.router)
 router.include_router(models.router)
 router.include_router(inference.router)
+router.include_router(model_tests.router)
 router.include_router(labelstudio.router)
 router.include_router(experiments.router)
+router.include_router(settings.router)
+router.include_router(tensorrt.router)
 
 # ── Optional sub-service routers ───────────────────────────────────
 
@@ -58,6 +64,18 @@ except Exception:
 try:
     from vlm_labeling.api.router import router as vlm_router
     router.include_router(vlm_router)
+except Exception:
+    pass
+
+try:
+    from backend.api.v1.vlm_providers import router as vlm_providers_router
+    router.include_router(vlm_providers_router)
+except Exception:
+    pass
+
+try:
+    from backend.api.v1.remote_compute import router as remote_compute_router
+    router.include_router(remote_compute_router)
 except Exception:
     pass
 

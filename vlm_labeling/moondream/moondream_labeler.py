@@ -2,8 +2,11 @@
 vlm_labeling.moondream.moondream_labeler — Moondream-2B VLM backend.
 
 MODEL: vikhyatk/moondream2 (2B parameters)
-Default quantization: 4-bit (bitsandbytes) → ~2.1 GB VRAM
-Full precision (FP16): ~4.2 GB VRAM
+Default quantization: none (FP16) → ~4.2 GB VRAM
+
+NOTE: bitsandbytes 4-bit/8-bit quantization is NOT supported for moondream2.
+The model uses custom functional linear calls (F.linear(x, w.weight, w.bias))
+that bypass bitsandbytes module interception, resulting in Half×Byte dtype errors.
 
 CAPABILITY PROFILE:
 - Best at: binary/multi-class classification, captioning, simple Q&A
@@ -46,6 +49,15 @@ from vlm_labeling.prompts.trichome_prompts import (
 logger = get_logger(__name__)
 
 
+def _default_device() -> str:
+    try:
+        from backend.utils.compute import get_torch_device
+        return get_torch_device()
+    except ImportError:
+        import torch
+        return "cuda:0" if torch.cuda.is_available() else "cpu"
+
+
 @dataclass
 class MoondreamConfig:
     """Configuration for Moondream-2B VLM."""
@@ -56,15 +68,16 @@ class MoondreamConfig:
     revision: str = "2025-01-09"
     """Model revision for reproducibility."""
 
-    quantization: str = "4bit"
+    quantization: str = "none"
     """
     Quantization level:
-    - '4bit': ~2.1 GB VRAM, slight quality reduction
-    - '8bit': ~4.2 GB VRAM, near full quality
-    - 'none': FP16, ~4.2 GB VRAM
+    - 'none': FP16, ~4.2 GB VRAM (default — bitsandbytes incompatible with moondream2's
+      custom functional linear calls that access w.weight directly)
+    - '4bit': NOT supported for moondream2 (F.linear with Byte weight fails)
+    - '8bit': NOT supported for moondream2 (same issue)
     """
 
-    device: str = "cuda:0"
+    device: str = field(default_factory=lambda: _default_device())
     max_new_tokens: int = 512
     """Maximum tokens to generate per response."""
 
@@ -149,9 +162,9 @@ class MoondreamLabeler:
 
     MODEL_NAME = "moondream"
     VRAM_REQUIREMENT_GB = {
-        "4bit": 2.1,
-        "8bit": 4.2,
         "none": 4.2,
+        "4bit": 4.2,  # falls back to FP16 — bitsandbytes not supported
+        "8bit": 4.2,  # falls back to FP16 — bitsandbytes not supported
     }
 
     def __init__(self, config: MoondreamConfig | None = None) -> None:
@@ -199,6 +212,11 @@ class MoondreamLabeler:
             if self._config.cache_dir:
                 model_kwargs["cache_dir"] = self._config.cache_dir
 
+            device = self._config.device
+            if device.startswith("cuda") and not torch.cuda.is_available():
+                logger.warning("CUDA not available, falling back to CPU")
+                device = "cpu"
+
             if self._config.quantization == "4bit":
                 try:
                     from transformers import BitsAndBytesConfig
@@ -209,6 +227,7 @@ class MoondreamLabeler:
                         bnb_4bit_use_double_quant=True,
                     )
                     model_kwargs["quantization_config"] = bnb_config
+                    # bitsandbytes places the model on GPU automatically — no device_map needed
                 except ImportError:
                     logger.warning(
                         "bitsandbytes not available, falling back to FP16. "
@@ -221,6 +240,7 @@ class MoondreamLabeler:
                     from transformers import BitsAndBytesConfig
                     bnb_config = BitsAndBytesConfig(load_in_8bit=True)
                     model_kwargs["quantization_config"] = bnb_config
+                    # bitsandbytes handles device placement automatically
                 except ImportError:
                     logger.warning("bitsandbytes not available, falling back to FP16")
                     model_kwargs["torch_dtype"] = torch.float16
@@ -242,12 +262,8 @@ class MoondreamLabeler:
                 **model_kwargs,
             )
 
-            # Move to device (only if not using quantization, which handles device placement)
+            # Move to device only when not using quantization (quantization handles placement)
             if self._config.quantization == "none":
-                device = self._config.device
-                if device.startswith("cuda") and not torch.cuda.is_available():
-                    logger.warning("CUDA not available, falling back to CPU")
-                    device = "cpu"
                 self._model = self._model.to(device)
 
             self._model.eval()

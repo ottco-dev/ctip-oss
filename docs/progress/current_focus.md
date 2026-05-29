@@ -1,10 +1,86 @@
 # Current Focus
 
-**Updated: 2026-05-27 (container management API; background docker tasks; browser notifications; in-app wiki; .env crash fixes)**
+**Updated: 2026-05-29 (VLM auto-label + Label Studio integration — fully operational)**
 
 ---
 
 ## Completed This Sprint
+
+### VLM Auto-Label + Label Studio Integration ✅ 2026-05-29
+
+- Moondream2 FP16 (bitsandbytes incompatible, custom F.linear bypasses bnb interception)
+- accelerate downgraded 1.13.0 → 0.26.1 (dispatch_model→model.to() conflict with bnb)
+- Label Studio auto-connect: env credentials read from `get_settings()` not `os.environ`
+- Annotation jobs: job_uuid NOT NULL fix, _fmt_ts datetime/float, UUID lookup
+- Frontend: ReviewItem.id string, correct auto-label field names
+- **End-to-end verified**: 3-image auto-label → queue populated; LS connected (4 projects)
+
+### CTIP Rebrand + Dark/Light Theme ✅ 2026-05-29
+
+- Renamed "TrichomeLab" → **CTIP** (Cannabis Trichome Intelligence Platform) across layout
+- `CtipLogo` SVG: trichome stalk+bulb + microscope body+objective, all using `var(--accent)`
+- Dual-theme CSS variable system in `globals.css`: `[data-theme="dark"]` (default) + `[data-theme="light"]`
+- Sage green accent palette: `--accent: #4a7c45`, hover, subtle, text variants
+- No-flash inline theme script in `layout.tsx` reads `ctip-ui-store` from localStorage before hydration
+- `ThemeProvider` component syncs Zustand `theme` state → `document.documentElement` attribute
+- Theme toggle (Sun/Moon) in Sidebar bottom section; `tailwind.config.ts` `darkMode: 'selector'`
+
+### System Dashboard Rewrite ✅ 2026-05-29
+
+`SystemStatusTab.tsx` — complete rewrite (~580 lines):
+- `RingGauge` + `Sparkline` (gradient fill) components
+- `GpuPanel`: 4 rings (VRAM/Compute/Temp/Power), sparkline history, SM count, compute capability
+- `QueuePanel`: wired to `gpu_semaphore.busy`, `gpu_queue_depth`, `jobs.pending/running/completed/failed`
+- `ServicesPanel`: calls `GET /system/services` every 10s, TCP health check per service
+- `ConfigPanel`: hostname, OS, Python, CUDA device, VRAM limit
+- `LogTerminal`: `GET /system/logs?limit=20`, color-codes ERROR/WARNING/INFO
+- Backend: `GET /system/services` + `GET /system/logs` endpoints added to `system.py`
+
+### nginx Dynamic PUBLIC_DOMAIN ✅ 2026-05-29
+
+- `docker/nginx/nginx.conf.template` with `server_name ${PUBLIC_DOMAIN} localhost _;`
+- `docker-compose.yml` nginx service: mounts template, runs `envsubst '$$PUBLIC_DOMAIN'` before nginx
+- All `your-domain.com` hardcoded strings replaced with `${PUBLIC_DOMAIN:-localhost}`
+- `PUBLIC_DOMAIN` env var passed via `environment:` block, defaults to `localhost`
+
+### Container rm Confirmation Dialog ✅ 2026-05-29
+
+- Trash2 button added to each container card in `ProcessesTab.tsx`
+- Confirm modal: backdrop blur, container name display, warning text, Cancel + Remove buttons
+- `confirmRm` state gates the `api.delete('/containers/${confirmRm}')` call
+
+### TaskRouter Restart Recovery ✅ 2026-05-29
+
+- `TaskRouter.restore_from_db(db_session)` loads last 24h of `BackgroundJob` records
+- Marks pending/running jobs as `failed` (can't recover mid-job after restart)
+- Called in `main.py` lifespan startup after `create_all_tables()`
+
+### model-tests API Tests ✅ 2026-05-29
+
+`tests/unit/test_model_tests_api.py` — 26 tests, all passing:
+- `TestCreate`: 9 tests (201, UUID, defaults, timestamps, empty graph, nested, unicode, missing graph 422, duplicate names)
+- `TestList`: 3 tests (200, newest-first order, no graph field in list)
+- `TestLoadDetail`: 4 tests (graph preserved, 404, uuid match)
+- `TestUpdate`: 5 tests (name/desc, graph roundtrip, updated_at increment, created_at unchanged, 404)
+- `TestDelete`: 5 tests (returns uuid, gone from list, 404 on load, double-delete 404, unknown 404)
+- Uses `StaticPool` in-memory SQLite for session isolation
+
+### VLM Provider Switcher UI ✅ 2026-05-28
+
+New "VLM Providers" tab in the Processes page (`/processes`):
+- `VLMProvidersPanel` fetches all 8 providers from `GET /vlm/providers`
+- Local section (Moondream, Qwen2VL) + Remote API section (OpenAI, Anthropic, Google, Together, Groq, HuggingFace)
+- `ProviderCard`: tier badge, status dot, cost/rate info, model selector, Activate button
+- Collapsible API key form: persists key to `.env` via `POST /vlm/providers/{id}/configure`
+- TDB-022 fixed: `POST /vlm/providers/active` now persists selection to `.env`
+
+### Port-Conflict Dialog + Container test suite ✅ 2026-05-28
+
+- Docker reinstall failure → `status: "port_conflict"` → orange modal dialog in UI
+- User picks new port → wired to `.env` + derived vars (MLFLOW_TRACKING_URI etc.) → retry
+- `docker compose pull --ignore-buildable` prevents pull failure on locally-built images
+- `backend/utils/env_file.py`: shared `.env` read/write (preserves comments/ordering)
+- `tests/unit/test_containers_api.py`: 47 tests — all endpoints covered
 
 ### Container Management + Background Docker Tasks ✅ 2026-05-27
 
@@ -28,7 +104,7 @@ Additional endpoints: `POST /containers/{name}/pull`, SSE live log per container
 ### .env crash fixes ✅ 2026-05-27
 - `VRAM_INFERENCE_BUDGET_GB=""` → `"2.0"` — empty string → Pydantic `float_parsing` → backend crash on startup
 - `DATA_ROOT="/mnt/data/trichome"` → `"./data"` — `/mnt/data` not mounted → `PermissionError` on `ensure_dirs()`
-- `REPO_ROOT parents[4]` → `parents[3]` in `containers.py` — was resolving to `/home/ottcouture`, not repo root
+- `REPO_ROOT parents[4]` → `parents[3]` in `containers.py` — was resolving to the home directory, not repo root
 
 ### In-app Wiki (Next.js) ✅ 2026-05-27
 14-page multilingual documentation (EN/DE/ES), WikiRenderer, sidebar with search + language switcher, `docs/github-wiki/` for GitHub export.
@@ -122,24 +198,20 @@ All stale numbers corrected (EN/DE/ES): 50→868 tests, 72+→128+ endpoints
 
 ## Test Status
 
-- Total: **960 passed**, 4 skipped (GPU-only + reportlab guard), 0 failing
-- New this sprint: +92 tests (35 TRT runner + 57 tiling)
+- Total: **1053 passed**, 6 skipped (GPU-only + reportlab guard), 0 failing
+- This sprint: +26 tests (test_model_tests_api)
+- Cumulative: +1027 from previous sprints
 
 ---
 
 ## Next Priority (in order)
 
-1. **Frontend TypeScript type-check** — `npm run type-check` in `frontend/`
-   - Verify MetricsChart refactor + video page type fixes compile clean
+1. **TDB-023: Modal training submission** — stub → real implementation
+   - Dataset upload to Modal Volumes, job submission, status polling
 
-2. **ONNX Runtime tests** — `tests/unit/test_onnx_runner.py`
-   - ONNX session mock, provider selection, postprocess
+2. **TensorRT full implementation** — requires NVIDIA TRT SDK + YOLO11s .pt weights for export
 
-3. **TRT engine integration test** — export YOLO11s to ONNX → build .engine → infer
-   - Requires: `yolo11s.pt` model weights + Ultralytics export
-   - Full E2E: `build_engine_from_onnx` → `TensorRTRunner.infer(synthetic_image)`
-
-4. **README.md update** — reflect 960 tests + TRT runner complete
+3. **Batch inference optimization** — queue + aggregate requests for GPU throughput
 
 ---
 

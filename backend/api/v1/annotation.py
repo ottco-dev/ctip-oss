@@ -50,9 +50,9 @@ _STATS: dict[str, Any] = {
 
 class QueueItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    sample_id: str
-    dataset_id: str
-    image_path: str
+    sample_id: str = ""
+    dataset_id: str = ""
+    image_path: str = ""
     vlm_labels: list[dict[str, Any]] = Field(default_factory=list)
     vlm_backend: str = "moondream"
     priority: int = Field(default=1, ge=0, le=3)  # 0=Low 1=Med 2=High 3=Crit
@@ -66,6 +66,16 @@ class QueueItem(BaseModel):
     scientific_caveat: str = (
         "Visual maturity analysis does NOT allow quantitative THC/CBD determination."
     )
+    # VLM-specific fields (populated by auto-label pipeline)
+    maturity_stage: str | None = None
+    clear_fraction: float = 0.0
+    cloudy_fraction: float = 0.0
+    amber_fraction: float = 0.0
+    hallucination_flags: list[str] = Field(default_factory=list)
+    review_priority: int = 1
+    filename: str = ""
+    vlm_confidence: float = 0.0
+    queued_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class QueueItemCreate(BaseModel):
@@ -92,7 +102,8 @@ class AutoLabelRequest(BaseModel):
     sample_ids: list[str] | None = None  # None = all unlabeled
     vlm_backend: str = "moondream"  # moondream | florence2 | qwen2vl
     max_samples: int = 100
-    confidence_threshold: float = 0.70
+    batch_size: int = 50  # alias accepted from frontend
+    confidence_threshold: float = 0.40
 
 
 class QueueStats(BaseModel):
@@ -218,19 +229,155 @@ def delete_queue_item(item_id: str):
 # ---------------------------------------------------------------------------
 
 
-def _run_auto_label(job_id: str, request: AutoLabelRequest):
-    """Background task: invoke VLM auto-labeling and push results to queue."""
+async def _run_auto_label(job_uuid: str, request: AutoLabelRequest) -> None:
+    """
+    Async GPU background task: VLM auto-labeling pipeline.
+
+    Finds dataset images → runs AutoLabelPipeline → pushes to review queue.
+    GPU semaphore is acquired inside so it queues behind running training/inference.
+    """
+    import asyncio
+    from pathlib import Path
+
+    from shared.logging.logger import get_logger as _get_logger
+    _log = _get_logger(__name__)
+
+    def _db_update(status: str, progress: float = 0.0, error: str | None = None, result: dict | None = None) -> None:
+        try:
+            from backend.database import get_session as _gs
+            from backend.models.job import BackgroundJob as _BJ
+            from sqlmodel import select as _sel
+            with next(_gs()) as _db:
+                j = _db.exec(_sel(_BJ).where(_BJ.job_uuid == job_uuid)).first()
+                if j:
+                    j.status = status
+                    j.progress = progress
+                    if error:
+                        j.error_message = error[:1000]
+                    if result:
+                        j.set_result(result)
+                    _db.add(j)
+                    _db.commit()
+        except Exception:
+            pass
+
     try:
-        # Lazy import to avoid startup overhead
-        from vlm_labeling.application.auto_label_pipeline import AutoLabelPipeline  # noqa: F401
+        from backend.config import get_settings
+        from backend.tasks.task_router import task_router
+        from vlm_labeling.application.auto_label_pipeline import (
+            AutoLabelPipeline,
+            AutoLabelPipelineConfig,
+        )
 
-        # In production: iterate samples, call VLM, push each result to queue
-        # For now: mock progress updates via job status
-        time.sleep(1)  # Simulate some processing time placeholder
+        settings = get_settings()
+        data_root = Path("./data/datasets")
 
-    except Exception as exc:  # noqa: BLE001
-        # Update job status to failed (best-effort)
-        pass
+        # Resolve dataset directory by name or numeric DB id
+        candidate_dirs: list[Path] = []
+        ds_id = request.dataset_id.strip()
+        candidate_dirs.append(data_root / ds_id)
+
+        if ds_id.isdigit():
+            try:
+                from backend.database import get_session as _gs
+                from backend.models.dataset import Dataset as _DS
+                with next(_gs()) as _db:
+                    ds = _db.get(_DS, int(ds_id))
+                    if ds:
+                        if ds.root_path:
+                            candidate_dirs.insert(0, Path(ds.root_path))
+                        candidate_dirs.insert(0, data_root / ds.name)
+            except Exception:
+                pass
+
+        image_paths: list[Path] = []
+        for d in candidate_dirs:
+            for split in ("train", "val", ""):
+                img_dir = d / "images" / split if split else d / "images"
+                if img_dir.exists():
+                    found = sorted(img_dir.glob("*.jpg")) + sorted(img_dir.glob("*.png"))
+                    image_paths.extend(found)
+            if image_paths:
+                break
+
+        if not image_paths:
+            _db_update("failed", error=f"No images found for dataset '{ds_id}'. "
+                       f"Checked: {[str(p) for p in candidate_dirs]}")
+            return
+
+        max_imgs = min(request.max_samples or request.batch_size, len(image_paths))
+        image_paths = image_paths[:max_imgs]
+        _log.info("Auto-label: images found", count=len(image_paths), dataset=ds_id)
+
+        _db_update("running", 0.0)
+
+        async with task_router._gpu_semaphore:
+            config = AutoLabelPipelineConfig(
+                vlm_backend=request.vlm_backend,
+                min_vlm_confidence=request.confidence_threshold,
+                enable_hallucination_filter=True,
+                max_images=max_imgs,
+            )
+            pipeline = AutoLabelPipeline(config)
+
+            def _run_sync() -> tuple:
+                pipeline.load()
+                try:
+                    return pipeline.run(image_paths)
+                finally:
+                    pipeline.unload()
+
+            loop = asyncio.get_event_loop()
+            labels, stats = await loop.run_in_executor(None, _run_sync)
+
+        pushed = 0
+        for label in labels:
+            item_id = label.label_id
+            now_iso = datetime.utcnow().isoformat()
+            _QUEUE[item_id] = {
+                "id": item_id,
+                "sample_id": label.image_id,
+                "dataset_id": request.dataset_id,
+                "image_path": label.image_path,
+                "filename": Path(label.image_path).name,
+                "vlm_labels": [{"maturity_stage": label.maturity_stage}] if label.maturity_stage else [],
+                "vlm_backend": request.vlm_backend,
+                "vlm_confidence": label.vlm_confidence,
+                "confidence": label.vlm_confidence,
+                "priority": (label.filter_result.review_priority if label.filter_result else 1),
+                "review_priority": (label.filter_result.review_priority if label.filter_result else 1),
+                "status": "pending",
+                "submitted_at": now_iso,
+                "queued_at": now_iso,
+                "maturity_stage": label.maturity_stage,
+                "clear_fraction": label.clear_fraction or 0.0,
+                "cloudy_fraction": label.cloudy_fraction or 0.0,
+                "amber_fraction": label.amber_fraction or 0.0,
+                "hallucination_flags": label.hallucination_flags,
+                "maturity_fractions": {
+                    "clear": label.clear_fraction or 0.0,
+                    "cloudy": label.cloudy_fraction or 0.0,
+                    "amber": label.amber_fraction or 0.0,
+                },
+                "detection_boxes": [],
+                "reviewer_note": "",
+                "scientific_caveat": (
+                    "Visual maturity analysis does NOT allow quantitative THC/CBD determination."
+                ),
+            }
+            _STATS["total_submitted"] = _STATS.get("total_submitted", 0) + 1
+            _STATS["pending"] = _STATS.get("pending", 0) + 1
+            pushed += 1
+
+        result_summary = {**stats.to_dict(), "pushed_to_queue": pushed}
+        _db_update("completed", progress=1.0, result=result_summary)
+        _log.info("Auto-label complete", job_uuid=job_uuid, pushed=pushed)
+
+    except Exception as exc:
+        import traceback
+        err = f"{type(exc).__name__}: {exc}"
+        _db_update("failed", error=err)
+        _log.error("Auto-label failed", job_uuid=job_uuid, error=err)
 
 
 @router.post("/auto-label", status_code=202)
@@ -245,19 +392,20 @@ def trigger_auto_label(
     Results are pushed to the review queue and require human approval before
     they are eligible for model training (human-in-loop invariant).
     """
+    job_uuid_str = str(uuid.uuid4())
     job = BackgroundJob(
+        job_uuid=job_uuid_str,
         job_type="auto_label",
         status=JobStatus.PENDING,
         params_json=request.model_dump_json(),
     )
     db.add(job)
     db.commit()
-    db.refresh(job)
 
-    background_tasks.add_task(_run_auto_label, str(job.id), request)
+    background_tasks.add_task(_run_auto_label, job_uuid_str, request)
 
     return {
-        "job_id": str(job.id),
+        "job_id": job_uuid_str,
         "status": "queued",
         "message": (
             f"Auto-label job queued for dataset {request.dataset_id} "
@@ -286,13 +434,21 @@ def list_annotation_jobs(
         .limit(limit)
     )
     jobs = db.exec(stmt).all()
+    def _fmt_ts(ts: object) -> str | None:
+        if ts is None:
+            return None
+        if hasattr(ts, "isoformat"):
+            return ts.isoformat()
+        return datetime.utcfromtimestamp(float(ts)).isoformat()
+
     return [
         {
-            "id": str(j.id),
+            "id": j.job_uuid,
+            "job_uuid": j.job_uuid,
             "type": j.job_type,
             "status": j.status.value if hasattr(j.status, "value") else j.status,
             "progress": j.progress,
-            "created_at": j.created_at.isoformat() if j.created_at else None,
+            "created_at": _fmt_ts(j.created_at),
             "params": json.loads(j.params_json) if j.params_json else {},
         }
         for j in jobs
@@ -301,17 +457,26 @@ def list_annotation_jobs(
 
 @router.get("/jobs/{job_id}")
 def get_annotation_job(job_id: str, db: Session = Depends(get_session)):
-    job = db.get(BackgroundJob, job_id)
+    job = db.exec(select(BackgroundJob).where(BackgroundJob.job_uuid == job_id)).first()
     if not job:
         raise HTTPException(404, "Job not found")
+
+    def _fmt(ts: object) -> str | None:
+        if ts is None:
+            return None
+        if hasattr(ts, "isoformat"):
+            return ts.isoformat()
+        return datetime.utcfromtimestamp(float(ts)).isoformat()
+
     return {
-        "id": str(job.id),
+        "id": job.job_uuid,
+        "job_uuid": job.job_uuid,
         "type": job.job_type,
         "status": job.status.value if hasattr(job.status, "value") else job.status,
         "progress": job.progress,
         "error_message": job.error_message,
-        "created_at": job.created_at.isoformat() if job.created_at else None,
-        "finished_at": job.finished_at.isoformat() if job.finished_at else None,
+        "created_at": _fmt(job.created_at),
+        "finished_at": _fmt(job.finished_at),
         "result": json.loads(job.result_json) if job.result_json else None,
         "params": json.loads(job.params_json) if job.params_json else {},
     }

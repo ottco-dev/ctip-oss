@@ -59,7 +59,7 @@ const FORMAT_ICON: Record<string, string> = {
 function ReportCard({ report }: { report: Report }) {
   const handleDownload = () => {
     // Triggers file download via the backend download endpoint
-    window.open(`http://localhost:8000/api/v1/reports/${report.id}/download`, "_blank");
+    window.open(`/api/v1/reports/${report.id}/download`, "_blank");
   };
 
   return (

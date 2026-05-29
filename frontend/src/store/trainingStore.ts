@@ -3,7 +3,16 @@
  */
 
 import { create } from 'zustand';
-import type { MetricPoint } from '@/lib/types';
+import type { MetricPoint, LogLevel, WsDatasetReady } from '@/lib/types';
+
+export interface LogEntry {
+  ts: number;
+  line: string;
+  level: LogLevel;
+  run_id: string;
+}
+
+const MAX_LOG_LINES = 2000;
 
 interface TrainingState {
   activeRunUuid: string | null;
@@ -13,11 +22,16 @@ interface TrainingState {
   liveMetrics: MetricPoint[];
   bestMap50: number;
   bestMap50Epoch: number;
+  logLines: LogEntry[];
+  datasetReadyMap: Record<string, WsDatasetReady>;
 
   setActiveRun: (runUuid: string, totalEpochs: number) => void;
   clearActiveRun: () => void;
   addMetrics: (epoch: number, metrics: Record<string, number>) => void;
+  addLogLine: (entry: LogEntry) => void;
+  clearLog: () => void;
   setStatus: (status: string) => void;
+  setDatasetReady: (result: WsDatasetReady) => void;
 }
 
 export const useTrainingStore = create<TrainingState>((set, get) => ({
@@ -28,6 +42,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   liveMetrics: [],
   bestMap50: 0,
   bestMap50Epoch: 0,
+  logLines: [],
+  datasetReadyMap: {},
 
   setActiveRun: (runUuid, totalEpochs) =>
     set({
@@ -37,6 +53,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       liveMetrics: [],
       bestMap50: 0,
       activeRunStatus: 'running',
+      logLines: [],
     }),
 
   clearActiveRun: () =>
@@ -65,5 +82,20 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     }));
   },
 
+  addLogLine: (entry) =>
+    set((state) => ({
+      logLines:
+        state.logLines.length >= MAX_LOG_LINES
+          ? [...state.logLines.slice(-MAX_LOG_LINES + 1), entry]
+          : [...state.logLines, entry],
+    })),
+
+  clearLog: () => set({ logLines: [] }),
+
   setStatus: (status) => set({ activeRunStatus: status }),
+
+  setDatasetReady: (result) =>
+    set((state) => ({
+      datasetReadyMap: { ...state.datasetReadyMap, [result.prepare_id]: result },
+    })),
 }));

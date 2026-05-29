@@ -37,11 +37,23 @@ export function GpuMonitor({ className, compact = false }: GpuMonitorProps) {
   const vramColor =
     vramUsedPct > 85 ? '#ef4444' : vramUsedPct > 65 ? '#eab308' : '#22c55e';
 
-  if (!gpu?.available) {
+  if (gpu === null) {
+    // Still waiting for first WS push
+    return (
+      <div className={cn('card flex items-center justify-center h-32', className)}>
+        <div className="flex flex-col items-center gap-2 text-text-muted">
+          <div className="w-5 h-5 border-2 border-text-muted/30 border-t-text-muted rounded-full animate-spin" />
+          <span className="text-xs">Loading GPU stats…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!gpu.available) {
     return (
       <div className={cn('card flex items-center justify-center h-32', className)}>
         <div className="text-text-muted text-sm">
-          {gpu?.reason ?? 'GPU not available'}
+          {gpu.reason ?? 'GPU not available'}
         </div>
       </div>
     );

@@ -9,6 +9,7 @@
 - [[Infrastructure]]
 
 **Scientific Workflow**
+- [[End-to-End Guide|Workflow-Guide]] ⭐
 - [[Data Collection|Data-Collection]]
 - [[Labeling]]
 - [[Training]]

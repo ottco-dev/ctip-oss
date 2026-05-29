@@ -88,7 +88,7 @@ async def list_datasets(
             num_samples=d.num_samples,
             num_annotated=d.num_annotated,
             num_reviewed=d.num_reviewed,
-            class_names=d.class_names,
+            class_names=d.get_class_names(),
             version=d.version,
             status=d.status,
             created_at=d.created_at,

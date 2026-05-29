@@ -59,6 +59,52 @@ class TaskRouter:
         self._gpu_task_running: str | None = None
         """UUID of currently running GPU task (for status display)."""
 
+    async def restore_from_db(self, db_session: Any) -> int:
+        """
+        Load recent jobs from SQLite into the in-memory cache on startup.
+
+        Any job that was pending/running when the process died is marked failed.
+        Returns the number of restored jobs.
+        """
+        import time as _time
+        try:
+            from sqlmodel import select
+            from backend.models.job import BackgroundJob
+
+            cutoff = _time.time() - 24 * 3600  # last 24 h
+            jobs = db_session.exec(
+                select(BackgroundJob)
+                .where(BackgroundJob.created_at > cutoff)  # type: ignore[arg-type]
+                .order_by(BackgroundJob.id.desc())  # type: ignore[attr-defined]
+                .limit(200)
+            ).all()
+
+            restored = 0
+            for job in jobs:
+                self._active_jobs[job.job_uuid] = {
+                    "job_id": job.job_uuid,
+                    "job_type": job.job_type,
+                    "status": job.status,
+                    "progress": job.progress,
+                    "params": {},
+                    "stop_requested": False,
+                    "created_at": job.created_at,
+                }
+                # Mark in-flight jobs as failed — they can't recover after restart
+                if job.status in ("pending", "running"):
+                    self._active_jobs[job.job_uuid]["status"] = "failed"
+                    job.status = "failed"
+                    job.error_message = "Backend restarted — job interrupted"
+                    db_session.add(job)
+                    restored += 1
+
+            db_session.commit()
+            logger.info("TaskRouter: restored jobs from DB", total=len(jobs), marked_failed=restored)
+            return len(jobs)
+        except Exception as e:
+            logger.warning("TaskRouter: DB restore failed", error=str(e))
+            return 0
+
     @property
     def gpu_task_running(self) -> str | None:
         """UUID of the currently running GPU task, if any."""

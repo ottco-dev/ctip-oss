@@ -95,17 +95,21 @@ services:
       POSTGRE_NAME: ${POSTGRES_DB:-labelstudio}
 
       # Label Studio settings
-      # Public URL — used for links in Label Studio emails/exports
-      # Access via nginx at /annotation/ path
-      LABEL_STUDIO_HOST: http://your-domain.com:3001/annotation
+      # Public URL — used for links in Label Studio emails/exports and redirects.
+      # Set PUBLIC_DOMAIN in .env to your server's LAN IP (e.g. 192.168.2.31).
+      # Label Studio is accessed directly on its own port (no sub-path proxy needed).
+      LABEL_STUDIO_HOST: http://${PUBLIC_DOMAIN:-localhost}:${PORT_LABEL_STUDIO:-3005}
       SECRET_KEY: ${LABEL_STUDIO_SECRET_KEY:-INSECURE_DEV_KEY_CHANGE_IN_PRODUCTION}
       DISABLE_SIGNUP_WITHOUT_LINK: ${LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK:-false}
+      # Allow legacy API token auth (needed for CTIP backend integration)
+      LABEL_STUDIO_ENABLE_LEGACY_API_TOKEN: "true"
 
       # File storage: local filesystem inside container
       # Swap to S3/GCS via STORAGE_TYPE env var for production
       DATA_UPLOAD_MAX_MEMORY_SIZE: "536870912"  # 512 MB — for large tiff uploads
-      LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: "true"
-      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /label-studio/data/media
+      # Correct env var names (no LABEL_STUDIO_ prefix — see settings/base.py)
+      LOCAL_FILES_SERVING_ENABLED: "true"
+      LOCAL_FILES_DOCUMENT_ROOT: /ctip-data
 
       # Performance
       GUNICORN_WORKERS: "2"  # Conservative for 16GB RAM dev machine
@@ -113,9 +117,11 @@ services:
     volumes:
       # Label Studio data: projects, media (uploaded images), annotations export
       - label-studio-data:/label-studio/data
-      # Mount microscopy dataset for local storage backend
-      # Uncomment and adjust path to your microscopy image store:
-      # - /mnt/data/microscopy:/label-studio/data/media/microscopy:ro
+      # CTIP datasets — read-only mount for local file serving
+      # Images referenced as: /data/local-files/?d=datasets/ctip_combined/images/train/C_1078.jpg
+      # Set CTIP_DATA_ROOT in .env to your absolute data directory path.
+      # Docker Compose requires absolute paths (relative paths resolve from the compose-file dir).
+      - ${CTIP_DATA_ROOT:-../data}:/ctip-data:ro
     networks:
       - trichome-annotation-net
     depends_on:

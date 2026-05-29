@@ -25,14 +25,21 @@ export function useWebSocket(
   options: UseWebSocketOptions = {},
 ): UseWebSocketResult {
   const {
-    onMessage,
-    onConnect,
-    onDisconnect,
     enabled = true,
     maxReconnectAttempts = 15,
     reconnectBaseDelayMs = 1500,
     initialDelayMs = 200, // Short delay avoids StrictMode double-connect error
   } = options;
+
+  // Keep callbacks in refs so changing them never triggers reconnects
+  const onMessageRef = useRef(options.onMessage);
+  const onConnectRef = useRef(options.onConnect);
+  const onDisconnectRef = useRef(options.onDisconnect);
+  useEffect(() => {
+    onMessageRef.current = options.onMessage;
+    onConnectRef.current = options.onConnect;
+    onDisconnectRef.current = options.onDisconnect;
+  });
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttemptRef = useRef(0);
@@ -63,13 +70,13 @@ export function useWebSocket(
       reconnectAttemptRef.current = 0;
       setConnected(true);
       setReconnectAttempts(0);
-      onConnect?.();
+      onConnectRef.current?.();
     };
 
     ws.onmessage = (event) => {
       if (!mountedRef.current) return;
       try {
-        onMessage?.(JSON.parse(event.data));
+        onMessageRef.current?.(JSON.parse(event.data));
       } catch {
         // Non-JSON — ignore
       }
@@ -80,7 +87,7 @@ export function useWebSocket(
       // 1000 = normal close (we closed it intentionally)
       if (ev.code === 1000) return;
       setConnected(false);
-      onDisconnect?.();
+      onDisconnectRef.current?.();
       wsRef.current = null;
 
       if (reconnectAttemptRef.current < maxReconnectAttempts && enabled) {
@@ -100,7 +107,7 @@ export function useWebSocket(
       // Let onclose handle reconnect
       ws.close();
     };
-  }, [path, clientId, enabled, onConnect, onDisconnect, onMessage, maxReconnectAttempts, reconnectBaseDelayMs]);
+  }, [path, clientId, enabled, maxReconnectAttempts, reconnectBaseDelayMs]);
 
   useEffect(() => {
     mountedRef.current = true;

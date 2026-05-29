@@ -43,8 +43,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(
         default=[
             # Local direct access (dev)
+            "http://localhost:3000",   # Next.js dev (default)
             "http://localhost:3001",   # nginx proxy
-            "http://localhost:3003",   # Next.js dev
+            "http://localhost:3003",   # Next.js dev (alt)
+            "http://127.0.0.1:3000",
             "http://127.0.0.1:3001",
             "http://127.0.0.1:3003",
             # Public DDNS access via nginx
@@ -76,6 +78,17 @@ class Settings(BaseSettings):
     """Maximum file upload size in MB."""
 
     # ── GPU / HARDWARE ───────────────────────────────────────────────
+    compute_backend: str = "auto"
+    """
+    Compute backend for inference and training:
+      auto   — detect best available at startup (cuda → rocm → mps → cpu)
+      cuda   — NVIDIA CUDA (requires PyTorch with CUDA)
+      rocm   — AMD ROCm (requires PyTorch with ROCm/HIP)
+      mps    — Apple Silicon MPS
+      cpu    — CPU-only, no GPU required
+    Persisted to .env via /settings/compute endpoint.
+    """
+
     cuda_device: str = "cuda:0"
     vram_limit_gb: float = 8.0
     """RTX 4060 VRAM. Used by GPU guard middleware."""
@@ -108,6 +121,22 @@ class Settings(BaseSettings):
     # ── VLM LABELING ─────────────────────────────────────────────────
     default_vlm_backend: str = "moondream"
     vlm_min_confidence: float = 0.40
+
+    # Active provider — can be swapped at runtime via /vlm/providers/active
+    # IDs: moondream | qwen2vl | florence2 | openai | anthropic | google | together | groq | huggingface
+    active_vlm_provider: str = "moondream"
+    active_vlm_model: str = ""
+    """Override model for the active provider. Empty = use provider default."""
+
+    # ── REMOTE VLM API KEYS ───────────────────────────────────────────
+    # Set these in .env — never hardcode. All are optional.
+    # Prioritised for free use: groq (free) > google (free tier) > huggingface (free)
+    openai_api_key: str = ""       # https://platform.openai.com/api-keys
+    anthropic_api_key: str = ""    # https://console.anthropic.com/account/keys
+    google_api_key: str = ""       # https://aistudio.google.com/app/apikey (FREE TIER)
+    together_api_key: str = ""     # https://api.together.xyz/settings/api-keys
+    groq_api_key: str = ""         # https://console.groq.com/keys (FREE TIER)
+    huggingface_api_key: str = ""  # https://huggingface.co/settings/tokens (FREE TIER)
 
     # ── ANNOTATION ──────────────────────────────────────────────────
     cvat_url: str = "http://localhost:3006"       # host port 3006 → container 8080

@@ -6,29 +6,30 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: 'class',
+  darkMode: 'selector',
   theme: {
     extend: {
       colors: {
-        // Dark mode color palette (GitHub-inspired dark)
-        background: '#080b10',
-        surface: '#0d1117',
-        panel: '#161b22',
-        border: '#21262d',
-        'border-muted': '#30363d',
+        // CSS-variable driven — adapts to dark/light theme
+        background: 'var(--background)',
+        surface: 'var(--surface)',
+        panel: 'var(--panel)',
+        border: 'var(--border)',
+        'border-muted': 'var(--border-muted)',
 
         // Accent colors
         accent: {
-          DEFAULT: '#238636',   // GitHub green
-          hover: '#2ea043',
-          muted: '#1a3a24',
+          DEFAULT: 'var(--accent)',
+          hover: 'var(--accent-hover)',
+          subtle: 'var(--accent-subtle)',
+          text: 'var(--accent-text)',
         },
 
         // Text colors
         text: {
-          primary: '#e6edf3',
-          secondary: '#8b949e',
-          muted: '#484f58',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
         },
 
         // Trichome maturity colors (matches Python MATURITY_COLORS)
