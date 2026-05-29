@@ -74,7 +74,16 @@ CTIP is a **full-stack, production-grade research platform** for automated trich
 
 ## 2. Hardware Requirements
 
-### Minimum (development)
+### Supported GPU backends
+
+| Backend | Hardware | `.env` setting | Notes |
+|---------|----------|----------------|-------|
+| **NVIDIA CUDA** | GTX 1080+ / RTX series | `CUDA_DEVICE="cuda:0"` | Recommended. Full feature set including TensorRT. |
+| **AMD ROCm** | RX 6000 / RX 7000 (RDNA2/3) | `CUDA_DEVICE="cuda:0"` | ROCm 6.x required. TensorRT unavailable; use ONNX+MIGraphX. ~70% CUDA perf. |
+| **Apple MPS** | Apple Silicon M1/M2/M3/M4 | `CUDA_DEVICE="mps"` | Metal Performance Shaders. No fp16 for all ops. Sequential inference only. |
+| **CPU** | Any x86-64 / ARM64 | `CUDA_DEVICE="cpu"` | ~20× slower. Development, annotation, and dataset management only. |
+
+### Resource requirements
 
 | Component | Minimum | Recommended |
 |---|---|---|
@@ -82,9 +91,9 @@ CTIP is a **full-stack, production-grade research platform** for automated trich
 | CPU | 6-core modern | i5-13400F or better |
 | RAM | 16 GB | 32 GB |
 | Storage | 50 GB SSD | 500 GB NVMe |
-| CUDA | 11.8+ | 12.6 |
+| CUDA | 11.8+ (NVIDIA) / ROCm 6.x (AMD) | 12.6 / ROCm 6.1 |
 
-### VRAM Budget (RTX 4060, 8 GB)
+### VRAM Budget (8 GB card — RTX 4060 / RX 7800 XT)
 
 | Component | VRAM |
 |---|---|
@@ -95,7 +104,8 @@ CTIP is a **full-stack, production-grade research platform** for automated trich
 | Qwen2-VL-7B (4-bit) | ~4.8 GB |
 | YOLO v11s training (bs=8) | ~5.5 GB |
 
-> Only **one GPU task runs at a time** — enforced by `asyncio.Semaphore(1)`. Intentional for 8 GB VRAM cards.
+> Only **one GPU task runs at a time** — enforced by `asyncio.Semaphore(1)`. Intentional for 8 GB VRAM cards.  
+> Apple Silicon MPS shares system RAM — VRAM budget applies to unified memory.
 
 ---
 

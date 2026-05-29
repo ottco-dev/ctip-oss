@@ -1,9 +1,14 @@
 import type { WikiPage } from '../types';
 
 const en = `
-> **Apple Silicon (M1/M2/M3)**: GPU acceleration via Metal/MPS (no CUDA).
-> **Intel Mac**: CPU-only recommended (eGPU with CUDA not officially supported).
-> Tested: macOS 13 Ventura, macOS 14 Sonoma
+> **Apple Silicon (M1/M2/M3/M4)**: GPU acceleration via Metal Performance Shaders (MPS). No CUDA required.
+> **Intel Mac**: CPU-only. eGPU with CUDA is not officially supported by PyTorch on macOS.
+> Tested: macOS 13 Ventura, macOS 14 Sonoma, macOS 15 Sequoia
+
+| Mac type | GPU backend | Suitable for |
+|----------|-------------|--------------|
+| Apple Silicon (M1/M2/M3/M4) | MPS | Development, annotation, inference |
+| Intel Mac (any) | CPU only | Development, annotation only |
 
 ## 1. Xcode Command Line Tools
 
@@ -49,20 +54,67 @@ print('MPS available:', torch.backends.mps.is_available())
 "
 \`\`\`
 
-## 5. Apple Silicon GPU (MPS)
+## 5. GPU backend selection
+
+### Apple Silicon — MPS
 
 CTIP auto-detects MPS. Set explicitly in \`.env\`:
 
 \`\`\`bash
 CUDA_DEVICE="mps"
 CUDA_VISIBLE_DEVICES=""
-VRAM_LIMIT_GB="8.0"     # MPS shares RAM — on 16 GB Mac, ~8–10 GB usable for GPU
+VRAM_LIMIT_GB="8.0"          # MPS shares system RAM — on 16 GB Mac ~8–10 GB usable
+VRAM_INFERENCE_BUDGET_GB="4.0"
+\`\`\`
+
+Verify:
+
+\`\`\`bash
+python -c "
+import torch
+print('PyTorch :', torch.__version__)
+print('MPS     :', torch.backends.mps.is_available())
+print('Built   :', torch.backends.mps.is_built())
+"
 \`\`\`
 
 **MPS limitations**:
-- No half-precision (fp16) in all ops — some ops fall back to CPU
-- Shared memory: GPU tasks compete with system RAM
-- No CUDA streams → sequential inference only
+- Not all PyTorch ops support fp16 on MPS — affected ops fall back to CPU automatically (logged, not fatal)
+- Memory is shared with system RAM — GPU tasks compete with the OS and other applications
+- No CUDA streams, no concurrent GPU kernels → strictly sequential inference
+- TensorRT not available; ONNX Runtime CoreML execution provider is an alternative
+
+**Recommended tile size for MPS** (reduces peak memory usage):
+
+\`\`\`bash
+TILE_SIZE="960"    # default 1280 — reduce if you see out-of-memory errors
+\`\`\`
+
+---
+
+### Intel Mac — CPU only
+
+Intel Macs run CTIP in CPU mode. eGPU acceleration via CUDA is not supported by PyTorch on macOS.
+
+\`\`\`bash
+CUDA_DEVICE="cpu"
+CUDA_VISIBLE_DEVICES=""
+VRAM_LIMIT_GB="0"
+VRAM_INFERENCE_BUDGET_GB="0"
+\`\`\`
+
+Install the lightweight profile (no VLM, no SAM2):
+
+\`\`\`bash
+uv pip install -e ".[dev]"
+\`\`\`
+
+CPU mode is suitable for:
+- Frontend development and UI work
+- Dataset management and Label Studio annotation
+- Running the API and inspecting results
+
+Extended training and VLM auto-labeling are impractical on CPU.
 
 ## 6. Frontend
 
@@ -138,9 +190,14 @@ sudo nginx -c "$(pwd)/nginx-local/nginx.conf"
 `;
 
 const de = `
-> **Apple Silicon (M1/M2/M3)**: GPU-Beschleunigung über Metal/MPS (kein CUDA).
-> **Intel Mac**: CPU-only empfohlen.
-> Getestet: macOS 13 Ventura, macOS 14 Sonoma
+> **Apple Silicon (M1/M2/M3/M4)**: GPU-Beschleunigung über Metal Performance Shaders (MPS). Kein CUDA erforderlich.
+> **Intel Mac**: Nur CPU. eGPU mit CUDA wird von PyTorch auf macOS nicht unterstützt.
+> Getestet: macOS 13 Ventura, macOS 14 Sonoma, macOS 15 Sequoia
+
+| Mac-Typ | GPU-Backend | Geeignet für |
+|---------|-------------|--------------|
+| Apple Silicon (M1/M2/M3/M4) | MPS | Entwicklung, Annotation, Inferenz |
+| Intel Mac (beliebig) | Nur CPU | Entwicklung, Annotation |
 
 ## 1. Xcode Command Line Tools
 
@@ -179,17 +236,61 @@ uv pip install -e ".[all]"
 python -c "import torch; print('MPS:', torch.backends.mps.is_available())"
 \`\`\`
 
-## 5. Apple Silicon GPU (MPS)
+## 5. GPU-Backend-Auswahl
+
+### Apple Silicon — MPS
 
 In \`.env\` setzen:
 
 \`\`\`bash
 CUDA_DEVICE="mps"
 CUDA_VISIBLE_DEVICES=""
-VRAM_LIMIT_GB="8.0"     # MPS teilt RAM — bei 16 GB Mac ~8–10 GB nutzbar
+VRAM_LIMIT_GB="8.0"          # MPS teilt System-RAM — bei 16 GB Mac ~8–10 GB nutzbar
+VRAM_INFERENCE_BUDGET_GB="4.0"
 \`\`\`
 
-**MPS-Einschränkungen**: Kein volles fp16, geteilter Speicher mit System-RAM, sequentielle Inferenz.
+Prüfen:
+
+\`\`\`bash
+python -c "
+import torch
+print('MPS verfügbar:', torch.backends.mps.is_available())
+print('MPS gebaut   :', torch.backends.mps.is_built())
+"
+\`\`\`
+
+**MPS-Einschränkungen**:
+- Nicht alle PyTorch-Ops unterstützen fp16 auf MPS — betroffene Ops fallen automatisch auf CPU zurück (wird geloggt, kein Fehler)
+- Speicher wird mit System-RAM geteilt — GPU-Tasks konkurrieren mit dem Betriebssystem
+- Keine CUDA Streams, keine parallelen GPU-Kernel → streng sequentielle Inferenz
+- TensorRT nicht verfügbar; ONNX Runtime mit CoreML als Alternative
+
+Empfohlene Tile-Größe für MPS (reduziert Peak-Speicherverbrauch):
+
+\`\`\`bash
+TILE_SIZE="960"    # Standard 1280 — reduzieren bei Out-of-Memory-Fehlern
+\`\`\`
+
+---
+
+### Intel Mac — Nur CPU
+
+Intel-Macs laufen im CPU-Modus. eGPU via CUDA wird von PyTorch auf macOS nicht unterstützt.
+
+\`\`\`bash
+CUDA_DEVICE="cpu"
+CUDA_VISIBLE_DEVICES=""
+VRAM_LIMIT_GB="0"
+VRAM_INFERENCE_BUDGET_GB="0"
+\`\`\`
+
+Leichtgewichtiges Profil installieren (ohne VLM/SAM2):
+
+\`\`\`bash
+uv pip install -e ".[dev]"
+\`\`\`
+
+CPU-Modus eignet sich für: Frontend-Entwicklung, Datensatzverwaltung, Label Studio Annotation. Nicht empfohlen für Training oder VLM-Auto-Labeling.
 
 ## 6. nginx-Konfiguration (macOS-spezifisch)
 
@@ -234,9 +335,14 @@ TILE_SIZE="640"
 `;
 
 const es = `
-> **Apple Silicon (M1/M2/M3)**: Aceleración GPU vía Metal/MPS (sin CUDA).
-> **Mac Intel**: Solo CPU recomendado.
-> Probado: macOS 13 Ventura, macOS 14 Sonoma
+> **Apple Silicon (M1/M2/M3/M4)**: Aceleración GPU vía Metal Performance Shaders (MPS). Sin CUDA necesario.
+> **Mac Intel**: Solo CPU. eGPU con CUDA no está soportado por PyTorch en macOS.
+> Probado: macOS 13 Ventura, macOS 14 Sonoma, macOS 15 Sequoia
+
+| Tipo de Mac | Backend GPU | Adecuado para |
+|-------------|-------------|---------------|
+| Apple Silicon (M1/M2/M3/M4) | MPS | Desarrollo, anotación, inferencia |
+| Mac Intel (cualquiera) | Solo CPU | Desarrollo, anotación |
 
 ## 1. Xcode Command Line Tools
 
@@ -263,14 +369,47 @@ uv pip install -e ".[all]"
 cd frontend && npm install && cd ..
 \`\`\`
 
-## 4. GPU Apple Silicon (MPS)
+## 4. Selección del backend GPU
+
+### Apple Silicon — MPS
 
 \`\`\`bash
 # En .env:
 CUDA_DEVICE="mps"
 CUDA_VISIBLE_DEVICES=""
-VRAM_LIMIT_GB="8.0"
+VRAM_LIMIT_GB="8.0"          # MPS comparte RAM del sistema — en Mac 16 GB ~8–10 GB usables
+VRAM_INFERENCE_BUDGET_GB="4.0"
+TILE_SIZE="960"               # reducir si hay errores de memoria
 \`\`\`
+
+Verificar:
+
+\`\`\`bash
+python -c "import torch; print('MPS:', torch.backends.mps.is_available())"
+\`\`\`
+
+**Limitaciones MPS**: No todas las ops soportan fp16 (caen a CPU automáticamente). Memoria compartida con RAM del sistema. Inferencia secuencial únicamente.
+
+---
+
+### Mac Intel — Solo CPU
+
+\`\`\`bash
+# En .env:
+CUDA_DEVICE="cpu"
+CUDA_VISIBLE_DEVICES=""
+VRAM_LIMIT_GB="0"
+\`\`\`
+
+Instalar perfil ligero (sin VLM ni SAM2):
+
+\`\`\`bash
+uv pip install -e ".[dev]"
+\`\`\`
+
+Adecuado para desarrollo de UI, gestión de datos y anotación. No recomendado para entrenamiento.
+
+---
 
 ## 5. Iniciar
 
@@ -285,9 +424,9 @@ const page: WikiPage = {
   slug: 'installation-macos',
   title: { en: 'macOS Installation', de: 'macOS Installation', es: 'Instalación macOS' },
   description: {
-    en: 'Installation for Apple Silicon (M1/M2/M3) with MPS and Intel Macs.',
-    de: 'Installation für Apple Silicon (M1/M2/M3) mit MPS und Intel Macs.',
-    es: 'Instalación para Apple Silicon (M1/M2/M3) con MPS y Macs Intel.',
+    en: 'Installation for Apple Silicon (M1–M4) with MPS acceleration and Intel Macs (CPU-only).',
+    de: 'Installation für Apple Silicon (M1–M4) mit MPS-Beschleunigung und Intel Macs (nur CPU).',
+    es: 'Instalación para Apple Silicon (M1–M4) con aceleración MPS y Macs Intel (solo CPU).',
   },
   content: { en, de, es },
   section: 'setup',

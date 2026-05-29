@@ -1,6 +1,11 @@
-> **Apple Silicon (M1/M2/M3)**: GPU acceleration via Metal/MPS (no CUDA).
-> **Intel Mac**: CPU-only recommended (eGPU with CUDA not officially supported).
-> Tested: macOS 13 Ventura, macOS 14 Sonoma
+> **Apple Silicon (M1/M2/M3/M4)**: GPU acceleration via Metal Performance Shaders (MPS). No CUDA required.
+> **Intel Mac**: CPU-only. eGPU with CUDA is not officially supported by PyTorch on macOS.
+> Tested: macOS 13 Ventura, macOS 14 Sonoma, macOS 15 Sequoia
+
+| Mac type | GPU backend | Suitable for |
+|----------|-------------|--------------|
+| Apple Silicon (M1/M2/M3/M4) | MPS | Development, annotation, inference |
+| Intel Mac (any) | CPU | Development, annotation only |
 
 ## 1. Xcode Command Line Tools
 
@@ -46,20 +51,65 @@ print('MPS available:', torch.backends.mps.is_available())
 "
 ```
 
-## 5. Apple Silicon GPU (MPS)
+## 5. GPU backend selection
+
+### Apple Silicon — MPS
 
 CTIP auto-detects MPS. Set explicitly in `.env`:
 
 ```bash
 CUDA_DEVICE="mps"
 CUDA_VISIBLE_DEVICES=""
-VRAM_LIMIT_GB="8.0"     # MPS shares RAM — on 16 GB Mac, ~8–10 GB usable for GPU
+VRAM_LIMIT_GB="8.0"     # MPS shares system RAM — on 16 GB Mac, ~8–10 GB usable for GPU
+VRAM_INFERENCE_BUDGET_GB="4.0"
+```
+
+Verify:
+
+```bash
+python -c "
+import torch
+print('PyTorch :', torch.__version__)
+print('MPS     :', torch.backends.mps.is_available())
+print('Built   :', torch.backends.mps.is_built())
+"
 ```
 
 **MPS limitations**:
-- No half-precision (fp16) in all ops — some ops fall back to CPU
-- Shared memory: GPU tasks compete with system RAM
-- No CUDA streams → sequential inference only
+- Not all PyTorch ops support fp16 on MPS — affected ops automatically fall back to CPU (logged, not fatal)
+- Memory is shared with system RAM — GPU tasks compete with the OS and other apps
+- No CUDA streams, no concurrent GPU kernels → strictly sequential inference
+- TensorRT not available; ONNX Runtime CoreML execution provider is an alternative
+
+**Recommended tile size for MPS** (reduces peak memory):
+
+```bash
+TILE_SIZE="960"    # default 1280 — reduce if you see OOM errors
+```
+
+---
+
+### Intel Mac — CPU only
+
+Intel Macs run CTIP in CPU mode. GPU acceleration via eGPU is not supported.
+
+```bash
+CUDA_DEVICE="cpu"
+CUDA_VISIBLE_DEVICES=""
+VRAM_LIMIT_GB="0"
+VRAM_INFERENCE_BUDGET_GB="0"
+```
+
+Install the lightweight profile (no VLM, no SAM2):
+
+```bash
+uv pip install -e ".[dev]"
+```
+
+Inference and training will be slow (~20× vs RTX 4060). Intel Macs are fine for:
+- UI development and frontend work
+- Dataset management and Label Studio annotation
+- Running the API and reviewing results
 
 ## 6. Frontend
 
