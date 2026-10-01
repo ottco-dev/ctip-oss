@@ -1,5 +1,7 @@
 # CTIP — Cannabis Trichome Intelligence Platform
 
+<p align="center"><img src="docs/assets/banner.png" alt="CTIP — open-source cannabis trichome analysis" width="720"></p>
+
 **Open-source microscopy computer vision for cannabis trichomes:** detection, instance segmentation, morphology,
 optical maturity and size measurement, with an annotation and active-learning loop built around a human reviewer.
 

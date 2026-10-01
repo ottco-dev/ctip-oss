@@ -130,6 +130,7 @@ dev = [
     "pytest-cov>=5.0.0",
     "pytest-benchmark>=4.0.0",
     "pytest-mock>=3.14.0",
+    "pytest-timeout>=2.3.0",
     "hypothesis>=6.103.0",
     "ruff>=0.4.0",
     "black>=24.4.0",
