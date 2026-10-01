@@ -13,7 +13,7 @@ interface LabelStudioDatasetPickerProps {
 }
 
 const CLASS_COLORS: Record<string, string> = {
-  stalked: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  stalked: 'bg-accent/20 text-accent-text border-accent/30',
   sessile: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
   bulbous: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   'non-glandular': 'bg-red-500/20 text-red-300 border-red-500/30',
@@ -280,7 +280,7 @@ export function LabelStudioDatasetPicker({ onDatasetReady }: LabelStudioDatasetP
                 {/* Visual split bar */}
                 <div className="flex rounded overflow-hidden h-1.5 gap-px">
                   <div className="bg-accent" style={{ width: `${trainRatio * 100}%` }} />
-                  <div className="bg-blue-400" style={{ width: `${valRatio * 100}%` }} />
+                  <div className="bg-accent-hover" style={{ width: `${valRatio * 100}%` }} />
                   <div className="bg-surface-tertiary flex-1" />
                 </div>
                 <div className="flex justify-between text-[10px] text-text-muted">

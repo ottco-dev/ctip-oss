@@ -1,5 +1,5 @@
 """
-apps.cli.main — TrichomeLab CLI entry point.
+apps.cli.main — CTIP CLI entry point.
 
 All sub-commands are implemented in apps/cli/commands/:
     detect.py   — trichome detect    Run YOLO trichome detection
@@ -46,7 +46,7 @@ from rich import print as rprint
 
 app = typer.Typer(
     name="trichome",
-    help="[bold]TrichomeLab CLI[/bold] — Cannabis Trichome Analysis Platform",
+    help="[bold]CTIP CLI[/bold] — Cannabis Trichome Intelligence Platform",
     add_completion=True,
     rich_markup_mode="rich",
     no_args_is_help=True,
@@ -92,8 +92,8 @@ _add_subapp("convert",      "apps.cli.commands.convert",      "Convert YOLO .pt 
 
 @app.command()
 def version() -> None:
-    """Print TrichomeLab CLI version and GPU info."""
-    rprint(f"[bold]TrichomeLab CLI[/bold]  v{VERSION}")
+    """Print CTIP CLI version and GPU info."""
+    rprint(f"[bold]CTIP CLI[/bold]  v{VERSION}")
     rprint("[dim]Cannabis Trichome Intelligence Platform — detection · maturity · morphology · measurement[/dim]")
 
     try:
@@ -117,7 +117,7 @@ def version() -> None:
 @app.command()
 def status() -> None:
     """Show system status: GPU VRAM, loaded models, API availability."""
-    console.print("\n[bold]TrichomeLab System Status[/bold]\n")
+    console.print("\n[bold]CTIP System Status[/bold]\n")
 
     # GPU
     try:
@@ -159,7 +159,7 @@ def serve(
     log_level: str = typer.Option("info", "--log-level", help="Log level: debug | info | warning | error"),
 ) -> None:
     """
-    Start the TrichomeLab FastAPI backend server.
+    Start the CTIP FastAPI backend server.
 
     \b
     Examples:
@@ -173,7 +173,7 @@ def serve(
         console.print("[red]uvicorn not installed.[/red]  Run: uv pip install uvicorn")
         raise typer.Exit(code=1)
 
-    console.print(f"[bold]Starting TrichomeLab API[/bold]")
+    console.print(f"[bold]Starting CTIP API[/bold]")
     console.print(f"  URL:    [cyan]http://{host}:{port}[/cyan]")
     console.print(f"  Docs:   [cyan]http://{host}:{port}/docs[/cyan]")
     console.print(f"  Reload: {reload}")

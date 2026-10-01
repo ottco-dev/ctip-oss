@@ -19,7 +19,7 @@ interface ProgressBarProps {
 export function ProgressBar({
   value,
   max = 100,
-  color = "#3b82f6",
+  color = "var(--accent)",
   height = 6,
   label,
   showValue = false,
@@ -37,14 +37,14 @@ export function ProgressBar({
   return (
     <div className={`w-full ${className}`}>
       {(label || showValue) && (
-        <div className="flex justify-between text-xs mb-1" style={{ color: "#8b949e" }}>
+        <div className="flex justify-between text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
           {label && <span>{label}</span>}
           {showValue && <span>{pct.toFixed(0)}%</span>}
         </div>
       )}
       <div
         className="w-full overflow-hidden rounded-full"
-        style={{ height: `${height}px`, background: "#21262d" }}
+        style={{ height: `${height}px`, background: "var(--border)" }}
       >
         <div
           className={`h-full rounded-full transition-all duration-500 ${animated ? "animate-pulse" : ""}`}

@@ -161,7 +161,7 @@ function FrameQualityTimeline({
               y1={y}
               x2={WIDTH - PAD_R}
               y2={y}
-              stroke="#21262d"
+              stroke="var(--border)"
               strokeWidth={0.5}
             />
             <text
@@ -169,7 +169,7 @@ function FrameQualityTimeline({
               y={y + 3}
               textAnchor="end"
               fontSize={7}
-              fill="#484f58"
+              fill="var(--text-muted)"
             >
               {Math.round(t * 100)}
             </text>
@@ -221,21 +221,21 @@ function FrameQualityTimeline({
         y={HEIGHT - 2}
         textAnchor="middle"
         fontSize={7}
-        fill="#484f58"
+        fill="var(--text-muted)"
       >
         Frame index →
       </text>
 
       {/* Legend */}
       {[
-        { color: "#22c55e", label: "selected" },
+        { color: "var(--ok-text)", label: "selected" },
         { color: "#3b82f6", label: "above gate" },
         { color: "#f59e0b", label: "duplicate" },
         { color: "#374151", label: "rejected" },
       ].map((item, i) => (
         <g key={item.label} transform={`translate(${PAD_L + i * 80}, ${HEIGHT - 2})`}>
           <rect x={0} y={-6} width={6} height={6} fill={item.color} rx={1} />
-          <text x={9} y={0} fontSize={6.5} fill="#484f58">
+          <text x={9} y={0} fontSize={6.5} fill="var(--text-muted)">
             {item.label}
           </text>
         </g>
@@ -274,20 +274,20 @@ function AnalysisResults({
       {/* KPIs */}
       <div className="grid grid-cols-5 gap-2">
         {[
-          { label: "Total Frames", value: result.total_frames.toLocaleString(), color: "#e6edf3" },
-          { label: "Selected", value: selected.length, color: "#22c55e" },
+          { label: "Total Frames", value: result.total_frames.toLocaleString(), color: "var(--text-primary)" },
+          { label: "Selected", value: selected.length, color: "var(--ok-text)" },
           { label: "Selection Rate", value: `${selectionRate.toFixed(1)}%`, color: "#3b82f6" },
           { label: "Avg Quality", value: `${(avgQuality * 100).toFixed(0)}%`, color: avgQuality >= qualityGate ? "#22c55e" : "#f59e0b" },
-          { label: "Process Time", value: `${result.processing_time_s?.toFixed(1) ?? "—"}s`, color: "#484f58" },
+          { label: "Process Time", value: `${result.processing_time_s?.toFixed(1) ?? "—"}s`, color: "var(--text-muted)" },
         ].map(({ label, value, color }) => (
           <div
             key={label}
             className="rounded-xl p-3"
-            style={{ background: "#0d1117", border: "1px solid #21262d" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             <p
               className="text-[10px] uppercase tracking-wide mb-1"
-              style={{ color: "#484f58" }}
+              style={{ color: "var(--text-muted)" }}
             >
               {label}
             </p>
@@ -302,14 +302,14 @@ function AnalysisResults({
       {allFrames.length > 0 && (
         <div
           className="rounded-xl p-4 space-y-2"
-          style={{ background: "#0d1117", border: "1px solid #21262d" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <BarChart2 className="w-3.5 h-3.5" style={{ color: "#484f58" }} />
-            <span className="text-xs font-medium text-white">
+            <BarChart2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+            <span className="text-xs font-medium text-text-primary">
               Frame Quality Timeline
             </span>
-            <span className="text-[10px] ml-auto" style={{ color: "#484f58" }}>
+            <span className="text-[10px] ml-auto" style={{ color: "var(--text-muted)" }}>
               {allFrames.length} frames analysed · gate = {(qualityGate * 100).toFixed(0)}%
             </span>
           </div>
@@ -321,11 +321,11 @@ function AnalysisResults({
       {selected.length > 0 && (
         <div
           className="rounded-xl p-4 space-y-3"
-          style={{ background: "#0d1117", border: "1px solid #21262d" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <div className="flex items-center gap-2">
             <Star className="w-3.5 h-3.5 text-yellow-400" />
-            <span className="text-xs font-semibold text-white">
+            <span className="text-xs font-semibold text-text-primary">
               Best Frames ({selected.length})
             </span>
           </div>
@@ -338,14 +338,14 @@ function AnalysisResults({
                   <div
                     key={frame.frame_idx}
                     className="flex-shrink-0 w-[72px] rounded-lg overflow-hidden"
-                    style={{ border: "1px solid #21262d" }}
+                    style={{ border: "1px solid var(--border)" }}
                   >
                     {/* Frame thumbnail — served by GET /api/v1/video/thumbnail/{video_id}/{frame_index} */}
                     <img
                       src={frameThumbnailUrl(result.video_id, frame.frame_idx)}
                       alt={`Frame ${frame.frame_idx} @ ${frame.timestamp_s.toFixed(2)}s`}
                       className="w-full object-cover"
-                      style={{ height: 48, background: "#161b22" }}
+                      style={{ height: 48, background: "var(--panel)" }}
                       loading="lazy"
                       onError={(e) => {
                         // Fall back to placeholder if frame not saved (no output_dir set)
@@ -358,15 +358,15 @@ function AnalysisResults({
                     {/* Fallback placeholder shown only when thumbnail fetch fails */}
                     <div
                       className="w-full items-center justify-center hidden"
-                      style={{ height: 48, background: "#161b22" }}
+                      style={{ height: 48, background: "var(--panel)" }}
                     >
-                      <span className="text-[9px] font-mono" style={{ color: "#484f58" }}>
+                      <span className="text-[9px] font-mono" style={{ color: "var(--text-muted)" }}>
                         f {frame.frame_idx}
                       </span>
                     </div>
 
                     {/* Quality bar */}
-                    <div style={{ background: "#21262d", height: 2 }}>
+                    <div style={{ background: "var(--border)", height: 2 }}>
                       <div
                         style={{
                           height: 2,
@@ -381,7 +381,7 @@ function AnalysisResults({
                       <p className="text-[9px] font-mono" style={{ color: barColor }}>
                         {Math.round(q * 100)}%
                       </p>
-                      <p className="text-[8px] font-mono" style={{ color: "#484f58" }}>
+                      <p className="text-[8px] font-mono" style={{ color: "var(--text-muted)" }}>
                         {frame.timestamp_s.toFixed(2)}s
                       </p>
                     </div>
@@ -391,7 +391,7 @@ function AnalysisResults({
               {selected.length > 30 && (
                 <div
                   className="flex-shrink-0 w-[72px] rounded-lg flex items-center justify-center"
-                  style={{ border: "1px dashed #21262d", color: "#484f58" }}
+                  style={{ border: "1px dashed var(--border)", color: "var(--text-muted)" }}
                 >
                   <span className="text-[10px]">+{selected.length - 30}</span>
                 </div>
@@ -406,7 +406,7 @@ function AnalysisResults({
         <button
           onClick={onClear}
           className="text-xs transition-colors"
-          style={{ color: "#484f58" }}
+          style={{ color: "var(--text-muted)" }}
         >
           Clear results
         </button>
@@ -524,28 +524,28 @@ function UploadZone({
           {...getRootProps()}
           className="flex flex-col items-center justify-center gap-4 h-52 rounded-2xl border-2 border-dashed cursor-pointer transition-all"
           style={{
-            borderColor: isDragActive ? '#3b82f6' : '#21262d',
-            background: isDragActive ? 'rgba(59,130,246,0.1)' : 'transparent',
+            borderColor: isDragActive ? 'var(--accent)' : 'var(--border)',
+            background: isDragActive ? 'rgba(47,158,58,0.1)' : 'transparent',
           }}
         >
           <input {...getInputProps()} />
-          <Film className="w-10 h-10" style={{ color: '#484f58' }} />
+          <Film className="w-10 h-10" style={{ color: 'var(--text-muted)' }} />
           <div className="text-center">
-            <p className="text-sm font-medium" style={{ color: '#8b949e' }}>
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               {isDragActive ? "Drop video here" : "Drop a microscopy video"}
             </p>
-            <p className="text-xs mt-1" style={{ color: '#484f58' }}>MP4, AVI, MOV, MKV</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>MP4, AVI, MOV, MKV</p>
           </div>
         </div>
       ) : (
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl"
-          style={{ background: '#0d1117', border: '1px solid #21262d' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
         >
-          <Film className="w-5 h-5 text-blue-400" />
+          <Film className="w-5 h-5 text-accent-text" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm truncate" style={{ color: '#8b949e' }}>{videoFile.name}</p>
-            <p className="text-xs" style={{ color: '#484f58' }}>
+            <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{videoFile.name}</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
               {(videoFile.size / 1024 / 1024).toFixed(1)} MB
               {videoId && <span className="text-green-400 ml-2">✓ Uploaded (ID: {videoId.slice(0, 8)}…)</span>}
             </p>
@@ -561,7 +561,7 @@ function UploadZone({
                 analyzeMutation.reset();
               }}
               className="text-xs hover:text-red-400 transition-colors"
-              style={{ color: '#484f58' }}
+              style={{ color: 'var(--text-muted)' }}
             >
               Remove
             </button>
@@ -572,7 +572,7 @@ function UploadZone({
       {/* Settings */}
       {videoFile && !result && (
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2 text-xs" style={{ color: '#484f58' }}>
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
             <span>Max frames:</span>
             <input
               type="number"
@@ -581,10 +581,10 @@ function UploadZone({
               min={10}
               max={500}
               className="w-16 px-2 py-1 rounded text-xs focus:outline-none"
-              style={{ background: '#0d1117', border: '1px solid #21262d', color: '#8b949e' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
             />
           </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: '#484f58' }}>
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
             <span>Quality gate:</span>
             <input
               type="range"
@@ -594,7 +594,7 @@ function UploadZone({
               value={qualityGate}
               onChange={(e) => setQualityGate(Number(e.target.value))}
               className="w-24 h-1.5 appearance-none rounded cursor-pointer"
-              style={{ background: '#21262d' }}
+              style={{ background: 'var(--border)' }}
             />
             <span className="font-mono">{qualityGate.toFixed(2)}</span>
           </div>
@@ -603,7 +603,7 @@ function UploadZone({
           {!videoId && !uploadMutation.isPending && (
             <button
               onClick={() => uploadMutation.mutate(videoFile)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-all"
             >
               <Upload className="w-4 h-4" />
               Upload
@@ -611,8 +611,8 @@ function UploadZone({
           )}
 
           {uploadMutation.isPending && (
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#8b949e' }}>
-              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <Loader2 className="w-4 h-4 animate-spin text-accent-text" />
               Uploading…
             </div>
           )}
@@ -620,7 +620,7 @@ function UploadZone({
           {videoId && !analyzeMutation.isPending && !jobId && (
             <button
               onClick={() => analyzeMutation.mutate({ video_id: videoId })}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-all"
             >
               <Play className="w-4 h-4" />
               Analyze Video
@@ -628,8 +628,8 @@ function UploadZone({
           )}
 
           {(analyzeMutation.isPending || jobId) && (
-            <div className="flex items-center gap-2 text-sm" style={{ color: '#8b949e' }}>
-              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <Loader2 className="w-4 h-4 animate-spin text-accent-text" />
               {jobId ? `Analyzing… ${jobProgress}%` : "Starting analysis…"}
             </div>
           )}
@@ -707,14 +707,14 @@ function VideoList({ onDelete }: { onDelete: () => void }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+        <Loader2 className="w-5 h-5 text-accent-text animate-spin" />
       </div>
     );
   }
 
   if (videos.length === 0) {
     return (
-      <div className="text-center py-10" style={{ color: '#484f58' }}>
+      <div className="text-center py-10" style={{ color: 'var(--text-muted)' }}>
         <Film className="w-8 h-8 mx-auto mb-2 opacity-30" />
         <p className="text-sm">No videos uploaded yet</p>
       </div>
@@ -727,21 +727,21 @@ function VideoList({ onDelete }: { onDelete: () => void }) {
         <div
           key={video.id}
           className="flex items-center gap-3 px-4 py-3 rounded-xl"
-          style={{ background: '#0d1117', border: '1px solid #21262d' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
         >
-          <Film className="w-4 h-4 text-blue-400 flex-shrink-0" />
+          <Film className="w-4 h-4 text-accent-text flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm truncate" style={{ color: '#8b949e' }}>{video.filename}</p>
+            <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{video.filename}</p>
             <div className="flex items-center gap-3 mt-0.5">
-              <span className="text-[10px] font-mono" style={{ color: '#484f58' }}>
+              <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
                 {(video.file_size_bytes / 1024 / 1024).toFixed(1)} MB
               </span>
               {video.duration_s && (
-                <span className="text-[10px] font-mono" style={{ color: '#484f58' }}>
+                <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
                   {video.duration_s.toFixed(1)}s
                 </span>
               )}
-              <span className="text-[10px]" style={{ color: '#484f58' }}>
+              <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
                 {timeAgo(video.created_at)}
               </span>
             </div>
@@ -753,7 +753,7 @@ function VideoList({ onDelete }: { onDelete: () => void }) {
                 video.status === "completed"
                   ? "bg-green-500/20 text-green-400"
                   : video.status === "processing"
-                  ? "bg-blue-500/20 text-blue-400"
+                  ? "bg-accent/20 text-accent-text"
                   : video.status === "failed"
                   ? "bg-red-500/20 text-red-400"
                   : "bg-gray-500/20 text-gray-400"
@@ -765,7 +765,7 @@ function VideoList({ onDelete }: { onDelete: () => void }) {
               onClick={() => deleteMutation.mutate(video.id)}
               disabled={deleteMutation.isPending}
               className="p-1 rounded hover:text-red-400 transition-colors disabled:opacity-50"
-              style={{ color: '#484f58' }}
+              style={{ color: 'var(--text-muted)' }}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -834,7 +834,7 @@ const TRICHOME_TYPE_COLORS: Record<string, string> = {
 };
 
 function typeColor(t: string): string {
-  return TRICHOME_TYPE_COLORS[t] ?? "#8b949e";
+  return TRICHOME_TYPE_COLORS[t] ?? "var(--text-secondary)";
 }
 
 // ---------------------------------------------------------------------------
@@ -858,7 +858,7 @@ function TypeDistributionChart({ distribution }: { distribution: Record<string, 
 
   if (entries.length === 0) {
     return (
-      <p className="text-xs text-center py-4" style={{ color: "#484f58" }}>
+      <p className="text-xs text-center py-4" style={{ color: "var(--text-muted)" }}>
         No distribution data
       </p>
     );
@@ -885,7 +885,7 @@ function TypeDistributionChart({ distribution }: { distribution: Record<string, 
               y={y + BAR_HEIGHT / 2 + 4}
               textAnchor="end"
               fontSize={9}
-              fill="#8b949e"
+              fill="var(--text-secondary)"
               fontFamily="monospace"
             >
               {type.replace(/_/g, " ")}
@@ -896,7 +896,7 @@ function TypeDistributionChart({ distribution }: { distribution: Record<string, 
               y={y}
               width={BAR_AREA_W}
               height={BAR_HEIGHT}
-              fill="#21262d"
+              fill="var(--border)"
               rx={3}
             />
             {/* Value bar */}
@@ -1098,16 +1098,16 @@ function TrackingTab() {
       {/* ── Step 1: Session setup ─────────────────────────────────────────── */}
       <div
         className="rounded-xl p-4 space-y-4"
-        style={{ background: "#161b22", border: "1px solid #21262d" }}
+        style={{ background: "var(--panel)", border: "1px solid var(--border)" }}
       >
         <div className="flex items-center gap-2">
-          <Target className="w-3.5 h-3.5 text-blue-400" />
-          <span className="text-xs font-semibold text-white">Session Setup</span>
+          <Target className="w-3.5 h-3.5 text-accent-text" />
+          <span className="text-xs font-semibold text-text-primary">Session Setup</span>
         </div>
 
         {/* Video picker */}
         <div className="space-y-1">
-          <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+          <label className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             Video
           </label>
           {videos.length > 0 ? (
@@ -1116,9 +1116,9 @@ function TrackingTab() {
               onChange={(e) => setVideoId(e.target.value)}
               className="w-full px-3 py-1.5 rounded-lg text-xs focus:outline-none"
               style={{
-                background: "#0d1117",
-                border: "1px solid #21262d",
-                color: videoId ? "#e6edf3" : "#484f58",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: videoId ? "var(--text-primary)" : "var(--text-muted)",
               }}
               disabled={isRunning}
             >
@@ -1139,9 +1139,9 @@ function TrackingTab() {
               onChange={(e) => setVideoId(e.target.value)}
               className="w-full px-3 py-1.5 rounded-lg text-xs focus:outline-none"
               style={{
-                background: "#0d1117",
-                border: "1px solid #21262d",
-                color: "#e6edf3",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
               }}
               disabled={isRunning}
             />
@@ -1153,12 +1153,12 @@ function TrackingTab() {
           {/* max_age */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                 Max Age
               </label>
-              <span className="text-[10px] font-mono text-blue-400">{config.max_age}</span>
+              <span className="text-[10px] font-mono text-accent-text">{config.max_age}</span>
             </div>
-            <p className="text-[9px]" style={{ color: "#484f58" }}>frames before track deletion</p>
+            <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>frames before track deletion</p>
             <input
               type="range"
               min={1}
@@ -1167,7 +1167,7 @@ function TrackingTab() {
               value={config.max_age}
               onChange={(e) => setConfig((c) => ({ ...c, max_age: Number(e.target.value) }))}
               className="w-full h-1.5 appearance-none rounded cursor-pointer"
-              style={{ background: "#21262d" }}
+              style={{ background: "var(--border)" }}
               disabled={isRunning}
             />
           </div>
@@ -1175,12 +1175,12 @@ function TrackingTab() {
           {/* min_hits */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                 Min Hits
               </label>
-              <span className="text-[10px] font-mono text-blue-400">{config.min_hits}</span>
+              <span className="text-[10px] font-mono text-accent-text">{config.min_hits}</span>
             </div>
-            <p className="text-[9px]" style={{ color: "#484f58" }}>frames to confirm a track</p>
+            <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>frames to confirm a track</p>
             <input
               type="range"
               min={1}
@@ -1189,7 +1189,7 @@ function TrackingTab() {
               value={config.min_hits}
               onChange={(e) => setConfig((c) => ({ ...c, min_hits: Number(e.target.value) }))}
               className="w-full h-1.5 appearance-none rounded cursor-pointer"
-              style={{ background: "#21262d" }}
+              style={{ background: "var(--border)" }}
               disabled={isRunning}
             />
           </div>
@@ -1197,14 +1197,14 @@ function TrackingTab() {
           {/* iou_threshold */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                 IoU Threshold
               </label>
-              <span className="text-[10px] font-mono text-blue-400">
+              <span className="text-[10px] font-mono text-accent-text">
                 {config.iou_threshold.toFixed(2)}
               </span>
             </div>
-            <p className="text-[9px]" style={{ color: "#484f58" }}>box overlap for association</p>
+            <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>box overlap for association</p>
             <input
               type="range"
               min={0.1}
@@ -1215,7 +1215,7 @@ function TrackingTab() {
                 setConfig((c) => ({ ...c, iou_threshold: Number(e.target.value) }))
               }
               className="w-full h-1.5 appearance-none rounded cursor-pointer"
-              style={{ background: "#21262d" }}
+              style={{ background: "var(--border)" }}
               disabled={isRunning}
             />
           </div>
@@ -1223,12 +1223,12 @@ function TrackingTab() {
           {/* min_track_length */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+              <label className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
                 Min Track Length
               </label>
-              <span className="text-[10px] font-mono text-blue-400">{config.min_track_length}</span>
+              <span className="text-[10px] font-mono text-accent-text">{config.min_track_length}</span>
             </div>
-            <p className="text-[9px]" style={{ color: "#484f58" }}>minimum frames in a track</p>
+            <p className="text-[9px]" style={{ color: "var(--text-muted)" }}>minimum frames in a track</p>
             <input
               type="range"
               min={1}
@@ -1239,7 +1239,7 @@ function TrackingTab() {
                 setConfig((c) => ({ ...c, min_track_length: Number(e.target.value) }))
               }
               className="w-full h-1.5 appearance-none rounded cursor-pointer"
-              style={{ background: "#21262d" }}
+              style={{ background: "var(--border)" }}
               disabled={isRunning}
             />
           </div>
@@ -1250,7 +1250,7 @@ function TrackingTab() {
           <button
             onClick={() => startMutation.mutate()}
             disabled={!videoId || isRunning}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {startMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1260,8 +1260,8 @@ function TrackingTab() {
             Start Tracking
           </button>
           {isRunning && (
-            <span className="text-xs" style={{ color: "#484f58" }}>
-              Session: <span className="font-mono text-blue-400">{sessionId?.slice(0, 12)}…</span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Session: <span className="font-mono text-accent-text">{sessionId?.slice(0, 12)}…</span>
             </span>
           )}
         </div>
@@ -1285,20 +1285,20 @@ function TrackingTab() {
       {sessionId && trackingStatus && trackingStatus.status === "running" && (
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-xl"
-          style={{ background: "#161b22", border: "1px solid #21262d" }}
+          style={{ background: "var(--panel)", border: "1px solid var(--border)" }}
         >
           <span
             className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
             style={{ background: "#22c55e" }}
           />
-          <Activity className="w-4 h-4 text-blue-400 flex-shrink-0" />
-          <span className="text-sm" style={{ color: "#8b949e" }}>
+          <Activity className="w-4 h-4 text-accent-text flex-shrink-0" />
+          <span className="text-sm" style={{ color: "var(--text-secondary)" }}>
             Processed{" "}
-            <span className="font-mono text-white">
+            <span className="font-mono text-text-primary">
               {trackingStatus.frames_processed}
             </span>{" "}
             frames ·{" "}
-            <span className="font-mono text-white">{trackingStatus.track_count}</span> tracks
+            <span className="font-mono text-text-primary">{trackingStatus.track_count}</span> tracks
             found
           </span>
         </div>
@@ -1313,17 +1313,17 @@ function TrackingTab() {
               {
                 label: "Total Tracks",
                 value: summary.total_tracks.toLocaleString(),
-                color: "#e6edf3",
+                color: "var(--text-primary)",
               },
               {
                 label: "Confirmed Tracks",
                 value: summary.confirmed_tracks.toLocaleString(),
-                color: "#22c55e",
+                color: "var(--ok-text)",
               },
               {
                 label: "Avg Track Length",
                 value: summary.avg_track_length.toFixed(1),
-                color: "#58a6ff",
+                color: "var(--accent-text)",
               },
               {
                 label: "Top Type",
@@ -1334,11 +1334,11 @@ function TrackingTab() {
               <div
                 key={label}
                 className="rounded-xl p-3"
-                style={{ background: "#0d1117", border: "1px solid #21262d" }}
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               >
                 <p
                   className="text-[10px] uppercase tracking-wide mb-1"
-                  style={{ color: "#484f58" }}
+                  style={{ color: "var(--text-muted)" }}
                 >
                   {label}
                 </p>
@@ -1353,11 +1353,11 @@ function TrackingTab() {
           {Object.keys(summary.type_distribution).length > 0 && (
             <div
               className="rounded-xl p-4 space-y-3"
-              style={{ background: "#0d1117", border: "1px solid #21262d" }}
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <div className="flex items-center gap-2">
-                <BarChart2 className="w-3.5 h-3.5" style={{ color: "#484f58" }} />
-                <span className="text-xs font-semibold text-white">Type Distribution</span>
+                <BarChart2 className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+                <span className="text-xs font-semibold text-text-primary">Type Distribution</span>
               </div>
               <TypeDistributionChart distribution={summary.type_distribution} />
             </div>
@@ -1367,17 +1367,17 @@ function TrackingTab() {
           {trajectories.length > 0 && (
             <div
               className="rounded-xl p-4 space-y-3"
-              style={{ background: "#0d1117", border: "1px solid #21262d" }}
+              style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white">
+                <span className="text-xs font-semibold text-text-primary">
                   Trajectories ({trajectories.length})
                 </span>
                 <button
                   onClick={exportJson}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all hover:bg-blue-500/20"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all hover:bg-accent/20"
                   style={{
-                    color: "#58a6ff",
+                    color: "var(--accent-text)",
                     border: "1px solid rgba(88,166,255,0.25)",
                   }}
                 >
@@ -1388,16 +1388,16 @@ function TrackingTab() {
 
               <div
                 className="overflow-y-auto rounded-lg"
-                style={{ maxHeight: 300, border: "1px solid #21262d" }}
+                style={{ maxHeight: 300, border: "1px solid var(--border)" }}
               >
                 <table className="w-full text-xs border-collapse">
                   <thead>
-                    <tr style={{ background: "#161b22" }}>
+                    <tr style={{ background: "var(--panel)" }}>
                       {["Track ID", "Type", "Frame Span", "Length", "State"].map((h) => (
                         <th
                           key={h}
                           className="px-3 py-2 text-left font-medium uppercase tracking-wide"
-                          style={{ color: "#484f58", borderBottom: "1px solid #21262d" }}
+                          style={{ color: "var(--text-muted)", borderBottom: "1px solid var(--border)" }}
                         >
                           {h}
                         </th>
@@ -1410,16 +1410,16 @@ function TrackingTab() {
                       const lastFrame = t.frames.length > 0 ? Math.max(...t.frames) : 0;
                       const length = t.frames.length;
                       const isConfirmed = length >= config.min_track_length;
-                      const color = t.trichome_type ? typeColor(t.trichome_type) : "#484f58";
+                      const color = t.trichome_type ? typeColor(t.trichome_type) : "var(--text-muted)";
                       return (
                         <tr
                           key={t.track_id}
                           style={{
-                            background: idx % 2 === 0 ? "#0d1117" : "transparent",
-                            borderBottom: "1px solid #21262d",
+                            background: idx % 2 === 0 ? "var(--surface)" : "transparent",
+                            borderBottom: "1px solid var(--border)",
                           }}
                         >
-                          <td className="px-3 py-1.5 font-mono" style={{ color: "#8b949e" }}>
+                          <td className="px-3 py-1.5 font-mono" style={{ color: "var(--text-secondary)" }}>
                             #{t.track_id}
                           </td>
                           <td className="px-3 py-1.5 font-mono" style={{ color }}>
@@ -1427,10 +1427,10 @@ function TrackingTab() {
                               ? t.trichome_type.replace(/_/g, " ")
                               : "—"}
                           </td>
-                          <td className="px-3 py-1.5 font-mono" style={{ color: "#8b949e" }}>
+                          <td className="px-3 py-1.5 font-mono" style={{ color: "var(--text-secondary)" }}>
                             {firstFrame}–{lastFrame}
                           </td>
-                          <td className="px-3 py-1.5 font-mono" style={{ color: "#8b949e" }}>
+                          <td className="px-3 py-1.5 font-mono" style={{ color: "var(--text-secondary)" }}>
                             {length}
                           </td>
                           <td className="px-3 py-1.5">
@@ -1452,7 +1452,7 @@ function TrackingTab() {
                 </table>
               </div>
               {trajectories.length > 50 && (
-                <p className="text-[10px] text-center" style={{ color: "#484f58" }}>
+                <p className="text-[10px] text-center" style={{ color: "var(--text-muted)" }}>
                   Showing first 50 of {trajectories.length} trajectories. Export JSON for full
                   dataset.
                 </p>
@@ -1466,22 +1466,22 @@ function TrackingTab() {
       {history.length > 0 && (
         <div
           className="rounded-xl p-4 space-y-2"
-          style={{ background: "#161b22", border: "1px solid #21262d" }}
+          style={{ background: "var(--panel)", border: "1px solid var(--border)" }}
         >
-          <span className="text-xs font-semibold text-white">Session History</span>
+          <span className="text-xs font-semibold text-text-primary">Session History</span>
           <div className="space-y-1.5">
             {history.map((h) => (
               <div
                 key={h.session_id}
                 className="flex items-center gap-3 px-3 py-2 rounded-lg"
-                style={{ background: "#0d1117", border: "1px solid #21262d" }}
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               >
-                <span className="text-[10px] font-mono text-blue-400 flex-shrink-0">
+                <span className="text-[10px] font-mono text-accent-text flex-shrink-0">
                   {h.session_id.slice(0, 14)}…
                 </span>
                 <span
                   className="text-[10px] truncate flex-1 min-w-0"
-                  style={{ color: "#8b949e" }}
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   {h.video_id}
                 </span>
@@ -1494,7 +1494,7 @@ function TrackingTab() {
                   onClick={() => deleteMutation.mutate(h.session_id)}
                   disabled={deleteMutation.isPending}
                   className="p-1 rounded hover:text-red-400 transition-colors disabled:opacity-50 flex-shrink-0"
-                  style={{ color: "#484f58" }}
+                  style={{ color: "var(--text-muted)" }}
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -1520,16 +1520,16 @@ export default function VideoPage() {
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3"
-        style={{ borderBottom: '1px solid #21262d' }}
+        style={{ borderBottom: '1px solid var(--border)' }}
       >
         <div className="flex items-center gap-2">
-          <Film className="w-4 h-4 text-blue-400" />
-          <h1 className="text-base font-semibold text-white">Video Analysis</h1>
+          <Film className="w-4 h-4 text-accent-text" />
+          <h1 className="text-base font-semibold text-text-primary">Video Analysis</h1>
         </div>
         <div className="flex items-center gap-3">
           <div
             className="flex gap-1 p-0.5 rounded-lg"
-            style={{ background: '#161b22', border: '1px solid #21262d' }}
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
           >
             {(["upload", "library", "tracking"] as const).map((t) => (
               <button
@@ -1537,8 +1537,8 @@ export default function VideoPage() {
                 onClick={() => setTab(t)}
                 className="px-3 py-1 rounded text-xs font-medium capitalize transition-all"
                 style={{
-                  background: tab === t ? '#0d1117' : 'transparent',
-                  color: tab === t ? '#e6edf3' : '#484f58',
+                  background: tab === t ? 'var(--surface)' : 'transparent',
+                  color: tab === t ? 'var(--text-primary)' : 'var(--text-muted)',
                 }}
               >
                 {t}
@@ -1548,7 +1548,7 @@ export default function VideoPage() {
           <button
             onClick={() => queryClient.invalidateQueries({ queryKey: ["videos"] })}
             className="p-1.5 rounded transition-colors"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
           >
             <RefreshCw className="w-4 h-4" />
           </button>

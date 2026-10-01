@@ -335,7 +335,7 @@ async def _run_auto_label(job_uuid: str, request: AutoLabelRequest) -> None:
                 finally:
                     pipeline.unload()
 
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             labels, stats = await loop.run_in_executor(None, _run_sync)
 
         pushed = 0

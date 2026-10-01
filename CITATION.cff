@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use CTIP in your research, please cite it as below."
+title: "CTIP — Cannabis Trichome Intelligence Platform"
+abstract: >-
+  Open-source microscopy computer vision platform for cannabis trichome detection, instance segmentation,
+  morphology, optical maturity assessment and size measurement, with human-in-the-loop annotation and active learning.
+type: software
+authors:
+  - alias: ottco-dev
+repository-code: "https://github.com/ottco-dev/ctip-oss"
+license: AGPL-3.0-or-later
+version: 0.1.0
+date-released: "2026-10-01"
+keywords:
+  - computer vision
+  - microscopy
+  - cannabis
+  - trichome
+  - instance segmentation
+  - active learning

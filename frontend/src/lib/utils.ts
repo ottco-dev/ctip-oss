@@ -94,14 +94,14 @@ export function getMaturityLabel(stage: string): string {
 
 export function getStatusColor(status: RunStatus | JobStatus): string {
   const colors: Record<string, string> = {
-    pending: '#8b949e',
+    pending: 'var(--text-secondary)',
     running: '#3b82f6',
     completed: '#22c55e',
     failed: '#ef4444',
     stopped: '#eab308',
     cancelled: '#6b7280',
   };
-  return colors[status] ?? '#8b949e';
+  return colors[status] ?? 'var(--text-secondary)';
 }
 
 export function getStatusBadgeClass(status: RunStatus | JobStatus): string {

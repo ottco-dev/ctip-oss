@@ -387,7 +387,7 @@ async def ensemble_label(req: EnsembleLabelRequest) -> EnsembleLabelResponse:
     The consensus is a majority vote across all providers that returned a valid label.
     """
     image = _decode_image(req.image_base64)
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     tasks = []
     for provider_id in req.providers:

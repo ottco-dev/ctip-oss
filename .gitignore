@@ -114,3 +114,6 @@ temp/
 # Reports output
 reports/generated/
 *.pdf
+
+# Build caches
+*.tsbuildinfo

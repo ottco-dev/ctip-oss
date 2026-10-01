@@ -205,7 +205,7 @@ function ImageInputNode({ id, data }: { id: string; data: ImageInputData }) {
     >
       <div
         onClick={() => inputRef.current?.click()}
-        className="cursor-pointer rounded-lg border border-dashed border-blue-400/40 hover:border-blue-400/80 transition-colors text-center p-2"
+        className="cursor-pointer rounded-lg border border-dashed border-accent/40 hover:border-accent/80 transition-colors text-center p-2"
       >
         {data.imageUrl ? (
           <img
@@ -233,7 +233,7 @@ function ImageInputNode({ id, data }: { id: string; data: ImageInputData }) {
         onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
       />
       {/* output handle */}
-      <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-blue-400 border-2 border-surface" />
+      <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-accent-hover border-2 border-surface" />
     </NodeShell>
   );
 }
@@ -592,7 +592,7 @@ const PALETTE_ITEMS = [
     type: "model",
     label: "Model",
     icon: Brain,
-    color: "#a78bfa",
+    color: "var(--violet-text)",
     defaultData: {
       label: "Model",
       modelVariant: "yolo11s",

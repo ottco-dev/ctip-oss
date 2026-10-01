@@ -45,14 +45,14 @@ interface ModelVersion {
 function VramBar({ requiredGb, totalGb = 8 }: { requiredGb: number; totalGb?: number }) {
   const pct = Math.min(100, (requiredGb / totalGb) * 100);
   const color =
-    pct > 85 ? "bg-red-500" : pct > 65 ? "bg-yellow-500" : "bg-blue-500";
+    pct > 85 ? "bg-red-500" : pct > 65 ? "bg-yellow-500" : "bg-accent";
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#21262d' }}>
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
         <div className={cn("h-full transition-all", color)} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-[10px] font-mono w-12 text-right" style={{ color: '#484f58' }}>
+      <span className="text-[10px] font-mono w-12 text-right" style={{ color: 'var(--text-muted)' }}>
         {requiredGb.toFixed(1)} GB
       </span>
     </div>
@@ -67,12 +67,12 @@ function MetricBadge({ label, value }: { label: string; value: number }) {
   return (
     <div
       className="flex flex-col items-center px-2.5 py-1.5 rounded"
-      style={{ background: '#161b22', border: '1px solid #21262d' }}
+      style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
     >
-      <span className="text-[9px] uppercase tracking-wide" style={{ color: '#484f58' }}>
+      <span className="text-[9px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
         {label}
       </span>
-      <span className="text-sm font-bold font-mono text-white mt-0.5">
+      <span className="text-sm font-bold font-mono text-text-primary mt-0.5">
         {(value * 100).toFixed(1)}
       </span>
     </div>
@@ -99,7 +99,7 @@ function ModelCard({
   const [expanded, setExpanded] = useState(false);
 
   const typeColor: Record<string, string> = {
-    detection: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    detection: "text-accent-text bg-accent/10 border-accent/20",
     segmentation: "text-purple-400 bg-purple-500/10 border-purple-500/20",
     maturity: "text-amber-400 bg-amber-500/10 border-amber-500/20",
     morphology: "text-green-400 bg-green-500/10 border-green-500/20",
@@ -112,28 +112,28 @@ function ModelCard({
     <div
       className={cn("rounded-xl border transition-all")}
       style={{
-        border: model.is_active ? '1px solid rgba(59,130,246,0.4)' : '1px solid #21262d',
-        background: model.is_active ? 'rgba(59,130,246,0.05)' : '#0d1117',
+        border: model.is_active ? '1px solid rgba(47,158,58,0.4)' : '1px solid var(--border)',
+        background: model.is_active ? 'rgba(47,158,58,0.05)' : 'var(--surface)',
       }}
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
         {model.is_active && (
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+          <div className="w-1.5 h-1.5 rounded-full bg-accent-hover flex-shrink-0" />
         )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-white">{model.name}</h3>
+            <h3 className="text-sm font-semibold text-text-primary">{model.name}</h3>
             <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium capitalize", tc)}>
               {model.model_type}
             </span>
-            <span className="text-[10px]" style={{ color: '#484f58' }}>
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
               {model.variant} · {model.framework}
             </span>
           </div>
           {model.description && (
-            <p className="text-xs mt-0.5 truncate" style={{ color: '#484f58' }}>
+            <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>
               {model.description}
             </p>
           )}
@@ -162,7 +162,7 @@ function ModelCard({
               onClick={() => onDownload(model.id)}
               disabled={isDownloading}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium
-                bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                bg-accent hover:bg-accent-hover text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isDownloading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -177,7 +177,7 @@ function ModelCard({
               disabled={isActivating}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium
                 border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ borderColor: '#21262d', color: '#8b949e' }}
+              style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
             >
               {isActivating ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -187,7 +187,7 @@ function ModelCard({
               {isActivating ? "Activating…" : "Activate"}
             </button>
           ) : (
-            <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-blue-400 font-medium">
+            <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-accent-text font-medium">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Active
             </span>
@@ -196,7 +196,7 @@ function ModelCard({
           <button
             onClick={() => setExpanded((v) => !v)}
             className="p-1.5 rounded transition-colors"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
           >
             {expanded ? (
               <ChevronDown className="w-4 h-4" />
@@ -211,7 +211,7 @@ function ModelCard({
       {expanded && (
         <div
           className="px-4 pb-4 pt-3 space-y-3"
-          style={{ borderTop: '1px solid #21262d' }}
+          style={{ borderTop: '1px solid var(--border)' }}
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             {[
@@ -227,15 +227,15 @@ function ModelCard({
               { label: "Status", value: model.is_downloaded ? "Downloaded" : "Not downloaded" },
             ].map(({ label, value }) => (
               <div key={label} className="space-y-0.5">
-                <p className="text-[10px] uppercase tracking-wide" style={{ color: '#484f58' }}>{label}</p>
-                <p style={{ color: '#8b949e' }}>{value}</p>
+                <p className="text-[10px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                <p style={{ color: 'var(--text-secondary)' }}>{value}</p>
               </div>
             ))}
           </div>
 
           {Object.keys(model.metrics).length > 0 && (
             <div>
-              <p className="text-[10px] uppercase tracking-wide mb-2" style={{ color: '#484f58' }}>
+              <p className="text-[10px] uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>
                 Metrics
               </p>
               <div className="flex flex-wrap gap-2">
@@ -243,10 +243,10 @@ function ModelCard({
                   <div
                     key={key}
                     className="px-2 py-1 rounded text-xs"
-                    style={{ background: '#161b22', border: '1px solid #21262d' }}
+                    style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
                   >
-                    <span style={{ color: '#484f58' }}>{key}: </span>
-                    <span className="font-mono text-white">
+                    <span style={{ color: 'var(--text-muted)' }}>{key}: </span>
+                    <span className="font-mono text-text-primary">
                       {typeof val === "number" && val <= 1
                         ? (val * 100).toFixed(1) + "%"
                         : val}
@@ -259,10 +259,10 @@ function ModelCard({
 
           {model.file_path && (
             <div>
-              <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: '#484f58' }}>Path</p>
+              <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Path</p>
               <code
                 className="text-[10px] text-green-300/80 px-2 py-1 rounded block truncate"
-                style={{ background: '#161b22' }}
+                style={{ background: 'var(--panel)' }}
               >
                 {model.file_path}
               </code>
@@ -274,7 +274,7 @@ function ModelCard({
               href={model.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+              className="inline-flex items-center gap-1 text-xs text-accent-text hover:text-accent-text"
             >
               <ExternalLink className="w-3 h-3" />
               Source / Weights
@@ -332,16 +332,16 @@ export default function ModelsPage() {
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3"
-        style={{ borderBottom: '1px solid #21262d' }}
+        style={{ borderBottom: '1px solid var(--border)' }}
       >
         <div className="flex items-center gap-2">
-          <BoxSelect className="w-4 h-4 text-blue-400" />
-          <h1 className="text-base font-semibold text-white">Model Registry</h1>
+          <BoxSelect className="w-4 h-4 text-accent-text" />
+          <h1 className="text-base font-semibold text-text-primary">Model Registry</h1>
         </div>
         <div className="flex items-center gap-3">
           <div
             className="flex gap-1 p-0.5 rounded-lg"
-            style={{ background: '#161b22', border: '1px solid #21262d' }}
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
           >
             {types.map((t) => (
               <button
@@ -350,12 +350,12 @@ export default function ModelsPage() {
                 className={cn(
                   "px-2.5 py-1 rounded text-xs font-medium capitalize transition-all",
                   filterType === t
-                    ? "text-white"
-                    : "hover:text-white"
+                    ? "text-text-primary"
+                    : "hover:text-text-primary"
                 )}
                 style={{
-                  background: filterType === t ? '#0d1117' : 'transparent',
-                  color: filterType === t ? '#e6edf3' : '#484f58',
+                  background: filterType === t ? 'var(--surface)' : 'transparent',
+                  color: filterType === t ? 'var(--text-primary)' : 'var(--text-muted)',
                 }}
               >
                 {t}
@@ -365,7 +365,7 @@ export default function ModelsPage() {
           <button
             onClick={() => refetch()}
             className="p-1.5 rounded transition-colors"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -375,16 +375,16 @@ export default function ModelsPage() {
       {/* VRAM summary */}
       <div
         className="px-5 py-3"
-        style={{ borderBottom: '1px solid #21262d', background: '#161b22' }}
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--panel)' }}
       >
         <div className="flex items-center gap-6 text-xs">
           <div className="flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5 text-blue-400" />
-            <span style={{ color: '#484f58' }}>RTX 4060 — 8 GB VRAM</span>
+            <Cpu className="w-3.5 h-3.5 text-accent-text" />
+            <span style={{ color: 'var(--text-muted)' }}>RTX 4060 — 8 GB VRAM</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-400" />
-            <span className="text-blue-400">Safe (≤ 5.2 GB)</span>
+            <span className="w-2 h-2 rounded-full bg-accent-hover" />
+            <span className="text-accent-text">Safe (≤ 5.2 GB)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-yellow-400" />
@@ -394,7 +394,7 @@ export default function ModelsPage() {
             <span className="w-2 h-2 rounded-full bg-red-400" />
             <span className="text-red-400">Too large (&gt; 6.8 GB)</span>
           </div>
-          <span className="ml-auto" style={{ color: '#484f58' }}>
+          <span className="ml-auto" style={{ color: 'var(--text-muted)' }}>
             Only 1 GPU task runs at a time (asyncio.Semaphore)
           </span>
         </div>
@@ -405,7 +405,7 @@ export default function ModelsPage() {
         {/* Loading */}
         {isLoading && (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
           </div>
         )}
 
@@ -426,7 +426,7 @@ export default function ModelsPage() {
 
         {/* Empty state */}
         {!isLoading && !isError && models.length === 0 && (
-          <div className="text-center py-16" style={{ color: '#484f58' }}>
+          <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>
             <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm font-medium">No models registered yet</p>
             <p className="text-xs mt-1">Models registered via the API will appear here</p>
@@ -435,7 +435,7 @@ export default function ModelsPage() {
 
         {/* Filtered empty */}
         {!isLoading && !isError && models.length > 0 && filteredModels.length === 0 && (
-          <div className="text-center py-16" style={{ color: '#484f58' }}>
+          <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>
             <BoxSelect className="w-8 h-8 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No {filterType} models in registry</p>
           </div>

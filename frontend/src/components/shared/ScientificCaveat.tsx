@@ -28,7 +28,7 @@ export function ScientificCaveat({
         color: "#ca8a04",
       }}
     >
-      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#eab308" }} />
+      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "var(--warn-text)" }} />
       <p className="leading-relaxed">{message}</p>
     </div>
   );

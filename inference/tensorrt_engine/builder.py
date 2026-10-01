@@ -79,14 +79,7 @@ def build_engine_from_onnx(
         ImportError: TensorRT not installed.
         RuntimeError: Build failure.
     """
-    try:
-        import tensorrt as trt
-    except ImportError as exc:
-        raise ImportError(
-            "TensorRT not available. "
-            "Install: pip install tensorrt  (or apt-get install python3-libnvinfer)"
-        ) from exc
-
+    # inputs first: a missing file or an existing engine needs no TensorRT
     onnx_path = Path(config.onnx_path)
     engine_path = Path(config.engine_path)
 
@@ -96,6 +89,14 @@ def build_engine_from_onnx(
     if engine_path.exists() and not overwrite:
         logger.info("Engine already exists (use overwrite=True to rebuild): %s", engine_path)
         return engine_path
+
+    try:
+        import tensorrt as trt
+    except ImportError as exc:
+        raise ImportError(
+            "TensorRT not available. "
+            "Install: pip install tensorrt  (or apt-get install python3-libnvinfer)"
+        ) from exc
 
     engine_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -194,14 +195,14 @@ def inspect_engine(engine_path: str | Path) -> dict:
           "trt_version": str,
         }
     """
+    engine_path = Path(engine_path)
+    if not engine_path.exists():
+        raise FileNotFoundError(engine_path)
+
     try:
         import tensorrt as trt
     except ImportError as exc:
         raise ImportError("TensorRT not available.") from exc
-
-    engine_path = Path(engine_path)
-    if not engine_path.exists():
-        raise FileNotFoundError(engine_path)
 
     trt_logger = trt.Logger(trt.Logger.ERROR)
     runtime = trt.Runtime(trt_logger)

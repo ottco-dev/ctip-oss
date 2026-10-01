@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import json
 import os
-import random
 import shutil
 import time
 import urllib.parse
@@ -36,6 +35,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from shared.logging.logger import get_logger
+from training.pipelines.session_split import split_by_session
 
 logger = get_logger(__name__)
 
@@ -178,21 +178,17 @@ def export_ls_project(config: ExportConfig) -> ExportResult:
         (out_dir / "labels" / split).mkdir(parents=True, exist_ok=True)
 
     # ── Split tasks ─────────────────────────────────────────────────────────
-    rng = random.Random(config.seed)
-    rng.shuffle(all_tasks)
-    n = len(all_tasks)
-    n_train = max(1, int(n * config.train_ratio))
-    n_val = max(1, int(n * config.val_ratio))
-    splits = {
-        "train": all_tasks[:n_train],
-        "val": all_tasks[n_train : n_train + n_val],
-        "test": all_tasks[n_train + n_val :],
-    }
+    # whole imaging sessions per split: near-identical frames must not leak into val/test
+    session_split = split_by_session(all_tasks, config.train_ratio, config.val_ratio, config.seed)
+    splits = session_split.splits
+    _log(f"Session split — {session_split.summary()}", "info")
+    for w in session_split.warnings:
+        _log(w, "warning")
 
     # ── Write images + labels ────────────────────────────────────────────────
     exported = 0
     skipped = 0
-    warnings: list[str] = []
+    warnings: list[str] = list(session_split.warnings)
     class_names_seen: set[str] = set()
     _total_tasks = len(all_tasks)
     _processed = 0

@@ -624,7 +624,7 @@ class TestRemoteComputeRegistry:
         from services.remote_compute.registry import get_compute_backend
         b = get_compute_backend("modal")
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             b.run_training_job(config={}, dataset_path="/tmp/fake")
         )
         assert not result.success
@@ -637,7 +637,7 @@ class TestRemoteComputeRegistry:
         from services.remote_compute.registry import get_compute_backend
         b = get_compute_backend("replicate")
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             b.run_training_job(config={}, dataset_path="/tmp/fake")
         )
         assert not result.success
@@ -650,7 +650,7 @@ class TestRemoteComputeRegistry:
         from services.remote_compute.registry import get_compute_backend
         b = get_compute_backend("replicate")
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             b.run_vlm_inference(_rgb_image(), "describe this image")
         )
         assert not result.success

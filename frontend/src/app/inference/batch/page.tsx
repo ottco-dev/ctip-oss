@@ -82,14 +82,14 @@ function StatCard({
   return (
     <div
       className="px-4 py-3 rounded-xl flex-1 min-w-0"
-      style={{ background: "#0d1117", border: "1px solid #21262d" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
-      <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "#484f58" }}>
+      <p className="text-[10px] uppercase tracking-wide mb-1" style={{ color: "var(--text-muted)" }}>
         {label}
       </p>
       <p
         className="text-2xl font-bold font-mono truncate"
-        style={{ color: color ?? "#e6edf3" }}
+        style={{ color: color ?? "var(--text-primary)" }}
       >
         {value}
       </p>
@@ -108,7 +108,7 @@ function ResultRow({ item, idx }: { item: FileResult; idx: number }) {
   return (
     <tr
       className={cn("border-b text-sm transition-colors", idx % 2 === 0 ? "" : "")}
-      style={{ borderColor: "#21262d" }}
+      style={{ borderColor: "var(--border)" }}
     >
       {/* Status */}
       <td className="px-3 py-2.5 w-8">
@@ -124,7 +124,7 @@ function ResultRow({ item, idx }: { item: FileResult; idx: number }) {
         <span
           className="block truncate text-xs font-mono"
           title={item.filename}
-          style={{ color: "#8b949e" }}
+          style={{ color: "var(--text-secondary)" }}
         >
           {item.filename}
         </span>
@@ -136,7 +136,7 @@ function ResultRow({ item, idx }: { item: FileResult; idx: number }) {
       </td>
 
       {/* Dimensions */}
-      <td className="px-3 py-2.5 text-xs font-mono text-right" style={{ color: "#484f58" }}>
+      <td className="px-3 py-2.5 text-xs font-mono text-right" style={{ color: "var(--text-muted)" }}>
         {item.width && item.height ? `${item.width}×${item.height}` : "—"}
       </td>
 
@@ -144,7 +144,7 @@ function ResultRow({ item, idx }: { item: FileResult; idx: number }) {
       <td className="px-3 py-2.5 text-right">
         <span
           className="text-sm font-bold font-mono"
-          style={{ color: isOk ? "#60a5fa" : "#484f58" }}
+          style={{ color: isOk ? "#60a5fa" : "var(--text-muted)" }}
         >
           {isOk ? item.num_detections : "—"}
         </span>
@@ -157,7 +157,7 @@ function ResultRow({ item, idx }: { item: FileResult; idx: number }) {
           style={{
             color:
               item.mean_confidence == null
-                ? "#484f58"
+                ? "var(--text-muted)"
                 : item.mean_confidence >= 0.7
                 ? "#22c55e"
                 : item.mean_confidence >= 0.5
@@ -170,7 +170,7 @@ function ResultRow({ item, idx }: { item: FileResult; idx: number }) {
       </td>
 
       {/* Inference time */}
-      <td className="px-3 py-2.5 text-right text-xs font-mono" style={{ color: "#484f58" }}>
+      <td className="px-3 py-2.5 text-right text-xs font-mono" style={{ color: "var(--text-muted)" }}>
         {ms != null ? `${ms.toFixed(0)} ms` : "—"}
       </td>
     </tr>
@@ -289,24 +289,24 @@ export default function BatchInferencePage() {
 
   // ---------------------------------------------------------------------------
   return (
-    <div className="flex flex-col h-full" style={{ background: "#010409" }}>
+    <div className="flex flex-col h-full" style={{ background: "var(--background)" }}>
       {/* ── Header ── */}
       <div
         className="flex items-center gap-4 px-5 py-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d", background: "#0d1117" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}
       >
         <Link
           href="/inference"
           className="flex items-center gap-1.5 text-xs transition-colors"
-          style={{ color: "#484f58" }}
+          style={{ color: "var(--text-muted)" }}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Inference
         </Link>
-        <span style={{ color: "#21262d" }}>/</span>
+        <span style={{ color: "var(--border)" }}>/</span>
         <div className="flex items-center gap-2">
-          <Layers className="w-4 h-4 text-blue-400" />
-          <h1 className="text-base font-semibold text-white">Batch Detection</h1>
+          <Layers className="w-4 h-4 text-accent-text" />
+          <h1 className="text-base font-semibold text-text-primary">Batch Detection</h1>
         </div>
       </div>
 
@@ -314,12 +314,12 @@ export default function BatchInferencePage() {
         {/* ── Left: config + dropzone ── */}
         <div
           className="w-72 flex-shrink-0 flex flex-col overflow-y-auto"
-          style={{ borderRight: "1px solid #21262d" }}
+          style={{ borderRight: "1px solid var(--border)" }}
         >
           <div className="p-4 space-y-5">
             {/* Dropzone */}
             <div>
-              <p className="text-xs font-medium mb-2" style={{ color: "#8b949e" }}>
+              <p className="text-xs font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
                 Images
               </p>
               <div
@@ -329,17 +329,17 @@ export default function BatchInferencePage() {
                   "border-2 border-dashed cursor-pointer transition-all",
                 )}
                 style={{
-                  borderColor: isDragActive ? "#3b82f6" : "#21262d",
-                  background: isDragActive ? "rgba(59,130,246,0.08)" : "transparent",
+                  borderColor: isDragActive ? "var(--accent)" : "var(--border)",
+                  background: isDragActive ? "rgba(47,158,58,0.08)" : "transparent",
                 }}
               >
                 <input {...getInputProps()} />
-                <Upload className="w-7 h-7" style={{ color: isDragActive ? "#3b82f6" : "#484f58" }} />
+                <Upload className="w-7 h-7" style={{ color: isDragActive ? "var(--accent)" : "var(--text-muted)" }} />
                 <div className="text-center">
-                  <p className="text-xs font-medium" style={{ color: "#8b949e" }}>
+                  <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
                     {isDragActive ? "Drop images here" : "Drop or click to add images"}
                   </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "#484f58" }}>
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                     PNG · JPG · TIFF
                   </p>
                 </div>
@@ -347,7 +347,7 @@ export default function BatchInferencePage() {
 
               {files.length > 0 && (
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs" style={{ color: "#484f58" }}>
+                  <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                     {files.length} file{files.length !== 1 ? "s" : ""} queued
                   </span>
                   <button
@@ -358,7 +358,7 @@ export default function BatchInferencePage() {
                       setStatus("idle");
                     }}
                     className="text-[10px] flex items-center gap-1 transition-colors"
-                    style={{ color: "#484f58" }}
+                    style={{ color: "var(--text-muted)" }}
                   >
                     <Trash2 className="w-3 h-3" />
                     Clear all
@@ -369,17 +369,17 @@ export default function BatchInferencePage() {
 
             {/* Configuration */}
             <div className="space-y-4">
-              <p className="text-xs font-medium" style={{ color: "#8b949e" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
                 Configuration
               </p>
 
               {/* Conf threshold */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs" style={{ color: "#484f58" }}>
+                  <label className="text-xs" style={{ color: "var(--text-muted)" }}>
                     Confidence Threshold
                   </label>
-                  <span className="text-xs font-mono" style={{ color: "#8b949e" }}>
+                  <span className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
                     {confThreshold.toFixed(2)}
                   </span>
                 </div>
@@ -391,9 +391,9 @@ export default function BatchInferencePage() {
                   value={confThreshold}
                   onChange={(e) => setConfThreshold(Number(e.target.value))}
                   className="w-full h-1.5 appearance-none rounded cursor-pointer"
-                  style={{ background: "#21262d" }}
+                  style={{ background: "var(--border)" }}
                 />
-                <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "#484f58" }}>
+                <div className="flex justify-between text-[10px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                   <span>0.1</span>
                   <span>0.9</span>
                 </div>
@@ -401,7 +401,7 @@ export default function BatchInferencePage() {
 
               {/* Model variant */}
               <div>
-                <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+                <label className="text-xs mb-1.5 block" style={{ color: "var(--text-muted)" }}>
                   Model Variant
                 </label>
                 <select
@@ -411,9 +411,9 @@ export default function BatchInferencePage() {
                   }
                   className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
                   style={{
-                    background: "#0d1117",
-                    border: "1px solid #21262d",
-                    color: "#8b949e",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-secondary)",
                   }}
                 >
                   <option value="yolo11n">yolo11n — Nano (fastest)</option>
@@ -425,10 +425,10 @@ export default function BatchInferencePage() {
               {/* Tiled toggle */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs" style={{ color: "#8b949e" }}>
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                     Tiled Inference
                   </p>
-                  <p className="text-[10px]" style={{ color: "#484f58" }}>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                     Recommended for images &gt; 1280px
                   </p>
                 </div>
@@ -437,7 +437,7 @@ export default function BatchInferencePage() {
                   className={cn(
                     "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
                   )}
-                  style={{ background: useTiled ? "#2563eb" : "#21262d" }}
+                  style={{ background: useTiled ? "#2563eb" : "var(--border)" }}
                   role="switch"
                   aria-checked={useTiled}
                 >
@@ -462,8 +462,8 @@ export default function BatchInferencePage() {
               style={{
                 background:
                   files.length === 0 || status === "running"
-                    ? "rgba(37,99,235,0.3)"
-                    : "#1d4ed8",
+                    ? "var(--accent-subtle)"
+                    : "var(--accent)",
                 color:
                   files.length === 0 || status === "running"
                     ? "rgba(147,197,253,0.5)"
@@ -486,7 +486,7 @@ export default function BatchInferencePage() {
             </button>
 
             {files.length === 0 && (
-              <p className="text-[10px] text-center" style={{ color: "#484f58" }}>
+              <p className="text-[10px] text-center" style={{ color: "var(--text-muted)" }}>
                 Add at least one image
               </p>
             )}
@@ -499,17 +499,17 @@ export default function BatchInferencePage() {
           {status === "running" && (
             <div
               className="px-5 py-3 flex-shrink-0"
-              style={{ borderBottom: "1px solid #21262d" }}
+              style={{ borderBottom: "1px solid var(--border)" }}
             >
               <div className="flex items-center justify-between mb-1.5 text-xs">
-                <span style={{ color: "#8b949e" }}>Processing images…</span>
-                <span className="font-mono" style={{ color: "#484f58" }}>
+                <span style={{ color: "var(--text-secondary)" }}>Processing images…</span>
+                <span className="font-mono" style={{ color: "var(--text-muted)" }}>
                   {progress.done} / {progress.total}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
                 <div
-                  className="h-full bg-blue-500 transition-all duration-500"
+                  className="h-full bg-accent transition-all duration-500"
                   style={{
                     width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%`,
                   }}
@@ -541,17 +541,17 @@ export default function BatchInferencePage() {
           {status === "done" && aggregated && (
             <div
               className="px-5 pt-4 pb-3 flex-shrink-0"
-              style={{ borderBottom: "1px solid #21262d" }}
+              style={{ borderBottom: "1px solid var(--border)" }}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-blue-400" />
-                  <h2 className="text-sm font-semibold text-white">Batch Summary</h2>
+                  <BarChart3 className="w-4 h-4 text-accent-text" />
+                  <h2 className="text-sm font-semibold text-text-primary">Batch Summary</h2>
                 </div>
                 <button
                   onClick={exportJson}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)" }}
+                  style={{ background: "rgba(34,197,94,0.15)", color: "var(--ok-text)", border: "1px solid rgba(34,197,94,0.25)" }}
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export JSON
@@ -572,7 +572,7 @@ export default function BatchInferencePage() {
                 <StatCard
                   label="Avg Inference"
                   value={avgInfMs != null ? `${avgInfMs.toFixed(0)} ms` : "—"}
-                  color="#8b949e"
+                  color="var(--text-secondary)"
                 />
                 <StatCard
                   label="Avg Dets / Image"
@@ -601,7 +601,7 @@ export default function BatchInferencePage() {
           {/* Idle placeholder */}
           {status === "idle" && files.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center" style={{ color: "#484f58" }}>
+              <div className="text-center" style={{ color: "var(--text-muted)" }}>
                 <Layers className="w-12 h-12 mx-auto mb-4 opacity-20" />
                 <p className="text-sm font-medium">No images loaded</p>
                 <p className="text-xs mt-1 opacity-60">
@@ -613,7 +613,7 @@ export default function BatchInferencePage() {
 
           {status === "idle" && files.length > 0 && (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center" style={{ color: "#484f58" }}>
+              <div className="text-center" style={{ color: "var(--text-muted)" }}>
                 <Cpu className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">
                   {files.length} image{files.length !== 1 ? "s" : ""} ready
@@ -627,36 +627,36 @@ export default function BatchInferencePage() {
           {results.length > 0 && (
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="sticky top-0" style={{ background: "#0d1117" }}>
-                  <tr style={{ borderBottom: "1px solid #21262d" }}>
+                <thead className="sticky top-0" style={{ background: "var(--surface)" }}>
+                  <tr style={{ borderBottom: "1px solid var(--border)" }}>
                     <th className="px-3 py-2.5 w-8" />
                     <th
                       className="px-3 py-2.5 text-[10px] font-medium uppercase tracking-wide"
-                      style={{ color: "#484f58" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       Filename
                     </th>
                     <th
                       className="px-3 py-2.5 text-[10px] font-medium uppercase tracking-wide text-right"
-                      style={{ color: "#484f58" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       Dimensions
                     </th>
                     <th
                       className="px-3 py-2.5 text-[10px] font-medium uppercase tracking-wide text-right"
-                      style={{ color: "#484f58" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       Detections
                     </th>
                     <th
                       className="px-3 py-2.5 text-[10px] font-medium uppercase tracking-wide text-right"
-                      style={{ color: "#484f58" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       Avg Conf
                     </th>
                     <th
                       className="px-3 py-2.5 text-[10px] font-medium uppercase tracking-wide text-right"
-                      style={{ color: "#484f58" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       Inference Time
                     </th>
@@ -674,8 +674,8 @@ export default function BatchInferencePage() {
           {/* Running skeleton */}
           {status === "running" && results.length === 0 && (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center" style={{ color: "#484f58" }}>
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-400" />
+              <div className="text-center" style={{ color: "var(--text-muted)" }}>
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-accent-text" />
                 <p className="text-sm">Running batch inference…</p>
                 <p className="text-xs mt-1 opacity-60">
                   {progress.done} of {progress.total} images processed

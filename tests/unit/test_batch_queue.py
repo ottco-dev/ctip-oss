@@ -45,6 +45,21 @@ def _make_image(h: int = 64, w: int = 64) -> np.ndarray:
     return np.zeros((h, w, 3), dtype=np.uint8)
 
 
+# Futures for the synchronous tests: pytest-asyncio >= 1.0 no longer leaves an event loop set outside async tests.
+_SYNC_LOOP = asyncio.new_event_loop()
+
+
+def teardown_module() -> None:
+    _SYNC_LOOP.close()
+
+
+def _new_future() -> asyncio.Future:
+    try:
+        return asyncio.get_running_loop().create_future()
+    except RuntimeError:
+        return _SYNC_LOOP.create_future()
+
+
 def _make_entry(**kwargs) -> _QueueEntry:
     defaults = dict(
         image=_make_image(),
@@ -55,7 +70,7 @@ def _make_entry(**kwargs) -> _QueueEntry:
         model_path=None,
     )
     defaults.update(kwargs)
-    defaults["future"] = asyncio.Future()
+    defaults["future"] = _new_future()
     import time
     defaults["queued_at"] = time.monotonic()
     return _QueueEntry(**defaults)

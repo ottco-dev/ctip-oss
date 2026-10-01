@@ -24,7 +24,7 @@ export function WebSocketStatus({
     return (
       <span
         className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full font-medium ${className}`}
-        style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80" }}
+        style={{ background: "rgba(34,197,94,0.12)", color: "var(--ok-text)" }}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
         {label}

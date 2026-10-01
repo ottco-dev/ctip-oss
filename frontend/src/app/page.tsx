@@ -154,7 +154,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
         <p className="text-sm text-text-secondary mt-0.5">
-          TrichomeLab — Cannabis Trichome Analysis Platform
+          CTIP — Cannabis Trichome Intelligence Platform
         </p>
       </div>
 

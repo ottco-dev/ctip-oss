@@ -165,14 +165,14 @@ function RingGauge({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold font-mono text-white">{Math.round(pct)}%</span>
+          <span className="text-sm font-bold font-mono text-text-primary">{Math.round(pct)}%</span>
         </div>
       </div>
       <div className="text-center">
-        <p className="text-xs font-semibold" style={{ color: "#8b949e" }}>{label}</p>
-        <p className="text-[10px] font-mono leading-tight" style={{ color: "#484f58" }}>{value}</p>
+        <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{label}</p>
+        <p className="text-[10px] font-mono leading-tight" style={{ color: "var(--text-muted)" }}>{value}</p>
         {sublabel && (
-          <p className="text-[9px] leading-tight mt-0.5" style={{ color: "#30363d" }}>{sublabel}</p>
+          <p className="text-[9px] leading-tight mt-0.5" style={{ color: "var(--border-muted)" }}>{sublabel}</p>
         )}
       </div>
     </div>
@@ -229,10 +229,10 @@ function Sparkline({
 // Stat row in a panel
 // ---------------------------------------------------------------------------
 
-function StatRow({ label, value, color = "#8b949e" }: { label: string; value: string; color?: string }) {
+function StatRow({ label, value, color = "var(--text-secondary)" }: { label: string; value: string; color?: string }) {
   return (
     <div className="flex items-center justify-between py-1">
-      <span className="text-xs" style={{ color: "#484f58" }}>{label}</span>
+      <span className="text-xs" style={{ color: "var(--text-muted)" }}>{label}</span>
       <span className="text-xs font-mono font-medium" style={{ color }}>{value}</span>
     </div>
   );
@@ -258,14 +258,14 @@ function Panel({
   return (
     <div
       className={cn("rounded-xl overflow-hidden", className)}
-      style={{ background: "#0d1117", border: "1px solid #21262d" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
       <div
         className="flex items-center gap-2 px-4 py-2.5"
-        style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--panel)" }}
       >
         <Icon className="w-3.5 h-3.5" style={{ color: iconColor }} />
-        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#8b949e" }}>
+        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--text-secondary)" }}>
           {title}
         </span>
       </div>
@@ -290,7 +290,7 @@ function GpuPanel({
   if (!gpu?.available) {
     return (
       <Panel title="GPU" icon={Zap} iconColor="#a78bfa">
-        <p className="text-sm text-center py-4" style={{ color: "#484f58" }}>
+        <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>
           {gpu?.available === false ? "No CUDA GPU detected" : "Loading…"}
         </p>
       </Panel>
@@ -353,7 +353,7 @@ function GpuPanel({
         <div className="flex-1 space-y-3 min-w-0">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px]" style={{ color: "#484f58" }}>VRAM Usage (60s)</span>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>VRAM Usage (60s)</span>
               <span className="text-[10px] font-mono" style={{ color: vramColor }}>
                 {vramPct.toFixed(1)}%
               </span>
@@ -362,8 +362,8 @@ function GpuPanel({
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px]" style={{ color: "#484f58" }}>GPU Compute (60s)</span>
-              <span className="text-[10px] font-mono" style={{ color: "#a78bfa" }}>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>GPU Compute (60s)</span>
+              <span className="text-[10px] font-mono" style={{ color: "var(--violet-text)" }}>
                 {gpu.gpu_utilization_pct != null ? `${gpuUtil}%` : "—"}
               </span>
             </div>
@@ -372,7 +372,7 @@ function GpuPanel({
         </div>
 
         {/* Detail stats */}
-        <div className="space-y-0 min-w-[160px] flex-shrink-0 divide-y" style={{ borderColor: "#21262d" }}>
+        <div className="space-y-0 min-w-[160px] flex-shrink-0 divide-y" style={{ borderColor: "var(--border)" }}>
           <StatRow label="Reserved VRAM" value={`${vramReservedGb.toFixed(1)} GB`} color="#60a5fa" />
           <StatRow label="Free VRAM" value={`${vramFreeGb.toFixed(1)} GB`} />
           <StatRow label="Compute Cap." value={gpu.compute_capability ?? "—"} />
@@ -407,24 +407,24 @@ function ResourceBar({
   return (
     <div
       className="rounded-xl p-4 space-y-3"
-      style={{ background: "#0d1117", border: "1px solid #21262d" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Icon className="w-3.5 h-3.5" style={{ color }} />
-          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#484f58" }}>
+          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
             {label}
           </span>
         </div>
         <span className="text-lg font-bold font-mono" style={{ color }}>{value}</span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
         <div
           className="h-full rounded-full transition-all duration-500"
           style={{ width: `${Math.min(100, pct)}%`, background: barColor }}
         />
       </div>
-      <p className="text-[10px]" style={{ color: "#484f58" }}>{sub}</p>
+      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{sub}</p>
     </div>
   );
 }
@@ -442,50 +442,50 @@ function QueuePanel({ data }: { data: QueueData | undefined }) {
 
   return (
     <Panel title="Task Queue" icon={Activity} iconColor="#a78bfa">
-      <div className="space-y-0 divide-y" style={{ borderColor: "#21262d" }}>
+      <div className="space-y-0 divide-y" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center justify-between py-2">
-          <span className="text-xs" style={{ color: "#484f58" }}>GPU Semaphore</span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>GPU Semaphore</span>
           <div className="flex items-center gap-1.5">
-            <div className={cn("w-2 h-2 rounded-full", gpuBusy ? "bg-blue-400 animate-pulse" : "bg-gray-600")} />
-            <span className="text-xs font-mono font-bold" style={{ color: gpuBusy ? "#60a5fa" : "#484f58" }}>
+            <div className={cn("w-2 h-2 rounded-full", gpuBusy ? "bg-accent-hover animate-pulse" : "bg-gray-600")} />
+            <span className="text-xs font-mono font-bold" style={{ color: gpuBusy ? "#60a5fa" : "var(--text-muted)" }}>
               {gpuBusy ? "BUSY" : "IDLE"}
             </span>
           </div>
         </div>
         <div className="flex items-center justify-between py-2">
-          <span className="text-xs" style={{ color: "#484f58" }}>Slots Available</span>
-          <span className="text-xs font-mono font-bold" style={{ color: "#22c55e" }}>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Slots Available</span>
+          <span className="text-xs font-mono font-bold" style={{ color: "var(--ok-text)" }}>
             {sem?.available_slots ?? 1} / {sem?.max_concurrent ?? 1}
           </span>
         </div>
         <div className="flex items-center justify-between py-2">
-          <span className="text-xs" style={{ color: "#484f58" }}>GPU Queue Depth</span>
-          <span className="text-xs font-mono font-bold" style={{ color: pendingDepth > 0 ? "#eab308" : "#484f58" }}>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>GPU Queue Depth</span>
+          <span className="text-xs font-mono font-bold" style={{ color: pendingDepth > 0 ? "#eab308" : "var(--text-muted)" }}>
             {pendingDepth}
           </span>
         </div>
         <div className="flex items-center justify-between py-2">
-          <span className="text-xs" style={{ color: "#484f58" }}>Active Jobs</span>
-          <span className="text-xs font-mono font-bold" style={{ color: totalActive > 0 ? "#a78bfa" : "#484f58" }}>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>Active Jobs</span>
+          <span className="text-xs font-mono font-bold" style={{ color: totalActive > 0 ? "#a78bfa" : "var(--text-muted)" }}>
             {totalActive}
           </span>
         </div>
         {jobs && (
           <>
             <div className="flex items-center justify-between py-2">
-              <span className="text-xs" style={{ color: "#484f58" }}>Completed</span>
-              <span className="text-xs font-mono" style={{ color: "#22c55e" }}>{jobs.completed}</span>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Completed</span>
+              <span className="text-xs font-mono" style={{ color: "var(--ok-text)" }}>{jobs.completed}</span>
             </div>
             <div className="flex items-center justify-between py-2">
-              <span className="text-xs" style={{ color: "#484f58" }}>Failed</span>
-              <span className="text-xs font-mono" style={{ color: jobs.failed > 0 ? "#ef4444" : "#484f58" }}>
+              <span className="text-xs" style={{ color: "var(--text-muted)" }}>Failed</span>
+              <span className="text-xs font-mono" style={{ color: jobs.failed > 0 ? "#ef4444" : "var(--text-muted)" }}>
                 {jobs.failed}
               </span>
             </div>
           </>
         )}
       </div>
-      <p className="text-[9px] mt-3 pt-2" style={{ borderTop: "1px solid #21262d", color: "#30363d" }}>
+      <p className="text-[9px] mt-3 pt-2" style={{ borderTop: "1px solid var(--border)", color: "var(--border-muted)" }}>
         RTX 4060 semaphore: max 1 concurrent GPU task (VRAM guard)
       </p>
     </Panel>
@@ -518,7 +518,7 @@ function ServicesPanel() {
   return (
     <Panel title="Services" icon={Server} iconColor="#22c55e">
       {isLoading ? (
-        <div className="text-xs py-2" style={{ color: "#484f58" }}>Checking services…</div>
+        <div className="text-xs py-2" style={{ color: "var(--text-muted)" }}>Checking services…</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {services.map((svc) => {
@@ -529,26 +529,26 @@ function ServicesPanel() {
                 key={svc.name}
                 className="rounded-lg p-3 flex items-start gap-2"
                 style={{
-                  background: up ? "rgba(34,197,94,0.04)" : "#161b22",
-                  border: `1px solid ${up ? "rgba(34,197,94,0.2)" : "#21262d"}`,
+                  background: up ? "rgba(34,197,94,0.04)" : "var(--panel)",
+                  border: `1px solid ${up ? "rgba(34,197,94,0.2)" : "var(--border)"}`,
                 }}
               >
                 <div className="mt-0.5 flex-shrink-0">
                   {up ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#22c55e" }} />
+                    <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--ok-text)" }} />
                   ) : (
-                    <XCircle className="w-3.5 h-3.5" style={{ color: "#484f58" }} />
+                    <XCircle className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium truncate" style={{ color: up ? "#e6edf3" : "#484f58" }}>
+                  <p className="text-xs font-medium truncate" style={{ color: up ? "var(--text-primary)" : "var(--text-muted)" }}>
                     {svc.name}
                   </p>
                   <p className="text-[10px] font-mono" style={{ color: up ? "#22c55e" : "#374151" }}>
                     :{svc.port}
                   </p>
                   {svc.profile && (
-                    <p className="text-[9px]" style={{ color: "#30363d" }}>
+                    <p className="text-[9px]" style={{ color: "var(--border-muted)" }}>
                       docker: {svc.profile}
                     </p>
                   )}
@@ -573,7 +573,7 @@ function ConfigPanel({ config, platform: plat }: { config: ConfigData | undefine
     { label: "Hostname", value: plat?.hostname ?? "—" },
     { label: "OS", value: plat?.os ?? "—" },
     { label: "Python", value: plat?.python_version ?? "—" },
-    { label: "Default VLM", value: config?.default_vlm ?? "—", color: "#a78bfa" },
+    { label: "Default VLM", value: config?.default_vlm ?? "—", color: "var(--violet-text)" },
     { label: "CUDA Device", value: config?.cuda_device != null ? `cuda:${config.cuda_device}` : "—", color: "#60a5fa" },
     { label: "VRAM Limit", value: config?.vram_limit_gb != null ? `${config.vram_limit_gb} GB` : "—" },
     { label: "MLflow URI", value: config?.mlflow_uri ?? "—" },
@@ -582,7 +582,7 @@ function ConfigPanel({ config, platform: plat }: { config: ConfigData | undefine
 
   return (
     <Panel title="Runtime Config" icon={Settings2} iconColor="#f97316">
-      <div className="divide-y" style={{ borderColor: "#21262d" }}>
+      <div className="divide-y" style={{ borderColor: "var(--border)" }}>
         {rows.map(({ label, value, color }) => (
           <StatRow key={label} label={label} value={value} color={color} />
         ))}
@@ -597,7 +597,7 @@ function ConfigPanel({ config, platform: plat }: { config: ConfigData | undefine
 
 function LogTerminal() {
   const [lines, setLines] = useState<string[]>([
-    "[system] TrichomeLab backend started",
+    "[system] CTIP backend started",
     "[gpu] RTX 4060 detected — 8.16 GB VRAM",
     "[api] FastAPI listening on :8000",
   ]);
@@ -633,14 +633,14 @@ function LogTerminal() {
   return (
     <div
       className="rounded-xl flex flex-col overflow-hidden"
-      style={{ background: "#080b10", border: "1px solid #21262d", height: "13rem" }}
+      style={{ background: "var(--background)", border: "1px solid var(--border)", height: "13rem" }}
     >
       <div
         className="flex items-center gap-2 px-3 py-2 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d", background: "#0d1117" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}
       >
         <Terminal className="w-3.5 h-3.5 text-green-400" />
-        <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#484f58" }}>
+        <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
           Backend Log
         </span>
         <div className="flex gap-1 ml-auto">
@@ -716,15 +716,15 @@ export function SystemStatusTab() {
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--panel)" }}
       >
         <div className="flex items-center gap-3">
-          <Monitor className="w-4 h-4 text-blue-400" />
-          <h1 className="text-sm font-semibold text-white">System Monitor</h1>
+          <Monitor className="w-4 h-4 text-accent-text" />
+          <h1 className="text-sm font-semibold text-text-primary">System Monitor</h1>
           {sysInfo?.platform?.hostname && (
             <span
               className="text-[10px] px-2 py-0.5 rounded font-mono"
-              style={{ background: "#0d1117", color: "#484f58", border: "1px solid #21262d" }}
+              style={{ background: "var(--surface)", color: "var(--text-muted)", border: "1px solid var(--border)" }}
             >
               {sysInfo.platform.hostname}
             </span>
@@ -735,7 +735,7 @@ export function SystemStatusTab() {
             {wsConnected ? (
               <>
                 <Wifi className="w-3.5 h-3.5 text-green-400" />
-                <span style={{ color: "#22c55e" }}>Live</span>
+                <span style={{ color: "var(--ok-text)" }}>Live</span>
               </>
             ) : (
               <>
@@ -745,7 +745,7 @@ export function SystemStatusTab() {
             )}
           </div>
           {sysInfo?.timestamp && (
-            <div className="flex items-center gap-1 text-[10px]" style={{ color: "#484f58" }}>
+            <div className="flex items-center gap-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
               <Clock className="w-3 h-3" />
               <span>{new Date(sysInfo.timestamp * 1000).toLocaleTimeString()}</span>
             </div>
@@ -753,7 +753,7 @@ export function SystemStatusTab() {
           <button
             onClick={() => refetch()}
             className={cn("p-1.5 rounded transition-colors hover:bg-panel", isFetching && "animate-spin")}
-            style={{ color: "#484f58" }}
+            style={{ color: "var(--text-muted)" }}
           >
             <RefreshCw className="w-4 h-4" />
           </button>

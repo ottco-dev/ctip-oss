@@ -95,7 +95,7 @@ export function WikiRenderer({ content }: WikiRendererProps) {
           },
           pre: ({ children, ...props }) => (
             <pre
-              className="bg-[#0d1117] border border-border rounded-lg p-4 overflow-x-auto text-xs leading-relaxed mb-4 [&>code]:!bg-transparent [&>code]:!p-0"
+              className="bg-[var(--surface)] border border-border rounded-lg p-4 overflow-x-auto text-xs leading-relaxed mb-4 [&>code]:!bg-transparent [&>code]:!p-0"
               {...props}
             >
               {children}

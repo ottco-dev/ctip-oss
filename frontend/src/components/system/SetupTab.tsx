@@ -230,7 +230,7 @@ function Toggle({ label, value, onChange, hint }: {
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2 rounded-md p-3 text-xs"
-      style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)', color: '#60a5fa' }}>
+      style={{ background: 'rgba(47,158,58,0.07)', border: '1px solid rgba(47,158,58,0.2)', color: 'var(--accent-text)' }}>
       <Info className="w-4 h-4 mt-0.5 shrink-0" /><span>{children}</span>
     </div>
   );
@@ -239,7 +239,7 @@ function InfoBox({ children }: { children: React.ReactNode }) {
 function WarnBox({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2 rounded-md p-3 text-xs"
-      style={{ background: 'rgba(234,179,8,0.07)', border: '1px solid rgba(234,179,8,0.2)', color: '#eab308' }}>
+      style={{ background: 'rgba(234,179,8,0.07)', border: '1px solid rgba(234,179,8,0.2)', color: 'var(--warn-text)' }}>
       <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" /><span>{children}</span>
     </div>
   );
@@ -248,7 +248,7 @@ function WarnBox({ children }: { children: React.ReactNode }) {
 function SuccessBox({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2 rounded-md p-3 text-xs"
-      style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', color: '#22c55e' }}>
+      style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.2)', color: 'var(--ok-text)' }}>
       <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{children}</span>
     </div>
   );
@@ -284,7 +284,7 @@ function StepWelcome() {
     <div className="text-center space-y-6">
       <div className="flex justify-center">
         <div className="w-24 h-24 rounded-2xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,rgba(35,134,54,.2),rgba(59,130,246,.15))', border: '1px solid rgba(35,134,54,.4)' }}>
+          style={{ background: 'linear-gradient(135deg,rgba(35,134,54,.2),rgba(47,158,58,.15))', border: '1px solid rgba(35,134,54,.4)' }}>
           <Microscope className="w-12 h-12 text-accent" />
         </div>
       </div>
@@ -307,7 +307,7 @@ function StepWelcome() {
           { icon: CheckCircle2, label: 'Verification', desc: 'Live health check' },
         ].map(({ icon: Icon, label, desc }) => (
           <div key={label} className="flex flex-col gap-2 rounded-lg p-3"
-            style={{ background: '#161b22', border: '1px solid #21262d' }}>
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
             <Icon className="w-4 h-4 text-accent" />
             <p className="text-xs font-medium text-text-primary">{label}</p>
             <p className="text-xs text-text-muted">{desc}</p>
@@ -372,7 +372,7 @@ function StepSystemCheck() {
       {core.length > 0 && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">Environment</p>
-          <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #21262d' }}>
+          <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
             {core.map(item => (
               <div key={item.name}
                 className="flex items-center gap-3 px-3 py-2 border-b border-border last:border-0 text-sm"
@@ -396,7 +396,7 @@ function StepSystemCheck() {
             {pkgs.map(item => (
               <div key={item.name}
                 className="flex items-center gap-2 rounded px-2.5 py-1.5 text-xs"
-                style={{ background: '#0d1117', border: `1px solid ${item.ok ? '#21262d' : item.required ? 'rgba(239,68,68,0.3)' : '#21262d'}` }}>
+                style={{ background: 'var(--surface)', border: `1px solid ${item.ok ? 'var(--border)' : item.required ? 'rgba(239,68,68,0.3)' : 'var(--border)'}` }}>
                 <StatusDot ok={item.ok} />
                 <span className="text-text-secondary font-mono">{item.name.replace('pkg:', '')}</span>
                 <span className="ml-auto text-text-muted truncate">{item.ok ? item.value : 'missing'}</span>
@@ -445,7 +445,7 @@ function StepNetwork({ state, set, errors }: {
         onChange={set('publicPort') as (v: string) => void}
         placeholder="3001" hint="nginx listens on this host port" error={errors.publicPort} />
       {!isPublic && (
-        <div className="rounded-md p-3 text-xs space-y-1" style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+        <div className="rounded-md p-3 text-xs space-y-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <p className="font-medium text-text-secondary">Access URLs (localhost only)</p>
           <p className="text-text-muted">Frontend: <span className="text-accent">http://localhost:{state.publicPort}</span></p>
           <p className="text-text-muted">API: <span className="text-accent">http://localhost:8000/api/v1</span></p>
@@ -487,10 +487,10 @@ function StepHardware({ state, set, errors }: {
           <option value="production">Production</option>
         </select>
       </div>
-      <div className="rounded-lg p-3 space-y-2" style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+      <div className="rounded-lg p-3 space-y-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <p className="text-xs text-text-secondary font-medium">VRAM Budget</p>
         <div className="flex items-center gap-2">
-          <div className="flex-1 h-2 rounded-full" style={{ background: '#21262d' }}>
+          <div className="flex-1 h-2 rounded-full" style={{ background: 'var(--border)' }}>
             <div className="h-2 rounded-full bg-accent transition-all"
               style={{ width: `${Math.min(100, (+state.vramInference / +state.vramLimit) * 100)}%` }} />
           </div>
@@ -634,7 +634,7 @@ function StepDocker() {
         <>
           <div className="space-y-2">
             <SectionHeader>Docker Status</SectionHeader>
-            <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #21262d' }}>
+            <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
               <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border text-sm">
                 <StatusDot ok={status.docker_available} />
                 <span className="text-text-primary">Docker Engine</span>
@@ -660,7 +660,7 @@ function StepDocker() {
                 (or run <code>newgrp docker</code> in your terminal) to apply the change.
               </WarnBox>
               <div className="flex items-center gap-2 rounded-md px-3 py-2.5"
-                style={{ background: '#0d1117', border: '1px solid rgba(234,179,8,0.3)' }}>
+                style={{ background: 'var(--surface)', border: '1px solid rgba(234,179,8,0.3)' }}>
                 <code className="flex-1 text-xs font-mono text-yellow-400 break-all">{status.fix_command}</code>
                 <button onClick={copyFixCommand}
                   className="shrink-0 text-xs text-text-muted hover:text-text-secondary transition-colors px-2 py-1 rounded border border-border">
@@ -673,7 +673,7 @@ function StepDocker() {
           {status.containers.length > 0 && (
             <div className="space-y-2">
               <SectionHeader>Containers</SectionHeader>
-              <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #21262d' }}>
+              <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
                 {status.containers.map(c => (
                   <div key={c.name} className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0 text-xs">
                     <div className={['w-2 h-2 rounded-full shrink-0',
@@ -718,9 +718,9 @@ function StepDocker() {
 
             {(logLines.length > 0 || starting) && (
               <div className="rounded-md overflow-hidden"
-                style={{ border: `1px solid ${startOk === false ? 'rgba(239,68,68,0.3)' : startOk === true ? 'rgba(34,197,94,0.3)' : '#21262d'}` }}>
+                style={{ border: `1px solid ${startOk === false ? 'rgba(239,68,68,0.3)' : startOk === true ? 'rgba(34,197,94,0.3)' : 'var(--border)'}` }}>
                 <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border"
-                  style={{ background: '#161b22' }}>
+                  style={{ background: 'var(--panel)' }}>
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
                     <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
@@ -736,7 +736,7 @@ function StepDocker() {
                 <pre
                   ref={logRef}
                   className="p-3 font-mono text-[11px] leading-relaxed text-text-secondary overflow-y-auto max-h-64 whitespace-pre-wrap break-all"
-                  style={{ background: '#0d1117' }}
+                  style={{ background: 'var(--surface)' }}
                 >
                   {logLines.join('\n')}
                   {starting && <span className="animate-pulse text-accent">▌</span>}
@@ -833,8 +833,8 @@ function StepModels() {
     return (
       <div key={model.id} className="rounded-lg p-3 space-y-2"
         style={{
-          background: '#0d1117',
-          border: `1px solid ${isDone ? 'rgba(34,197,94,0.25)' : isError ? 'rgba(239,68,68,0.2)' : '#21262d'}`,
+          background: 'var(--surface)',
+          border: `1px solid ${isDone ? 'rgba(34,197,94,0.25)' : isError ? 'rgba(239,68,68,0.2)' : 'var(--border)'}`,
         }}>
         <div className="flex items-center gap-3">
           {isDone
@@ -849,7 +849,7 @@ function StepModels() {
               <span className="text-sm font-medium text-text-primary font-mono">{model.filename}</span>
               {model.required && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                  style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa' }}>
+                  style={{ background: 'rgba(47,158,58,0.1)', border: '1px solid rgba(47,158,58,0.3)', color: 'var(--accent-text)' }}>
                   required
                 </span>
               )}
@@ -887,7 +887,7 @@ function StepModels() {
 
         {isDownloading && task && (
           <div className="space-y-1">
-            <div className="h-1.5 rounded-full" style={{ background: '#21262d' }}>
+            <div className="h-1.5 rounded-full" style={{ background: 'var(--border)' }}>
               <div className="h-1.5 rounded-full bg-accent transition-all duration-300"
                 style={{ width: `${task.progress}%` }} />
             </div>
@@ -1152,13 +1152,13 @@ function StepLabelStudio({ state, set }: {
           onChange={set('labelStudioProjectName') as (v: string) => void}
           placeholder="CTIP — Trichome Detection" />
 
-        <div className="rounded-md p-3 text-xs space-y-1.5" style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+        <div className="rounded-md p-3 text-xs space-y-1.5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <p className="font-medium text-text-secondary">Label config included (4 classes + quality):</p>
           <div className="flex flex-wrap gap-2 mt-1">
             {[
               { name: 'stalked',       color: '#22d3ee' },
               { name: 'sessile',       color: '#34d399' },
-              { name: 'bulbous',       color: '#a78bfa' },
+              { name: 'bulbous',       color: 'var(--violet-text)' },
               { name: 'non-glandular', color: '#fb923c' },
             ].map(l => (
               <span key={l.name} className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px]"
@@ -1168,7 +1168,7 @@ function StepLabelStudio({ state, set }: {
               </span>
             ))}
             <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-text-muted"
-              style={{ border: '1px solid #21262d' }}>
+              style={{ border: '1px solid var(--border)' }}>
               + quality rating + notes field
             </span>
           </div>
@@ -1321,7 +1321,7 @@ function StepReview({ state }: { state: WizardState }) {
       {sections.map(sec => (
         <div key={sec.title}>
           <p className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1.5">{sec.title}</p>
-          <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #21262d' }}>
+          <div className="rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
             {sec.rows.map(row => (
               <div key={row.k} className="flex items-start gap-3 px-3 py-2 border-b border-border last:border-0">
                 <span className="text-xs text-text-muted min-w-[180px] shrink-0 pt-0.5">{row.k}</span>
@@ -1386,9 +1386,9 @@ function StepVerification({ onDone }: { onDone: () => void }) {
 
       {items.length > 0 && (
         <div className="rounded-lg overflow-hidden font-mono text-xs"
-          style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border"
-            style={{ background: '#161b22' }}>
+            style={{ background: 'var(--panel)' }}>
             <Terminal className="w-3.5 h-3.5 text-text-muted" />
             <span className="text-text-muted">ctip verification log</span>
             <span className="ml-auto text-text-muted">{new Date().toLocaleTimeString()}</span>

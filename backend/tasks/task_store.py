@@ -274,12 +274,22 @@ class TaskStore:
         self._db_path = db_path
         self._cache: dict[str, TaskRecord] = {}
         self._lock = threading.Lock()
+        self._schema_ready = False
+
+    def _ensure_ready(self) -> None:
+        """Create the table on first use, so writes work even before initialize() ran (fresh install, tests)."""
+        if self._schema_ready:
+            return
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        _ensure_schema(self._db_path)
+        self._schema_ready = True
 
     async def initialize(self) -> None:
         """Load existing tasks from SQLite into memory, expire old ones."""
         db_path = self._db_path
         db_path.parent.mkdir(parents=True, exist_ok=True)
         await asyncio.to_thread(_ensure_schema, db_path)
+        self._schema_ready = True
         expired = await asyncio.to_thread(_expire_old, db_path, MAX_AGE_HOURS)
         if expired:
             logger.info("Task store: expired old tasks", count=expired)
@@ -296,7 +306,7 @@ class TaskStore:
         task = TaskRecord(id=tid, profile=profile)
         with self._lock:
             self._cache[tid] = task
-        # Fire-and-forget insert — OK to be slightly async
+        self._ensure_ready()
         _insert_task(self._db_path, task)
         return task
 

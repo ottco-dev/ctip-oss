@@ -189,7 +189,7 @@ const STEPS: Step[] = [
     id: 3,
     label: "Labeling",
     icon: Tag,
-    color: "#a78bfa",
+    color: "var(--violet-text)",
     headline: "Annotate trichomes in Label Studio",
     summary:
       "Open the Annotation tab, connect to Label Studio, and systematically label every trichome with bounding boxes.",
@@ -233,7 +233,7 @@ const STEPS: Step[] = [
         </p>
         <ul className="space-y-1.5 text-xs">
           <li>
-            <span className="text-blue-400 font-medium">Stalked</span> — large
+            <span className="text-accent-text font-medium">Stalked</span> — large
             glandular head on a visible stalk. Most common in mature flower.
           </li>
           <li>
@@ -330,7 +330,7 @@ const STEPS: Step[] = [
     id: 5,
     label: "Verification",
     icon: CheckCircle2,
-    color: "#22c55e",
+    color: "var(--ok-text)",
     headline: "Verify the trained model on unseen test data",
     summary:
       "Use the Detection Workbench to run the new model on your holdout test images and confirm the metrics match training logs.",
@@ -382,7 +382,7 @@ const STEPS: Step[] = [
             label consistency; Sessile/Stalked confusion is most common
           </li>
           <li>
-            <span className="text-blue-400">Works on one strain, fails on another</span>{" "}
+            <span className="text-accent-text">Works on one strain, fails on another</span>{" "}
             — your training data is not diverse enough; add images from the failing strain
           </li>
         </ul>
@@ -442,7 +442,7 @@ const STEPS: Step[] = [
               <tr key={use} className="border-b border-border/50">
                 <td className="py-1.5 text-text-secondary">{use}</td>
                 <td className="py-1.5 text-right text-emerald-400 font-mono">{lat}</td>
-                <td className="py-1.5 text-right text-blue-400 font-mono">{fps}</td>
+                <td className="py-1.5 text-right text-accent-text font-mono">{fps}</td>
               </tr>
             ))}
           </tbody>
@@ -493,7 +493,7 @@ const STEPS: Step[] = [
         <div className="space-y-1.5 text-xs">
           {[
             { color: "#60a5fa", name: "Image Input", desc: "Upload zone — entry point for images" },
-            { color: "#a78bfa", name: "Model", desc: "Detection with conf/IoU/tiled controls" },
+            { color: "var(--violet-text)", name: "Model", desc: "Detection with conf/IoU/tiled controls" },
             { color: "#34d399", name: "Filter", desc: "Confidence gate + class whitelist" },
             { color: "#f472b6", name: "Detection Output", desc: "Annotated image with bounding boxes" },
             { color: "#fb923c", name: "Stats Output", desc: "Per-class count + avg confidence chart" },
@@ -585,7 +585,7 @@ function TipBlock({ tip }: { tip: Tip }) {
   const config = {
     tip: { icon: Lightbulb, color: "text-yellow-400", bg: "bg-yellow-400/10 border-yellow-400/20" },
     warning: { icon: AlertTriangle, color: "text-orange-400", bg: "bg-orange-400/10 border-orange-400/20" },
-    info: { icon: Info, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/20" },
+    info: { icon: Info, color: "text-accent-text", bg: "bg-accent-hover/10 border-accent/20" },
   }[tip.type];
 
   const TipIcon = config.icon;
@@ -822,7 +822,7 @@ function ChecklistSection({ items, stepId }: { items: string[]; stepId: number }
             )}
           >
             {checked.has(i) && (
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 16 16">
+              <svg className="w-4 h-4 text-text-primary" fill="none" viewBox="0 0 16 16">
                 <path
                   stroke="currentColor"
                   strokeWidth={2}

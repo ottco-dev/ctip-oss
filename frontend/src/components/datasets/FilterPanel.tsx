@@ -61,7 +61,7 @@ function PillToggle<T extends string>({
             className={cn(
               "px-2.5 py-1 rounded text-xs font-medium transition-all",
               value === opt.value
-                ? "bg-blue-600 text-white"
+                ? "bg-accent text-white"
                 : "bg-[var(--color-panel)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]"
             )}
           >
@@ -107,7 +107,7 @@ function QualitySlider({
           className="w-full h-1.5 appearance-none bg-[var(--color-border)] rounded-full
             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5
             [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full
-            [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:cursor-pointer"
+            [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer"
         />
         <input
           type="range"
@@ -119,7 +119,7 @@ function QualitySlider({
           className="w-full h-1.5 appearance-none bg-[var(--color-border)] rounded-full
             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5
             [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full
-            [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:cursor-pointer"
+            [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer"
         />
       </div>
     </div>
@@ -163,12 +163,12 @@ export function FilterPanel({
             onChange={(e) => update({ search: e.target.value })}
             className="w-full pl-8 pr-3 py-1.5 text-sm bg-[var(--color-surface)] border border-[var(--color-border)]
               rounded-lg text-[var(--color-text-secondary)] placeholder:text-[var(--color-text-muted)]
-              focus:outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/20"
+              focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/20"
           />
           {filters.search && (
             <button
               onClick={() => update({ search: "" })}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-white"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-text-primary"
             >
               <X className="w-3 h-3" />
             </button>
@@ -179,7 +179,7 @@ export function FilterPanel({
         <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
           <SlidersHorizontal className="w-3.5 h-3.5" />
           <span>
-            <span className="text-white font-medium">{filteredCount}</span>
+            <span className="text-text-primary font-medium">{filteredCount}</span>
             {" / "}
             {totalCount}
           </span>
@@ -238,7 +238,7 @@ export function FilterPanel({
                 className={cn(
                   "px-2.5 py-1 rounded text-xs font-medium transition-all",
                   filters.minAnnotations === v
-                    ? "bg-blue-600 text-white"
+                    ? "bg-accent text-white"
                     : "bg-[var(--color-panel)] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] border border-[var(--color-border)]"
                 )}
               >

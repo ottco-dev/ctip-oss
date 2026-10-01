@@ -213,8 +213,8 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
   if (points.length < 2) {
     return (
       <svg width={W} height={H} className="block">
-        <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="#161b22" rx={2} />
-        <text x={W / 2} y={H / 2 + 4} textAnchor="middle" fill="#484f58" fontSize={10}>
+        <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="var(--panel)" rx={2} />
+        <text x={W / 2} y={H / 2 + 4} textAnchor="middle" fill="var(--text-muted)" fontSize={10}>
           Waiting for data…
         </text>
       </svg>
@@ -245,7 +245,7 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
   return (
     <svg width={W} height={H} className="block overflow-visible">
       {/* background */}
-      <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="#0d1117" rx={2} />
+      <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="var(--surface)" rx={2} />
 
       {/* gridlines + y-labels */}
       {yLabels.map((v) => {
@@ -257,10 +257,10 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
               y1={y}
               x2={PAD.left + innerW}
               y2={y}
-              stroke="#21262d"
+              stroke="var(--border)"
               strokeWidth={1}
             />
-            <text x={PAD.left - 4} y={y + 3} textAnchor="end" fill="#484f58" fontSize={8}>
+            <text x={PAD.left - 4} y={y + 3} textAnchor="end" fill="var(--text-muted)" fontSize={8}>
               {Math.round(v * 100)}
             </text>
           </g>
@@ -274,7 +274,7 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
           x={xOf(ep)}
           y={PAD.top + innerH + 12}
           textAnchor="middle"
-          fill="#484f58"
+          fill="var(--text-muted)"
           fontSize={8}
         >
           {ep}
@@ -287,7 +287,7 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
         y1={PAD.top}
         x2={PAD.left}
         y2={PAD.top + innerH}
-        stroke="#484f58"
+        stroke="var(--text-muted)"
         strokeWidth={1}
       />
       <line
@@ -295,12 +295,12 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
         y1={PAD.top + innerH}
         x2={PAD.left + innerW}
         y2={PAD.top + innerH}
-        stroke="#484f58"
+        stroke="var(--text-muted)"
         strokeWidth={1}
       />
 
       {/* line */}
-      <path d={pathD} fill="none" stroke="#58a6ff" strokeWidth={1.5} strokeLinejoin="round" />
+      <path d={pathD} fill="none" stroke="var(--accent-text)" strokeWidth={1.5} strokeLinejoin="round" />
 
       {/* last dot */}
       {points.length > 0 && (
@@ -308,7 +308,7 @@ function AccuracyChart({ points }: { points: EpochPoint[] }) {
           cx={xOf(points[points.length - 1].epoch)}
           cy={yOf(points[points.length - 1].val_accuracy)}
           r={2.5}
-          fill="#58a6ff"
+          fill="var(--accent-text)"
         />
       )}
     </svg>
@@ -441,9 +441,9 @@ function MorphologyCNNTraining() {
               onChange={(e) => setConfig((c) => ({ ...c, dataset_path: e.target.value }))}
               placeholder="/data/morphology/labeled  (subdirs = class names)"
               className={cn(
-                'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] placeholder-[#484f58] outline-none',
-                'focus:border-[#58a6ff] transition-colors',
+                'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none',
+                'focus:border-[var(--accent-text)] transition-colors',
               )}
             />
           </div>
@@ -455,8 +455,8 @@ function MorphologyCNNTraining() {
               value={config.model_arch}
               onChange={(e) => setConfig((c) => ({ ...c, model_arch: e.target.value }))}
               className={cn(
-                'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] outline-none focus:border-[#58a6ff] transition-colors',
+                'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-text)] transition-colors',
               )}
             >
               <option value="efficientnet_b0">EfficientNet-B0</option>
@@ -475,8 +475,8 @@ function MorphologyCNNTraining() {
                 setConfig((c) => ({ ...c, epochs: Math.max(10, Math.min(200, Number(e.target.value))) }))
               }
               className={cn(
-                'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] outline-none focus:border-[#58a6ff] transition-colors',
+                'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-text)] transition-colors',
               )}
             />
           </div>
@@ -485,14 +485,14 @@ function MorphologyCNNTraining() {
           <div className="space-y-1">
             <label className="text-xs text-text-secondary">
               Batch size{' '}
-              <span className="text-[#484f58]">(reduce if OOM)</span>
+              <span className="text-[var(--text-muted)]">(reduce if OOM)</span>
             </label>
             <select
               value={config.batch_size}
               onChange={(e) => setConfig((c) => ({ ...c, batch_size: Number(e.target.value) }))}
               className={cn(
-                'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] outline-none focus:border-[#58a6ff] transition-colors',
+                'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-text)] transition-colors',
               )}
             >
               {[8, 16, 32, 64].map((v) => (
@@ -510,8 +510,8 @@ function MorphologyCNNTraining() {
               value={config.learning_rate}
               onChange={(e) => setConfig((c) => ({ ...c, learning_rate: Number(e.target.value) }))}
               className={cn(
-                'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] outline-none focus:border-[#58a6ff] transition-colors',
+                'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-text)] transition-colors',
               )}
             >
               <option value={1e-5}>0.00001</option>
@@ -536,8 +536,8 @@ function MorphologyCNNTraining() {
                 }))
               }
               className={cn(
-                'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] outline-none focus:border-[#58a6ff] transition-colors',
+                'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent-text)] transition-colors',
               )}
             />
           </div>
@@ -546,7 +546,7 @@ function MorphologyCNNTraining() {
           <div className="space-y-1">
             <label className="text-xs text-text-secondary">
               Dropout{' '}
-              <span className="font-mono text-[#58a6ff]">{config.dropout.toFixed(1)}</span>
+              <span className="font-mono text-[var(--accent-text)]">{config.dropout.toFixed(1)}</span>
             </label>
             <input
               type="range"
@@ -555,9 +555,9 @@ function MorphologyCNNTraining() {
               step={0.1}
               value={config.dropout}
               onChange={(e) => setConfig((c) => ({ ...c, dropout: Number(e.target.value) }))}
-              className="w-full accent-[#58a6ff]"
+              className="w-full accent-[var(--accent-text)]"
             />
-            <div className="flex justify-between text-[10px] text-[#484f58]">
+            <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
               <span>0.0</span>
               <span>0.5</span>
             </div>
@@ -567,7 +567,7 @@ function MorphologyCNNTraining() {
           <div className="space-y-1">
             <label className="text-xs text-text-secondary">
               Validation split{' '}
-              <span className="font-mono text-[#58a6ff]">
+              <span className="font-mono text-[var(--accent-text)]">
                 {Math.round(config.val_split * 100)}%
               </span>
             </label>
@@ -578,9 +578,9 @@ function MorphologyCNNTraining() {
               step={0.05}
               value={config.val_split}
               onChange={(e) => setConfig((c) => ({ ...c, val_split: Number(e.target.value) }))}
-              className="w-full accent-[#58a6ff]"
+              className="w-full accent-[var(--accent-text)]"
             />
-            <div className="flex justify-between text-[10px] text-[#484f58]">
+            <div className="flex justify-between text-[10px] text-[var(--text-muted)]">
               <span>10%</span>
               <span>30%</span>
             </div>
@@ -598,7 +598,7 @@ function MorphologyCNNTraining() {
                 className={cn(
                   'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent',
                   'transition-colors focus-visible:outline-none',
-                  config.use_fp16 ? 'bg-[#58a6ff]' : 'bg-[#21262d]',
+                  config.use_fp16 ? 'bg-[var(--accent-text)]' : 'bg-[var(--border)]',
                 )}
               >
                 <span
@@ -611,7 +611,7 @@ function MorphologyCNNTraining() {
               </button>
               <span className="text-xs text-text-secondary">
                 FP16 mixed precision{' '}
-                <span className="text-[#484f58]">(RTX 4060)</span>
+                <span className="text-[var(--text-muted)]">(RTX 4060)</span>
               </span>
             </label>
 
@@ -625,7 +625,7 @@ function MorphologyCNNTraining() {
                 className={cn(
                   'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent',
                   'transition-colors focus-visible:outline-none',
-                  config.augment ? 'bg-[#58a6ff]' : 'bg-[#21262d]',
+                  config.augment ? 'bg-[var(--accent-text)]' : 'bg-[var(--border)]',
                 )}
               >
                 <span
@@ -638,7 +638,7 @@ function MorphologyCNNTraining() {
               </button>
               <span className="text-xs text-text-secondary">
                 Microscopy augmentations{' '}
-                <span className="text-[#484f58]">(rotation, color jitter)</span>
+                <span className="text-[var(--text-muted)]">(rotation, color jitter)</span>
               </span>
             </label>
           </div>
@@ -651,7 +651,7 @@ function MorphologyCNNTraining() {
             disabled={!config.dataset_path.trim() || startMutation.isPending || isRunning}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              'bg-[#58a6ff] text-[#0d1117] hover:bg-[#79b8ff]',
+              'bg-[var(--accent-text)] text-[var(--surface)] hover:bg-[#79b8ff]',
               'disabled:opacity-40 disabled:cursor-not-allowed',
             )}
           >
@@ -663,7 +663,7 @@ function MorphologyCNNTraining() {
             Start Training
           </button>
           {taskId && (
-            <span className="text-xs text-[#484f58] font-mono">task: {taskId}</span>
+            <span className="text-xs text-[var(--text-muted)] font-mono">task: {taskId}</span>
           )}
         </div>
 
@@ -682,8 +682,8 @@ function MorphologyCNNTraining() {
             </span>
             {/* Status badge */}
             {isRunning && (
-              <span className="flex items-center gap-1.5 text-xs font-medium text-[#58a6ff]">
-                <span className="w-2 h-2 rounded-full bg-[#58a6ff] animate-pulse" />
+              <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent-text)]">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent-text)] animate-pulse" />
                 Running
               </span>
             )}
@@ -706,15 +706,15 @@ function MorphologyCNNTraining() {
             <div className="flex justify-between text-xs text-text-secondary">
               <span>
                 Epoch{' '}
-                <span className="font-mono text-[#e6edf3]">{statusData.epoch}</span>
+                <span className="font-mono text-[var(--text-primary)]">{statusData.epoch}</span>
                 {' / '}
-                <span className="font-mono text-[#e6edf3]">{statusData.total_epochs}</span>
+                <span className="font-mono text-[var(--text-primary)]">{statusData.total_epochs}</span>
               </span>
-              <span className="text-[#484f58]">{formatElapsed(statusData.elapsed_s)}</span>
+              <span className="text-[var(--text-muted)]">{formatElapsed(statusData.elapsed_s)}</span>
             </div>
-            <div className="h-2 bg-[#21262d] rounded-full overflow-hidden">
+            <div className="h-2 bg-[var(--border)] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#58a6ff] rounded-full transition-all duration-500"
+                className="h-full bg-[var(--accent-text)] rounded-full transition-all duration-500"
                 style={{
                   width: `${statusData.total_epochs > 0 ? (statusData.epoch / statusData.total_epochs) * 100 : 0}%`,
                 }}
@@ -724,22 +724,22 @@ function MorphologyCNNTraining() {
 
           {/* Metric rows */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-[#0d1117] rounded-md p-3 space-y-1">
-              <div className="text-[#484f58]">Train loss</div>
-              <div className="font-mono text-[#e6edf3] text-sm">{statusData.train_loss.toFixed(4)}</div>
+            <div className="bg-[var(--surface)] rounded-md p-3 space-y-1">
+              <div className="text-[var(--text-muted)]">Train loss</div>
+              <div className="font-mono text-[var(--text-primary)] text-sm">{statusData.train_loss.toFixed(4)}</div>
             </div>
-            <div className="bg-[#0d1117] rounded-md p-3 space-y-1">
-              <div className="text-[#484f58]">Val loss</div>
-              <div className="font-mono text-[#e6edf3] text-sm">{statusData.val_loss.toFixed(4)}</div>
+            <div className="bg-[var(--surface)] rounded-md p-3 space-y-1">
+              <div className="text-[var(--text-muted)]">Val loss</div>
+              <div className="font-mono text-[var(--text-primary)] text-sm">{statusData.val_loss.toFixed(4)}</div>
             </div>
-            <div className="bg-[#0d1117] rounded-md p-3 space-y-1">
-              <div className="text-[#484f58]">Val accuracy</div>
-              <div className="font-mono text-[#e6edf3] text-sm">
+            <div className="bg-[var(--surface)] rounded-md p-3 space-y-1">
+              <div className="text-[var(--text-muted)]">Val accuracy</div>
+              <div className="font-mono text-[var(--text-primary)] text-sm">
                 {(statusData.val_accuracy * 100).toFixed(2)}%
               </div>
             </div>
-            <div className="bg-[#0d1117] rounded-md p-3 space-y-1 ring-1 ring-green-500/30">
-              <div className="text-[#484f58]">Best val accuracy</div>
+            <div className="bg-[var(--surface)] rounded-md p-3 space-y-1 ring-1 ring-green-500/30">
+              <div className="text-[var(--text-muted)]">Best val accuracy</div>
               <div className="font-mono text-green-400 text-sm">
                 {(statusData.best_val_accuracy * 100).toFixed(2)}%
               </div>
@@ -748,7 +748,7 @@ function MorphologyCNNTraining() {
 
           {/* Accuracy chart */}
           <div>
-            <div className="text-xs text-[#484f58] mb-1">Val accuracy over epochs</div>
+            <div className="text-xs text-[var(--text-muted)] mb-1">Val accuracy over epochs</div>
             <AccuracyChart points={epochHistory} />
           </div>
         </div>
@@ -769,9 +769,9 @@ function MorphologyCNNTraining() {
               onChange={(e) => setEvalModelPath(e.target.value)}
               placeholder="/models/morphology/best_model.pt"
               className={cn(
-                'flex-1 bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                'text-sm text-[#e6edf3] placeholder-[#484f58] outline-none',
-                'focus:border-[#58a6ff] transition-colors',
+                'flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                'text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none',
+                'focus:border-[var(--accent-text)] transition-colors',
               )}
             />
             <button
@@ -779,7 +779,7 @@ function MorphologyCNNTraining() {
               disabled={!evalModelPath.trim() || evalMutation.isPending}
               className={cn(
                 'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-                'bg-[#21262d] text-[#e6edf3] hover:bg-[#30363d]',
+                'bg-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--border-muted)]',
                 'disabled:opacity-40 disabled:cursor-not-allowed',
                 'flex items-center gap-2',
               )}
@@ -805,12 +805,12 @@ function MorphologyCNNTraining() {
 
               {/* Per-class bars */}
               <div className="space-y-2">
-                <div className="text-xs text-[#484f58]">Per-class accuracy</div>
+                <div className="text-xs text-[var(--text-muted)]">Per-class accuracy</div>
                 {(
                   ['CAPITATE_STALKED', 'CAPITATE_SESSILE', 'BULBOUS', 'NON_GLANDULAR'] as const
                 ).map((cls) => {
                   const val = evalResult.per_class[cls] ?? 0;
-                  const color = CLASS_COLORS[cls] ?? '#484f58';
+                  const color = CLASS_COLORS[cls] ?? 'var(--text-muted)';
                   const label = CLASS_DISPLAY[cls] ?? cls;
                   return (
                     <div key={cls} className="space-y-0.5">
@@ -821,7 +821,7 @@ function MorphologyCNNTraining() {
                         </span>
                       </div>
                       <svg width="100%" height="8">
-                        <rect width="100%" height="8" rx="4" fill="#21262d" />
+                        <rect width="100%" height="8" rx="4" fill="var(--border)" />
                         <rect
                           width={`${val * 100}%`}
                           height="8"
@@ -856,9 +856,9 @@ function MorphologyCNNTraining() {
                 onChange={(e) => setExportModelPath(e.target.value)}
                 placeholder="/models/morphology/best_model.pt"
                 className={cn(
-                  'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                  'text-sm text-[#e6edf3] placeholder-[#484f58] outline-none',
-                  'focus:border-[#58a6ff] transition-colors',
+                  'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                  'text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none',
+                  'focus:border-[var(--accent-text)] transition-colors',
                 )}
               />
             </div>
@@ -870,9 +870,9 @@ function MorphologyCNNTraining() {
                 onChange={(e) => setExportOutputPath(e.target.value)}
                 placeholder="/models/morphology/model.onnx"
                 className={cn(
-                  'w-full bg-[#0d1117] border border-[#21262d] rounded-md px-3 py-2',
-                  'text-sm text-[#e6edf3] placeholder-[#484f58] outline-none',
-                  'focus:border-[#58a6ff] transition-colors',
+                  'w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-3 py-2',
+                  'text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none',
+                  'focus:border-[var(--accent-text)] transition-colors',
                 )}
               />
             </div>
@@ -890,7 +890,7 @@ function MorphologyCNNTraining() {
             }
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors',
-              'bg-[#21262d] text-[#e6edf3] hover:bg-[#30363d]',
+              'bg-[var(--border)] text-[var(--text-primary)] hover:bg-[var(--border-muted)]',
               'disabled:opacity-40 disabled:cursor-not-allowed',
             )}
           >
@@ -913,14 +913,14 @@ function MorphologyCNNTraining() {
                 Export successful
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#484f58]">ONNX path</span>
-                <span className="font-mono text-[#e6edf3] truncate max-w-[60%]">
+                <span className="text-[var(--text-muted)]">ONNX path</span>
+                <span className="font-mono text-[var(--text-primary)] truncate max-w-[60%]">
                   {exportResult.onnx_path}
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-[#484f58]">Export time</span>
-                <span className="font-mono text-[#e6edf3]">
+                <span className="text-[var(--text-muted)]">Export time</span>
+                <span className="font-mono text-[var(--text-primary)]">
                   {exportResult.export_time_s.toFixed(2)} s
                 </span>
               </div>
@@ -1011,7 +1011,7 @@ export default function MorphologyPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 p-1 rounded-lg bg-[#161b22] border border-[#21262d] w-fit">
+      <div className="flex gap-1 p-1 rounded-lg bg-[var(--panel)] border border-[var(--border)] w-fit">
         {(
           [
             { key: 'classify', label: 'Classify', icon: FlaskConical },
@@ -1024,8 +1024,8 @@ export default function MorphologyPage() {
             className={cn(
               'flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
               tab === key
-                ? 'bg-[#21262d] text-[#e6edf3]'
-                : 'text-[#484f58] hover:text-[#e6edf3]',
+                ? 'bg-[var(--border)] text-[var(--text-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
             )}
           >
             <Icon className="w-3.5 h-3.5" />

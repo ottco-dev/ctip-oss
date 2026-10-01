@@ -115,7 +115,7 @@ class TestDetectEndpointGpuGuard:
         async def _hold():
             await sem.acquire()
 
-        asyncio.get_event_loop().run_until_complete(_hold())
+        asyncio.run(_hold())
 
         try:
             resp = client.post(
@@ -134,7 +134,7 @@ class TestDetectEndpointGpuGuard:
         import backend.dependencies.gpu as gpu_mod
         sem = gpu_mod._get_semaphore()
 
-        asyncio.get_event_loop().run_until_complete(sem.acquire())
+        asyncio.run(sem.acquire())
         try:
             resp = client.post(
                 "/inference/detect",
@@ -182,7 +182,7 @@ class TestBatchDetectEndpointGpuGuard:
         import backend.dependencies.gpu as gpu_mod
         sem = gpu_mod._get_semaphore()
 
-        asyncio.get_event_loop().run_until_complete(sem.acquire())
+        asyncio.run(sem.acquire())
         try:
             resp = client.post(
                 "/inference/detect/batch",
@@ -217,7 +217,7 @@ class TestMaturityEndpointNoGpuGuard:
         import backend.dependencies.gpu as gpu_mod
         sem = gpu_mod._get_semaphore()
 
-        asyncio.get_event_loop().run_until_complete(sem.acquire())
+        asyncio.run(sem.acquire())
         try:
             with (
                 patch("cv2.imdecode", return_value=np.zeros((100, 100, 3), dtype=np.uint8)),

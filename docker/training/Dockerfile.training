@@ -52,7 +52,7 @@ RUN pip install --no-cache-dir \
 COPY . /app/
 
 # Install package in development mode
-RUN pip install --no-cache-dir -e ".[training]" 2>/dev/null || pip install --no-cache-dir -e . 2>/dev/null || true
+RUN pip install --no-cache-dir -e .
 
 # Create training output directories
 RUN mkdir -p \

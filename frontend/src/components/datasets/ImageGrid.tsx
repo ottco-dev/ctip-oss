@@ -81,7 +81,7 @@ function SampleCard({
         "group relative rounded-lg overflow-hidden cursor-pointer",
         "border transition-all duration-150 select-none",
         isSelected
-          ? "border-blue-500 ring-2 ring-blue-500/40 bg-blue-500/5"
+          ? "border-accent ring-2 ring-accent/40 bg-accent/5"
           : "border-[var(--color-border)] hover:border-[var(--color-border-hover)] bg-[var(--color-surface)]"
       )}
       onClick={handleClick}
@@ -125,7 +125,7 @@ function SampleCard({
         {/* Selection overlay */}
         {isSelected && (
           <div className="absolute top-1.5 left-1.5">
-            <CheckCircle2 className="w-5 h-5 text-blue-400 drop-shadow" />
+            <CheckCircle2 className="w-5 h-5 text-accent-text drop-shadow" />
           </div>
         )}
 
@@ -139,7 +139,7 @@ function SampleCard({
         {/* Hover actions */}
         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <button
-            className="flex items-center gap-1 px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+            className="flex items-center gap-1 px-2 py-1 rounded bg-accent hover:bg-accent-hover text-white text-xs font-medium"
             onClick={(e) => {
               e.stopPropagation();
               onOpen(sample);
@@ -181,7 +181,7 @@ function SampleCard({
             className={cn(
               "text-[9px] px-1 rounded font-medium uppercase tracking-wide",
               sample.split === "train"
-                ? "bg-blue-500/20 text-blue-400"
+                ? "bg-accent/20 text-accent-text"
                 : sample.split === "val"
                 ? "bg-purple-500/20 text-purple-400"
                 : "bg-orange-500/20 text-orange-400"
@@ -340,12 +340,12 @@ export function SelectionToolbar({
   if (count === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-lg text-sm">
-      <CheckCircle2 className="w-4 h-4 text-blue-400" />
+    <div className="flex items-center gap-3 px-4 py-2 bg-accent/10 border border-accent/30 rounded-lg text-sm">
+      <CheckCircle2 className="w-4 h-4 text-accent-text" />
       <span className="text-[var(--color-text-secondary)]">
-        <span className="text-white font-medium">{count}</span>
+        <span className="text-text-primary font-medium">{count}</span>
         {" of "}
-        <span className="text-white font-medium">{total}</span>
+        <span className="text-text-primary font-medium">{total}</span>
         {" selected"}
       </span>
 
@@ -353,7 +353,7 @@ export function SelectionToolbar({
 
       <button
         onClick={onSelectAll}
-        className="text-blue-400 hover:text-blue-300 transition-colors"
+        className="text-accent-text hover:text-accent-text transition-colors"
       >
         Select all
       </button>

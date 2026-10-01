@@ -18,10 +18,10 @@ export const themeScript = `
 (function() {
   try {
     var store = JSON.parse(localStorage.getItem('ctip-ui-store') || '{}');
-    var theme = store.state?.theme || 'dark';
+    var theme = (store.version >= 1 && store.state && store.state.theme) || 'light';
     document.documentElement.setAttribute('data-theme', theme);
   } catch(e) {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 })();
 `;

@@ -2,6 +2,49 @@
 
 ---
 
+## 2026-10-01 — Public release preparation (v0.1.0-alpha)
+
+### WHAT WAS IMPLEMENTED
+- `training/pipelines/session_split.py` — `session_key()`, `split_by_session()`, `SessionSplit`: whole imaging sessions
+  per train/val/test split (task `data.session` → image folder → file-name series → task alone, reported)
+- `training/pipelines/ls_dataset_exporter.py` — uses the session split instead of a per-image shuffle; split summary
+  and leakage warnings in the export log and result
+- `tests/unit/test_session_split.py` — 17 tests (keys, no session in two splits, ratios, determinism, warnings, ratios)
+- `.github/workflows/ci.yml` — CPU unit tests (CPU PyTorch wheels) + frontend type-check and build on every push / PR
+- `CONTRIBUTING.md`, `SECURITY.md`, `CITATION.cff`, issue and PR templates, `CHANGELOG.md`
+- `LICENSE` — AGPL-3.0 text (the file was empty); `pyproject.toml` / `package.json` licence AGPL-3.0-or-later
+- README rewritten as a short, honest front page; full EN/DE/ES manuals and the technology rationale moved to
+  `docs/manual/`
+- Frontend: CTIP colour design (paper white / forest ink / leaf green, light default, dark variant); ~1000 hard-coded
+  GitHub-dark colours replaced by theme variables; theme colours as RGB channels so Tailwind opacity modifiers work
+
+### WHY
+- Release day: the repository must install, test and build from a clean clone and must not over-claim.
+- Scientific: the documented session split did not exist — the exporter shuffled single images, so near-identical
+  frames of one session could land in train and test and inflate metrics.
+
+### WHAT WAS FIXED
+- `sqlmodel` / `alembic` missing from the dependencies (backend did not import in a fresh install)
+- `TaskStore.create()` crashed before `initialize()` ("no such table: tasks") — schema now created on first use
+- TensorRT builder / runner / inspect reported "TensorRT missing" instead of "file not found"; wrong build hint
+- Tests relied on an implicit asyncio event loop (pytest-asyncio ≥ 1.0) — 20 failures in a clean environment
+- `asyncio.get_event_loop()` inside coroutines → `get_running_loop()` (backend, services)
+- `pyproject.toml` wheel listed non-existent packages (`microscopy`, `tracking`, `exports`) and missed `backend`
+- Frontend build failed on ESLint (disable comments for a rule without its plugin)
+- Docker images swallowed install errors (`… 2>/dev/null || true`, non-existent extras)
+- Manuals documented CLI commands that do not exist (`trichome dataset/focus/build-engine/report`) — replaced with
+  the real commands; CLI rebranded from "TrichomeLab" to CTIP
+- Removed from the repository: local databases, logs, MLflow runs with placeholder checkpoints, `frontend/.env.local`,
+  build caches, the trade-show cheat sheet
+
+### WHAT STILL REMAINS
+- No trained trichome weights and no public benchmark result (targets only)
+- Removed files remain in git history (rewrite would need a force push)
+- `training/callbacks/*` and `training_orchestrator.py` still use `asyncio.get_event_loop()` from worker threads
+- GPU / integration test suites not part of CI
+
+---
+
 ## 2026-05-29 — TensorRT Management API; NVIDIA Container Toolkit; Settings Page; Compute Backend
 
 ### WHAT WAS IMPLEMENTED

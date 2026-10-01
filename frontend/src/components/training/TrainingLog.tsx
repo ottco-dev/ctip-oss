@@ -94,10 +94,10 @@ export function TrainingLog({ wsConnected, className }: TrainingLogProps) {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto bg-[#0d0d0d] rounded-b-lg font-mono text-[11px] leading-[1.6] p-3 min-h-[200px] max-h-[340px]"
+        className="flex-1 overflow-y-auto bg-[#0a110c] rounded-b-lg font-mono text-[11px] leading-[1.6] p-3 min-h-[200px] max-h-[340px]"
       >
         {logLines.length === 0 ? (
-          <div className="text-text-muted/40 select-none">
+          <div className="text-[#5e7062] select-none">
             {wsConnected
               ? 'Waiting for training to start…'
               : 'Connect WebSocket to stream training output.'}

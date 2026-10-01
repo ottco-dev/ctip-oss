@@ -61,8 +61,8 @@ _INSTALL_TARGETS: dict[str, str] = {
 
 # Lines injected into shell rc files when the completion directory approach
 # isn't self-sourcing.
-_BASH_SOURCE_SNIPPET = "\n# TrichomeLab CLI completions\n[ -f ~/.bash_completion.d/trichome ] && source ~/.bash_completion.d/trichome\n"
-_ZSH_SOURCE_SNIPPET  = "\n# TrichomeLab CLI completions\nfpath=(~/.zsh/completions $fpath)\nautoload -Uz compinit && compinit\n"
+_BASH_SOURCE_SNIPPET = "\n# CTIP CLI completions\n[ -f ~/.bash_completion.d/trichome ] && source ~/.bash_completion.d/trichome\n"
+_ZSH_SOURCE_SNIPPET  = "\n# CTIP CLI completions\nfpath=(~/.zsh/completions $fpath)\nautoload -Uz compinit && compinit\n"
 
 
 # ---------------------------------------------------------------------------

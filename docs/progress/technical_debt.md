@@ -1,6 +1,19 @@
 # Technical Debt Register
 
-Last updated: 2026-05-29 (Moondream bitsandbytes incompatibility resolved; accelerate pinned)
+Last updated: 2026-10-01 (release preparation)
+
+## OPEN (2026-10-01)
+
+### TDB-030: Removed local files remain in git history
+- `trichome.db`, logs, `mlruns/`, `frontend/.env.local` were tracked until 2026-10-01. Removing them from history
+  needs `git filter-repo` and a force push — a decision for the maintainer.
+
+### TDB-031: `asyncio.get_event_loop()` in training callbacks
+- `training/callbacks/checkpoint_callback.py`, `metrics_callback.py`, `application/training_orchestrator.py` run in
+  worker threads; they should receive the loop from the caller (`run_coroutine_threadsafe`).
+
+### TDB-032: GPU and integration tests outside CI
+- `-m gpu` / `-m integration` need a CUDA runner and external services; run manually before releases.
 
 ## RESOLVED
 

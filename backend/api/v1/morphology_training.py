@@ -88,7 +88,7 @@ async def _run_training(config_dict: dict) -> None:
         _training_state["trainer"] = trainer
         _training_state["config"] = config_dict
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         def _progress_cb(status: dict) -> None:
             _training_state.update(status)
@@ -185,7 +185,7 @@ async def training_evaluate(request: EvaluateRequest) -> dict[str, Any]:
     config = MorphologyCNNConfig(data_dir=request.data_dir)
     trainer = MorphologyCNNTrainer(config)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         metrics = await loop.run_in_executor(
             None,
@@ -212,7 +212,7 @@ async def training_export(request: ExportRequest) -> dict[str, Any]:
     config = MorphologyCNNConfig()
     trainer = MorphologyCNNTrainer(config)
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     try:
         onnx_path = await loop.run_in_executor(
             None,

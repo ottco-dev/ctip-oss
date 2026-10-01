@@ -569,9 +569,11 @@ class TestInspectEngine:
                 raise ImportError("no tensorrt")
             return real_import(name, *args, **kwargs)
 
+        engine = tmp_path / "model.engine"
+        engine.write_bytes(b"engine")                 # the file exists, only TensorRT is missing
         monkeypatch.setattr(builtins, "__import__", mock_import)
         with pytest.raises(ImportError, match="TensorRT not available"):
-            inspect_engine(tmp_path / "model.engine")
+            inspect_engine(engine)
 
     def test_missing_engine_raises_file_not_found(self, tmp_path):
         with pytest.raises(FileNotFoundError):

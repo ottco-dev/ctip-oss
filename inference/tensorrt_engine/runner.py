@@ -148,6 +148,15 @@ class TensorRTRunner:
         if self._loaded:
             return
 
+        engine_path = Path(self.config.engine_path)
+        if not engine_path.exists():
+            raise FileNotFoundError(
+                f"TensorRT engine not found: {engine_path}\n"
+                "Build it first:\n"
+                "  from inference.tensorrt_engine.builder import TRTBuildConfig, build_engine_from_onnx\n"
+                "  build_engine_from_onnx(TRTBuildConfig(onnx_path='model.onnx', engine_path='model.engine'))"
+            )
+
         if not tensorrt_available():
             raise ImportError(
                 "TensorRT or pycuda not available. "
@@ -158,15 +167,6 @@ class TensorRTRunner:
         import tensorrt as trt
         import pycuda.autoinit  # noqa: F401 — creates default CUDA context
         import pycuda.driver as cuda
-
-        engine_path = Path(self.config.engine_path)
-        if not engine_path.exists():
-            raise FileNotFoundError(
-                f"TensorRT engine not found: {engine_path}\n"
-                "Build it first:\n"
-                "  from inference.tensorrt_engine.builder import build_engine_from_onnx\n"
-                "  build_engine_from_onnx('model.onnx', 'model.engine')"
-            )
 
         logger = trt.Logger(trt.Logger.WARNING)
         runtime = trt.Runtime(logger)

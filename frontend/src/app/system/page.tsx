@@ -43,7 +43,7 @@ function SystemPageInner() {
       {/* Tab bar */}
       <div
         className="flex items-center gap-1 px-4 py-2 shrink-0"
-        style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--panel)" }}
       >
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
@@ -52,8 +52,8 @@ function SystemPageInner() {
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium transition-colors",
               activeTab === id
-                ? "bg-[#21262d] text-white"
-                : "text-[#8b949e] hover:text-white hover:bg-[#21262d]/50"
+                ? "bg-[var(--border)] text-text-primary"
+                : "text-[var(--text-secondary)] hover:text-text-primary hover:bg-border/50"
             )}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -81,7 +81,7 @@ export default function SystemPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center h-full">
-          <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-blue-400 animate-spin" />
+          <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-accent animate-spin" />
         </div>
       }
     >

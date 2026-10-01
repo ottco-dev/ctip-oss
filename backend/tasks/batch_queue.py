@@ -171,11 +171,11 @@ class DetectionBatchQueue:
                 if self._flush_task and not self._flush_task.done():
                     self._flush_task.cancel()
                     self._flush_task = None
-                asyncio.get_event_loop().create_task(self._run_batch(batch))
+                asyncio.get_running_loop().create_task(self._run_batch(batch))
 
             elif self._flush_task is None or self._flush_task.done():
                 # First entry in a new collection window — start the expiry timer
-                self._flush_task = asyncio.get_event_loop().create_task(
+                self._flush_task = asyncio.get_running_loop().create_task(
                     self._window_flush()
                 )
 
@@ -207,7 +207,7 @@ class DetectionBatchQueue:
         async with self._lock:
             if self._pending:
                 batch = self._drain()
-                asyncio.get_event_loop().create_task(self._run_batch(batch))
+                asyncio.get_running_loop().create_task(self._run_batch(batch))
 
     async def _run_batch(self, batch: list[_QueueEntry]) -> None:
         """Acquire the GPU semaphore once and dispatch a single batched inference."""
@@ -220,7 +220,7 @@ class DetectionBatchQueue:
             from backend.dependencies.gpu import acquire_gpu_slot
 
             async with acquire_gpu_slot():
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 results = await loop.run_in_executor(None, self._sync_batch, batch)
 
             elapsed_ms = (time.monotonic() - t_gpu_start) * 1000

@@ -11,25 +11,25 @@ const config: Config = {
     extend: {
       colors: {
         // CSS-variable driven — adapts to dark/light theme
-        background: 'var(--background)',
-        surface: 'var(--surface)',
-        panel: 'var(--panel)',
-        border: 'var(--border)',
-        'border-muted': 'var(--border-muted)',
+        background: 'rgb(var(--background-rgb) / <alpha-value>)',
+        surface: 'rgb(var(--surface-rgb) / <alpha-value>)',
+        panel: 'rgb(var(--panel-rgb) / <alpha-value>)',
+        border: 'rgb(var(--border-rgb) / <alpha-value>)',
+        'border-muted': 'rgb(var(--border-muted-rgb) / <alpha-value>)',
 
         // Accent colors
         accent: {
-          DEFAULT: 'var(--accent)',
-          hover: 'var(--accent-hover)',
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          hover: 'rgb(var(--accent-hover-rgb) / <alpha-value>)',
           subtle: 'var(--accent-subtle)',
-          text: 'var(--accent-text)',
+          text: 'rgb(var(--accent-text-rgb) / <alpha-value>)',
         },
 
         // Text colors
         text: {
-          primary: 'var(--text-primary)',
-          secondary: 'var(--text-secondary)',
-          muted: 'var(--text-muted)',
+          primary: 'rgb(var(--text-primary-rgb) / <alpha-value>)',
+          secondary: 'rgb(var(--text-secondary-rgb) / <alpha-value>)',
+          muted: 'rgb(var(--text-muted-rgb) / <alpha-value>)',
         },
 
         // Trichome maturity colors (matches Python MATURITY_COLORS)

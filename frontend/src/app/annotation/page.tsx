@@ -147,8 +147,8 @@ function normalizeItem(item: ReviewItem): ReviewItem {
 function PriorityBadge({ priority }: { priority: number }) {
   const configs = [
     { label: "Low", bg: "rgba(107,114,128,0.2)", color: "#9ca3af" },
-    { label: "Med", bg: "rgba(59,130,246,0.2)", color: "#60a5fa" },
-    { label: "High", bg: "rgba(234,179,8,0.2)", color: "#eab308" },
+    { label: "Med", bg: "rgba(47,158,58,0.2)", color: "var(--accent-text)" },
+    { label: "High", bg: "rgba(234,179,8,0.2)", color: "var(--warn-text)" },
     { label: "Crit", bg: "rgba(239,68,68,0.2)", color: "#ef4444" },
   ];
   const config = configs[priority] ?? configs[0];
@@ -163,7 +163,7 @@ function PriorityBadge({ priority }: { priority: number }) {
 function FractionBar({ clear, cloudy, amber }: { clear: number; cloudy: number; amber: number }) {
   return (
     <div className="flex h-1.5 rounded-full overflow-hidden gap-[1px] w-full">
-      <div className="bg-blue-400" style={{ width: `${clear * 100}%` }} />
+      <div className="bg-accent-hover" style={{ width: `${clear * 100}%` }} />
       <div className="bg-gray-300" style={{ width: `${cloudy * 100}%` }} />
       <div className="bg-amber-400" style={{ width: `${amber * 100}%` }} />
     </div>
@@ -174,7 +174,7 @@ function FractionBar({ clear, cloudy, amber }: { clear: number; cloudy: number; 
 function maturityColors(stage: string | undefined): { bg: string; text: string } {
   if (stage === "amber") return { bg: "rgba(245,158,11,0.2)", text: "#f59e0b" };
   if (stage === "cloudy") return { bg: "rgba(107,114,128,0.2)", text: "#9ca3af" };
-  if (stage === "clear") return { bg: "rgba(59,130,246,0.2)", text: "#60a5fa" };
+  if (stage === "clear") return { bg: "rgba(47,158,58,0.2)", text: "#60a5fa" };
   return { bg: "rgba(168,85,247,0.2)", text: "#a855f7" };
 }
 
@@ -216,9 +216,9 @@ function ReviewRow({
     <div
       className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer"
       style={{
-        background: '#0d1117',
-        border: isSelected ? '1px solid rgba(59,130,246,0.5)' : '1px solid #21262d',
-        borderLeft: isSelected ? '3px solid #3b82f6' : '1px solid #21262d',
+        background: 'var(--surface)',
+        border: isSelected ? '1px solid rgba(47,158,58,0.5)' : '1px solid var(--border)',
+        borderLeft: isSelected ? '3px solid var(--accent)' : '1px solid var(--border)',
       }}
       onClick={() => onOpenDetail(item)}
     >
@@ -230,16 +230,16 @@ function ReviewRow({
           onChange={(e) => { e.stopPropagation(); onCheckChange(item.id, e.target.checked); }}
           onClick={(e) => e.stopPropagation()}
           className="w-3.5 h-3.5 rounded flex-shrink-0"
-          style={{ accentColor: "#3b82f6" }}
+          style={{ accentColor: "var(--accent)" }}
         />
       )}
       <PriorityBadge priority={norm.review_priority ?? 0} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm truncate" style={{ color: '#8b949e' }}>{norm.filename}</p>
+        <p className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>{norm.filename}</p>
         <div className="flex items-center gap-3 mt-1">
           <MaturityBadge stage={norm.maturity_stage} />
           {norm.vlm_backend && (
-            <span className="text-[10px]" style={{ color: '#484f58' }}>{norm.vlm_backend}</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{norm.vlm_backend}</span>
           )}
           {(norm.hallucination_flags?.length ?? 0) > 0 && (
             <div className="flex items-center gap-0.5 text-yellow-400">
@@ -261,7 +261,7 @@ function ReviewRow({
       {(norm.clear_fraction! + norm.cloudy_fraction! + norm.amber_fraction!) > 0 && (
         <div className="w-24 space-y-0.5">
           <FractionBar clear={norm.clear_fraction!} cloudy={norm.cloudy_fraction!} amber={norm.amber_fraction!} />
-          <div className="flex justify-between text-[9px] font-mono" style={{ color: '#484f58' }}>
+          <div className="flex justify-between text-[9px] font-mono" style={{ color: 'var(--text-muted)' }}>
             <span>{Math.round((norm.clear_fraction ?? 0) * 100)}</span>
             <span>{Math.round((norm.cloudy_fraction ?? 0) * 100)}</span>
             <span>{Math.round((norm.amber_fraction ?? 0) * 100)}</span>
@@ -271,15 +271,15 @@ function ReviewRow({
       <span className="text-xs font-mono w-10 text-right" style={{ color: confColor }}>
         {formatConfidence(conf)}
       </span>
-      <span className="text-[10px] w-14 text-right" style={{ color: '#484f58' }}>
+      <span className="text-[10px] w-14 text-right" style={{ color: 'var(--text-muted)' }}>
         {norm.queued_at ? timeAgo(new Date(norm.queued_at!).getTime() / 1000) : "—"}
       </span>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => e.stopPropagation()}>
-        <button onClick={() => onApprove(item.id)} className="p-1.5 rounded" style={{ color: '#484f58' }} title="Approve">
+        <button onClick={() => onApprove(item.id)} className="p-1.5 rounded" style={{ color: 'var(--text-muted)' }} title="Approve">
           <CheckCircle2 className="w-3.5 h-3.5 hover:text-green-400" />
         </button>
-        <button onClick={() => onReject(item.id)} className="p-1.5 rounded" style={{ color: '#484f58' }} title="Reject">
+        <button onClick={() => onReject(item.id)} className="p-1.5 rounded" style={{ color: 'var(--text-muted)' }} title="Reject">
           <XCircle className="w-3.5 h-3.5 hover:text-red-400" />
         </button>
       </div>
@@ -344,17 +344,17 @@ function ReviewDetailModal({
     >
       <div
         className="w-full max-w-5xl max-h-[90vh] rounded-2xl flex flex-col overflow-hidden"
-        style={{ background: "#0d1117", border: "1px solid #30363d" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border-muted)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
-          style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}>
+          style={{ borderBottom: "1px solid var(--border)", background: "var(--panel)" }}>
           <div className="flex items-center gap-2">
             <Brain className="w-4 h-4 text-purple-400" />
-            <h2 className="text-sm font-semibold text-white truncate max-w-lg">{norm.filename}</h2>
+            <h2 className="text-sm font-semibold text-text-primary truncate max-w-lg">{norm.filename}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: "#484f58" }}>
+          <button onClick={onClose} className="p-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: "var(--text-muted)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -363,11 +363,11 @@ function ReviewDetailModal({
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left: image preview */}
           <div className="flex-[3] relative bg-black/40 flex items-center justify-center overflow-hidden"
-            style={{ borderRight: "1px solid #21262d" }}>
+            style={{ borderRight: "1px solid var(--border)" }}>
             {!imageUrl || imgError ? (
-              <div className="flex flex-col items-center gap-3" style={{ color: "#484f58" }}>
+              <div className="flex flex-col items-center gap-3" style={{ color: "var(--text-muted)" }}>
                 <div className="w-20 h-20 rounded-xl flex items-center justify-center"
-                  style={{ background: "#161b22", border: "1px solid #21262d" }}>
+                  style={{ background: "var(--panel)", border: "1px solid var(--border)" }}>
                   <Tag className="w-8 h-8 opacity-30" />
                 </div>
                 <p className="text-xs">{imgError ? "Image not available" : "No image path"}</p>
@@ -435,30 +435,30 @@ function ReviewDetailModal({
             <div className="flex-1 p-5 space-y-4 overflow-y-auto">
               {/* Meta */}
               <div className="space-y-2">
-                <p className="text-sm font-bold text-white truncate">{norm.filename}</p>
+                <p className="text-sm font-bold text-text-primary truncate">{norm.filename}</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
                   {norm.vlm_backend && (
                     <>
-                      <span style={{ color: "#484f58" }}>VLM Backend</span>
-                      <span className="font-mono truncate" style={{ color: "#8b949e" }}>{norm.vlm_backend}</span>
+                      <span style={{ color: "var(--text-muted)" }}>VLM Backend</span>
+                      <span className="font-mono truncate" style={{ color: "var(--text-secondary)" }}>{norm.vlm_backend}</span>
                     </>
                   )}
                   {item.dataset_id !== undefined && (
                     <>
-                      <span style={{ color: "#484f58" }}>Dataset ID</span>
-                      <span className="font-mono" style={{ color: "#8b949e" }}>{item.dataset_id}</span>
+                      <span style={{ color: "var(--text-muted)" }}>Dataset ID</span>
+                      <span className="font-mono" style={{ color: "var(--text-secondary)" }}>{item.dataset_id}</span>
                     </>
                   )}
-                  <span style={{ color: "#484f58" }}>Priority</span>
+                  <span style={{ color: "var(--text-muted)" }}>Priority</span>
                   <span><PriorityBadge priority={norm.review_priority ?? 0} /></span>
                 </div>
               </div>
 
               {/* Confidence */}
               <div>
-                <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>VLM Confidence</p>
+                <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>VLM Confidence</p>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
                     <div className="h-full rounded-full" style={{ width: `${conf * 100}%`, background: confColor }} />
                   </div>
                   <span className="text-sm font-mono font-bold" style={{ color: confColor }}>
@@ -470,7 +470,7 @@ function ReviewDetailModal({
               {/* Maturity */}
               {norm.maturity_stage && (
                 <div>
-                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>Maturity Stage</p>
+                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Maturity Stage</p>
                   <MaturityBadge stage={norm.maturity_stage} />
                 </div>
               )}
@@ -478,10 +478,10 @@ function ReviewDetailModal({
               {/* Fraction bar */}
               {(norm.clear_fraction! + norm.cloudy_fraction! + norm.amber_fraction!) > 0 && (
                 <div>
-                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>Trichome Fractions</p>
+                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Trichome Fractions</p>
                   <FractionBar clear={norm.clear_fraction!} cloudy={norm.cloudy_fraction!} amber={norm.amber_fraction!} />
-                  <div className="flex justify-between text-[10px] mt-1.5 font-mono" style={{ color: "#484f58" }}>
-                    <span className="text-blue-400">Clear {Math.round((norm.clear_fraction ?? 0) * 100)}%</span>
+                  <div className="flex justify-between text-[10px] mt-1.5 font-mono" style={{ color: "var(--text-muted)" }}>
+                    <span className="text-accent-text">Clear {Math.round((norm.clear_fraction ?? 0) * 100)}%</span>
                     <span className="text-gray-400">Cloudy {Math.round((norm.cloudy_fraction ?? 0) * 100)}%</span>
                     <span className="text-amber-400">Amber {Math.round((norm.amber_fraction ?? 0) * 100)}%</span>
                   </div>
@@ -491,7 +491,7 @@ function ReviewDetailModal({
               {/* Hallucination flags */}
               {(norm.hallucination_flags?.length ?? 0) > 0 && (
                 <div>
-                  <p className="text-[10px] uppercase font-medium mb-1.5 flex items-center gap-1" style={{ color: "#484f58" }}>
+                  <p className="text-[10px] uppercase font-medium mb-1.5 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
                     <AlertTriangle className="w-3 h-3 text-yellow-400" />
                     Hallucination Flags
                   </p>
@@ -499,7 +499,7 @@ function ReviewDetailModal({
                     {norm.hallucination_flags!.map((flag, i) => (
                       <li key={i} className="flex items-start gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 flex-shrink-0 mt-1" />
-                        <span className="text-[11px]" style={{ color: "#e6edf3" }}>{flag}</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-primary)" }}>{flag}</span>
                       </li>
                     ))}
                   </ul>
@@ -509,7 +509,7 @@ function ReviewDetailModal({
               {/* VLM Labels */}
               {labels.length > 0 && (
                 <div>
-                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "#484f58" }}>
+                  <p className="text-[10px] uppercase font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>
                     VLM Labels ({labels.length})
                   </p>
                   <div className="space-y-1.5">
@@ -518,10 +518,10 @@ function ReviewDetailModal({
                       const { text } = maturityColors(lbl.maturity_stage ?? lbl.label);
                       return (
                         <div key={i} className="flex items-center gap-2">
-                          <span className="text-[11px] truncate flex-1 font-mono" style={{ color: "#e6edf3" }}>
+                          <span className="text-[11px] truncate flex-1 font-mono" style={{ color: "var(--text-primary)" }}>
                             {lbl.label ?? lbl.maturity_stage ?? `label-${i + 1}`}
                           </span>
-                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
                             <div className="h-full rounded-full" style={{ width: `${labelConf * 100}%`, background: text }} />
                           </div>
                           <span className="text-[10px] font-mono w-8 text-right" style={{ color: text }}>
@@ -531,7 +531,7 @@ function ReviewDetailModal({
                       );
                     })}
                     {labels.length > 5 && (
-                      <p className="text-[10px]" style={{ color: "#484f58" }}>+{labels.length - 5} more</p>
+                      <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>+{labels.length - 5} more</p>
                     )}
                   </div>
                 </div>
@@ -539,7 +539,7 @@ function ReviewDetailModal({
 
               {/* Reviewer note */}
               <div>
-                <label className="text-[10px] uppercase font-medium mb-1.5 flex items-center gap-1 block" style={{ color: "#484f58" }}>
+                <label className="text-[10px] uppercase font-medium mb-1.5 flex items-center gap-1 block" style={{ color: "var(--text-muted)" }}>
                   <StickyNote className="w-3 h-3" />
                   Reviewer Note (optional)
                 </label>
@@ -550,20 +550,20 @@ function ReviewDetailModal({
                   placeholder="Add a note for this review decision…"
                   className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none resize-none"
                   style={{
-                    background: "#161b22",
-                    border: "1px solid #21262d",
-                    color: "#e6edf3",
+                    background: "var(--panel)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
                   }}
                 />
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex-shrink-0 p-4 space-y-2" style={{ borderTop: "1px solid #21262d" }}>
+            <div className="flex-shrink-0 p-4 space-y-2" style={{ borderTop: "1px solid var(--border)" }}>
               <button
                 onClick={() => { onApprove(item.id, reviewerNote); onClose(); }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all"
-                style={{ background: "rgba(34,197,94,0.2)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.3)" }}
+                style={{ background: "rgba(34,197,94,0.2)", color: "var(--ok-text)", border: "1px solid rgba(34,197,94,0.3)" }}
               >
                 <CheckCircle2 className="w-4 h-4" /> Approve
               </button>
@@ -665,33 +665,33 @@ function VlmConfigPanel({
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid #21262d" }}
+      style={{ border: "1px solid var(--border)" }}
     >
       {/* Header / toggle */}
       <button
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors"
-        style={{ background: "#161b22" }}
+        style={{ background: "var(--panel)" }}
       >
         <div className="flex items-center gap-2">
           <Settings2 className="w-3.5 h-3.5 text-purple-400" />
-          <span className="text-xs font-semibold text-white">VLM Configuration</span>
+          <span className="text-xs font-semibold text-text-primary">VLM Configuration</span>
         </div>
         <ChevronDown
           className="w-3.5 h-3.5 transition-transform"
-          style={{ color: "#484f58", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+          style={{ color: "var(--text-muted)", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
         />
       </button>
 
       {open && (
-        <div className="px-4 py-3 space-y-4" style={{ background: "#0d1117" }}>
+        <div className="px-4 py-3 space-y-4" style={{ background: "var(--surface)" }}>
           {/* Provider selector */}
           <div>
-            <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+            <label className="text-xs mb-1.5 block" style={{ color: "var(--text-muted)" }}>
               Provider
             </label>
             {providersLoading ? (
-              <div className="flex items-center gap-2 text-xs" style={{ color: "#484f58" }}>
+              <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-muted)" }}>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading providers…
               </div>
             ) : (
@@ -700,9 +700,9 @@ function VlmConfigPanel({
                 onChange={(e) => handleProviderChange(e.target.value)}
                 className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
                 style={{
-                  background: "#161b22",
-                  border: "1px solid #21262d",
-                  color: config.providerId ? "#e6edf3" : "#484f58",
+                  background: "var(--panel)",
+                  border: "1px solid var(--border)",
+                  color: config.providerId ? "var(--text-primary)" : "var(--text-muted)",
                 }}
               >
                 <option value="">Use default (vlm_backend field)</option>
@@ -742,7 +742,7 @@ function VlmConfigPanel({
           {/* Model selector */}
           {config.providerId && availableModels.length > 0 && (
             <div>
-              <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+              <label className="text-xs mb-1.5 block" style={{ color: "var(--text-muted)" }}>
                 Model
               </label>
               <select
@@ -750,9 +750,9 @@ function VlmConfigPanel({
                 onChange={(e) => onChange({ ...config, modelId: e.target.value || null })}
                 className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
                 style={{
-                  background: "#161b22",
-                  border: "1px solid #21262d",
-                  color: config.modelId ? "#e6edf3" : "#484f58",
+                  background: "var(--panel)",
+                  border: "1px solid var(--border)",
+                  color: config.modelId ? "var(--text-primary)" : "var(--text-muted)",
                 }}
               >
                 <option value="">
@@ -771,7 +771,7 @@ function VlmConfigPanel({
 
           {/* Prompt preset */}
           <div>
-            <label className="text-xs mb-1.5 block" style={{ color: "#484f58" }}>
+            <label className="text-xs mb-1.5 block" style={{ color: "var(--text-muted)" }}>
               Prompt Preset
             </label>
             <select
@@ -779,9 +779,9 @@ function VlmConfigPanel({
               onChange={(e) => onChange({ ...config, promptName: e.target.value })}
               className="w-full px-3 py-1.5 text-xs rounded-lg focus:outline-none"
               style={{
-                background: "#161b22",
-                border: "1px solid #21262d",
-                color: "#e6edf3",
+                background: "var(--panel)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
               }}
             >
               {prompts.length > 0 ? (
@@ -811,7 +811,7 @@ function VlmConfigPanel({
           {config.promptName === "custom" && (
             <div className="space-y-2">
               <div>
-                <label className="text-[10px] mb-1 block" style={{ color: "#484f58" }}>
+                <label className="text-[10px] mb-1 block" style={{ color: "var(--text-muted)" }}>
                   System Prompt
                 </label>
                 <textarea
@@ -823,14 +823,14 @@ function VlmConfigPanel({
                   placeholder="You are an expert trichome analysis AI…"
                   className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none resize-y font-mono"
                   style={{
-                    background: "#161b22",
-                    border: "1px solid #21262d",
-                    color: "#e6edf3",
+                    background: "var(--panel)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
                   }}
                 />
               </div>
               <div>
-                <label className="text-[10px] mb-1 block" style={{ color: "#484f58" }}>
+                <label className="text-[10px] mb-1 block" style={{ color: "var(--text-muted)" }}>
                   User Prompt Template
                 </label>
                 <textarea
@@ -842,9 +842,9 @@ function VlmConfigPanel({
                   placeholder="Analyse this trichome microscopy image and…"
                   className="w-full px-3 py-2 text-xs rounded-lg focus:outline-none resize-y font-mono"
                   style={{
-                    background: "#161b22",
-                    border: "1px solid #21262d",
-                    color: "#e6edf3",
+                    background: "var(--panel)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
                   }}
                 />
               </div>
@@ -855,10 +855,10 @@ function VlmConfigPanel({
           <div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium" style={{ color: "#8b949e" }}>
+                <p className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
                   Ensemble Mode
                 </p>
-                <p className="text-[10px]" style={{ color: "#484f58" }}>
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                   {config.ensembleMode ? "Multi-Provider" : "Single Provider"}
                 </p>
               </div>
@@ -871,7 +871,7 @@ function VlmConfigPanel({
                   })
                 }
                 className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors"
-                style={{ background: config.ensembleMode ? "#7c3aed" : "#21262d" }}
+                style={{ background: config.ensembleMode ? "#7c3aed" : "var(--border)" }}
                 role="switch"
                 aria-checked={config.ensembleMode}
               >
@@ -903,7 +903,7 @@ function VlmConfigPanel({
             {/* Multi-select checkboxes for ensemble providers */}
             {config.ensembleMode && providers.length > 0 && (
               <div className="mt-2 space-y-1.5">
-                <p className="text-[10px]" style={{ color: "#484f58" }}>
+                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
                   Select providers for ensemble:
                 </p>
                 {providers.map((p) => (
@@ -925,7 +925,7 @@ function VlmConfigPanel({
                       className="rounded"
                       style={{ accentColor: "#7c3aed" }}
                     />
-                    <span className="text-xs" style={{ color: p.available ? "#8b949e" : "#484f58" }}>
+                    <span className="text-xs" style={{ color: p.available ? "var(--text-secondary)" : "var(--text-muted)" }}>
                       {p.name}
                     </span>
                     <span
@@ -1003,12 +1003,12 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
     <div className="p-4 space-y-4">
       {/* Dataset selector */}
       <div>
-        <label className="text-xs mb-1.5 block" style={{ color: '#484f58' }}>Target Dataset</label>
+        <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Target Dataset</label>
         <select
           value={datasetId ?? ""}
           onChange={(e) => setDatasetId(e.target.value ? Number(e.target.value) : null)}
           className="w-full px-3 py-1.5 text-sm rounded-lg focus:outline-none"
-          style={{ background: '#0d1117', border: '1px solid #21262d', color: datasetId ? '#e6edf3' : '#484f58' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: datasetId ? 'var(--text-primary)' : 'var(--text-muted)' }}
         >
           <option value="">Select dataset…</option>
           {datasets.map((d) => (
@@ -1023,7 +1023,7 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
       {/* VLM Backend (legacy fallback — visible when no remote provider is chosen) */}
       {!vlmConfig.providerId && (
         <div>
-          <label className="text-xs mb-1.5 block" style={{ color: '#484f58' }}>VLM Backend (local)</label>
+          <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>VLM Backend (local)</label>
           <div className="flex gap-1.5">
             {[
               { id: "moondream", label: "Moondream", vram: "2.1 GB" },
@@ -1034,8 +1034,8 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
                 className="flex-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-all border text-center"
                 style={{
                   background: backend === m.id ? 'rgba(168,85,247,0.2)' : 'transparent',
-                  border: backend === m.id ? '1px solid rgba(168,85,247,0.4)' : '1px solid #21262d',
-                  color: backend === m.id ? '#c084fc' : '#484f58',
+                  border: backend === m.id ? '1px solid rgba(168,85,247,0.4)' : '1px solid var(--border)',
+                  color: backend === m.id ? '#c084fc' : 'var(--text-muted)',
                 }}>
                 <div>{m.label}</div>
                 <div className="text-[9px] opacity-70">{m.vram}</div>
@@ -1048,13 +1048,13 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
       {/* Batch size */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="text-xs" style={{ color: '#484f58' }}>Batch Size</label>
-          <span className="text-xs font-mono" style={{ color: '#8b949e' }}>{batchSize}</span>
+          <label className="text-xs" style={{ color: 'var(--text-muted)' }}>Batch Size</label>
+          <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>{batchSize}</span>
         </div>
         <input type="range" min={10} max={500} step={10} value={batchSize}
           onChange={(e) => setBatchSize(Number(e.target.value))}
           className="w-full h-1.5 appearance-none rounded cursor-pointer"
-          style={{ background: '#21262d' }} />
+          style={{ background: 'var(--border)' }} />
       </div>
 
       <button onClick={() => startMutation.mutate()} disabled={!datasetId || startMutation.isPending}
@@ -1072,7 +1072,7 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
       </button>
 
       {!datasetId && (
-        <p className="text-[10px] text-center" style={{ color: '#484f58' }}>Select a dataset first</p>
+        <p className="text-[10px] text-center" style={{ color: 'var(--text-muted)' }}>Select a dataset first</p>
       )}
       {startMutation.isError && (
         <p className="text-xs text-red-400">{(startMutation.error as Error)?.message ?? "Failed to start auto-labeling"}</p>
@@ -1082,18 +1082,18 @@ function AutoLabelPanel({ datasets }: { datasets: Dataset[] }) {
       )}
 
       <div className="px-3 py-2.5 rounded-lg space-y-1.5 mt-2"
-        style={{ background: '#161b22', border: '1px solid #21262d' }}>
-        <h4 className="text-xs font-medium" style={{ color: '#8b949e' }}>Kappa Agreement</h4>
-        <p className="text-[10px] leading-relaxed" style={{ color: '#484f58' }}>
+        style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+        <h4 className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Kappa Agreement</h4>
+        <p className="text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
           Cohen&apos;s κ ≥ 0.80 is target for training data quality.
         </p>
         <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#21262d' }}>
+          <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
             <div className="h-full bg-green-500 rounded-full" style={{ width: '76%' }} />
           </div>
           <span className="text-xs font-mono text-green-400">0.76</span>
         </div>
-        <p className="text-[9px]" style={{ color: '#484f58' }}>VLM vs. human (estimated)</p>
+        <p className="text-[9px]" style={{ color: 'var(--text-muted)' }}>VLM vs. human (estimated)</p>
       </div>
     </div>
   );
@@ -1112,12 +1112,12 @@ function StatsPanel() {
 
   if (isLoading) return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+      <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
     </div>
   );
 
   if (!data) return (
-    <div className="text-center py-16" style={{ color: '#484f58' }}>
+    <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>
       <BarChart3 className="w-8 h-8 mx-auto mb-3 opacity-30" />
       <p className="text-sm">No annotation statistics available</p>
     </div>
@@ -1128,30 +1128,30 @@ function StatsPanel() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Pending", value: stats.total_pending ?? stats.pending_count ?? 0, color: "#eab308" },
-          { label: "Reviewed", value: stats.total_reviewed ?? stats.reviewed_count ?? 0, color: "#22c55e" },
+          { label: "Pending", value: stats.total_pending ?? stats.pending_count ?? 0, color: "var(--warn-text)" },
+          { label: "Reviewed", value: stats.total_reviewed ?? stats.reviewed_count ?? 0, color: "var(--ok-text)" },
           { label: "Throughput", value: `${(stats.throughput_per_hour ?? 0).toFixed(1)}/hr`, color: "#3b82f6" },
           { label: "High Priority", value: stats.high_priority_count ?? 0, color: "#ef4444" },
         ].map(({ label, value, color }) => (
           <div key={label} className="px-4 py-3 rounded-xl"
-            style={{ background: '#0d1117', border: '1px solid #21262d' }}>
-            <p className="text-xs mb-1" style={{ color: '#484f58' }}>{label}</p>
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
             <p className="text-2xl font-bold font-mono" style={{ color }}>{value}</p>
           </div>
         ))}
       </div>
       {data.agreement !== undefined && (
-        <div className="px-4 py-3 rounded-xl" style={{ background: '#0d1117', border: '1px solid #21262d' }}>
-          <p className="text-xs mb-2" style={{ color: '#484f58' }}>Inter-Annotator Agreement (Cohen&apos;s κ)</p>
+        <div className="px-4 py-3 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Inter-Annotator Agreement (Cohen&apos;s κ)</p>
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#21262d' }}>
+            <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
               <div className="h-full rounded-full"
                 style={{
                   width: `${Math.min(100, data.agreement * 100)}%`,
                   background: data.agreement >= 0.8 ? '#22c55e' : data.agreement >= 0.6 ? '#eab308' : '#ef4444',
                 }} />
             </div>
-            <span className="text-sm font-mono font-bold text-white">{data.agreement.toFixed(2)}</span>
+            <span className="text-sm font-mono font-bold text-text-primary">{data.agreement.toFixed(2)}</span>
           </div>
         </div>
       )}
@@ -1203,25 +1203,25 @@ function ConnectionPanel({ status, onConnect }: {
           <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs text-green-400 font-medium">API key loaded from .env</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "#4ade80" }}>Leave key field empty to use it.</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--ok-text)" }}>Leave key field empty to use it.</p>
           </div>
         </div>
       )}
       <div>
-        <label className="text-xs mb-1.5 block" style={{ color: "#8b949e" }}>Label Studio URL</label>
+        <label className="text-xs mb-1.5 block" style={{ color: "var(--text-secondary)" }}>Label Studio URL</label>
         <input type="text" value={host} onChange={(e) => setHost(e.target.value)}
           placeholder="http://localhost:3005"
           className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
-          style={{ background: "#161b22", border: "1px solid #21262d", color: "#e6edf3" }} />
+          style={{ background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
       </div>
       <div>
-        <label className="text-xs mb-1.5 block" style={{ color: "#8b949e" }}>
+        <label className="text-xs mb-1.5 block" style={{ color: "var(--text-secondary)" }}>
           API Key{envConfigured ? " (pre-filled from .env)" : ""}
         </label>
         <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)}
           placeholder={envConfigured ? "●●●●●●●● (from .env)" : "Label Studio API token"}
           className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
-          style={{ background: "#161b22", border: "1px solid #21262d", color: "#e6edf3" }} />
+          style={{ background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text-primary)" }} />
       </div>
       {error && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg"
@@ -1240,7 +1240,7 @@ function ConnectionPanel({ status, onConnect }: {
       <button onClick={handleConnect} disabled={isPending || !host}
         className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all"
         style={{
-          background: isPending || !host ? "rgba(37,99,235,0.3)" : "#1d4ed8",
+          background: isPending || !host ? "var(--accent-subtle)" : "var(--accent)",
           color: isPending || !host ? "rgba(147,197,253,0.5)" : "white",
           cursor: isPending || !host ? "not-allowed" : "pointer",
         }}>
@@ -1249,14 +1249,14 @@ function ConnectionPanel({ status, onConnect }: {
           : <><Link2 className="w-4 h-4" />Connect{envConfigured ? " (using .env token)" : ""}</>}
       </button>
       <div className="px-3 py-2.5 rounded-lg text-xs space-y-1.5"
-        style={{ background: "#0d1117", border: "1px solid #21262d" }}>
-        <p className="font-medium" style={{ color: "#8b949e" }}>Label Studio läuft auf Port 3005</p>
-        <p style={{ color: "#484f58" }}>
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+        <p className="font-medium" style={{ color: "var(--text-secondary)" }}>Label Studio läuft auf Port 3005</p>
+        <p style={{ color: "var(--text-muted)" }}>
           Öffne{" "}
-          <a href={lsUrl} target="_blank" rel="noreferrer" className="text-blue-400 underline">{lsUrl}</a>{" "}
+          <a href={lsUrl} target="_blank" rel="noreferrer" className="text-accent-text underline">{lsUrl}</a>{" "}
           im Browser zum Annotieren
         </p>
-        <p style={{ color: "#484f58" }}>
+        <p style={{ color: "var(--text-muted)" }}>
           Login: <code className="text-green-400">admin@ctip.local</code> /{" "}
           <code className="text-green-400">ctip_admin_2025</code>
         </p>
@@ -1281,36 +1281,36 @@ function TasksDrawer({ projectId, onClose }: { projectId: number; onClose: () =>
       style={{ background: "rgba(0,0,0,0.75)" }}
       onClick={onClose}>
       <div className="w-full max-w-xl max-h-[75vh] rounded-2xl flex flex-col overflow-hidden"
-        style={{ background: "#161b22", border: "1px solid #30363d" }}
+        style={{ background: "var(--panel)", border: "1px solid var(--border-muted)" }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3.5"
-          style={{ borderBottom: "1px solid #21262d" }}>
+          style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2">
-            <List className="w-4 h-4 text-blue-400" />
-            <h2 className="text-sm font-semibold text-white">Project #{projectId} — {total} tasks</h2>
+            <List className="w-4 h-4 text-accent-text" />
+            <h2 className="text-sm font-semibold text-text-primary">Project #{projectId} — {total} tasks</h2>
           </div>
           <button onClick={onClose} className="text-sm px-3 py-1 rounded-lg"
-            style={{ background: "#21262d", color: "#8b949e" }}>Close</button>
+            style={{ background: "var(--border)", color: "var(--text-secondary)" }}>Close</button>
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
             </div>
           ) : tasks.length === 0 ? (
-            <p className="text-center text-sm py-12" style={{ color: "#484f58" }}>No tasks</p>
+            <p className="text-center text-sm py-12" style={{ color: "var(--text-muted)" }}>No tasks</p>
           ) : (
             tasks.map((task) => (
               <div key={task.id} className="flex items-center gap-3 px-3 py-2 rounded-lg"
-                style={{ background: "#0d1117", border: "1px solid #21262d" }}>
-                <span className="text-xs font-mono w-12 text-right" style={{ color: "#484f58" }}>#{task.id}</span>
-                <span className="flex-1 text-xs truncate" style={{ color: "#8b949e" }}>
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+                <span className="text-xs font-mono w-12 text-right" style={{ color: "var(--text-muted)" }}>#{task.id}</span>
+                <span className="flex-1 text-xs truncate" style={{ color: "var(--text-secondary)" }}>
                   {task.data?.image?.split("/").pop() ?? "—"}
                 </span>
                 {task.is_labeled
                   ? <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-                  : <div className="w-3.5 h-3.5 rounded-full border flex-shrink-0" style={{ borderColor: "#21262d" }} />}
-                <span className="text-[10px] w-14 text-right" style={{ color: "#484f58" }}>
+                  : <div className="w-3.5 h-3.5 rounded-full border flex-shrink-0" style={{ borderColor: "var(--border)" }} />}
+                <span className="text-[10px] w-14 text-right" style={{ color: "var(--text-muted)" }}>
                   {task.total_annotations ?? 0} ann.
                 </span>
               </div>
@@ -1318,14 +1318,14 @@ function TasksDrawer({ projectId, onClose }: { projectId: number; onClose: () =>
           )}
         </div>
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid #21262d" }}>
+          <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
             <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
               className="text-xs px-3 py-1 rounded disabled:opacity-40"
-              style={{ background: "#21262d", color: "#8b949e" }}>Prev</button>
-            <span className="text-xs" style={{ color: "#484f58" }}>{page} / {totalPages}</span>
+              style={{ background: "var(--border)", color: "var(--text-secondary)" }}>Prev</button>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{page} / {totalPages}</span>
             <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}
               className="text-xs px-3 py-1 rounded disabled:opacity-40"
-              style={{ background: "#21262d", color: "#8b949e" }}>Next</button>
+              style={{ background: "var(--border)", color: "var(--text-secondary)" }}>Next</button>
           </div>
         )}
       </div>
@@ -1347,15 +1347,15 @@ function ProjectCard({ project, datasets, onImport, onViewTasks, importing, impo
   const pct = taskCount > 0 ? Math.round((annCount / taskCount) * 100) : 0;
 
   return (
-    <div className="rounded-xl p-4 space-y-3" style={{ background: "#0d1117", border: "1px solid #21262d" }}>
+    <div className="rounded-xl p-4 space-y-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-white truncate">{project.title}</p>
-          <p className="text-xs mt-0.5" style={{ color: "#484f58" }}>#{project.id}</p>
+          <p className="text-sm font-medium text-text-primary truncate">{project.title}</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>#{project.id}</p>
         </div>
         <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
           style={{
-            background: pct === 100 ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.15)",
+            background: pct === 100 ? "rgba(34,197,94,0.15)" : "rgba(47,158,58,0.15)",
             color: pct === 100 ? "#22c55e" : "#60a5fa",
           }}>
           {pct}%
@@ -1363,14 +1363,14 @@ function ProjectCard({ project, datasets, onImport, onViewTasks, importing, impo
       </div>
 
       <div className="space-y-1">
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#21262d" }}>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--border)" }}>
           <div className="h-full rounded-full transition-all"
             style={{
               width: `${pct}%`,
-              background: pct === 100 ? "#22c55e" : "linear-gradient(90deg,#3b82f6,#60a5fa)",
+              background: pct === 100 ? "#22c55e" : "linear-gradient(90deg,var(--accent),var(--accent-hover))",
             }} />
         </div>
-        <div className="flex justify-between text-[10px]" style={{ color: "#484f58" }}>
+        <div className="flex justify-between text-[10px]" style={{ color: "var(--text-muted)" }}>
           <span>{annCount} annotated</span>
           <span>{taskCount} tasks</span>
         </div>
@@ -1378,14 +1378,14 @@ function ProjectCard({ project, datasets, onImport, onViewTasks, importing, impo
 
       {/* Dataset selector for import target */}
       <div>
-        <label className="text-[10px] mb-1 block flex items-center gap-1" style={{ color: "#484f58" }}>
+        <label className="text-[10px] mb-1 block flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
           <Database className="w-3 h-3" />Import into dataset
         </label>
         <select
           value={selectedDataset ?? ""}
           onChange={(e) => setSelectedDataset(e.target.value ? Number(e.target.value) : null)}
           className="w-full px-2.5 py-1.5 text-xs rounded-lg focus:outline-none"
-          style={{ background: "#161b22", border: "1px solid #21262d", color: selectedDataset ? "#e6edf3" : "#484f58" }}>
+          style={{ background: "var(--panel)", border: "1px solid var(--border)", color: selectedDataset ? "var(--text-primary)" : "var(--text-muted)" }}>
           <option value="">Review queue (no dataset)</option>
           {datasets.map((d) => (
             <option key={d.id} value={d.id}>{d.name}</option>
@@ -1402,7 +1402,7 @@ function ProjectCard({ project, datasets, onImport, onViewTasks, importing, impo
       <div className="flex gap-2">
         <button onClick={() => onViewTasks(project.id)}
           className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium"
-          style={{ background: "transparent", border: "1px solid #21262d", color: "#8b949e" }}>
+          style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
           <List className="w-3.5 h-3.5" />Tasks
         </button>
         <button onClick={() => onImport(project.id, selectedDataset)}
@@ -1633,32 +1633,32 @@ export default function AnnotationPage() {
     <div className="flex h-full flex-col">
       {/* Top header with main tabs */}
       <div className="flex items-center justify-between px-5 py-3 flex-shrink-0"
-        style={{ borderBottom: '1px solid #21262d' }}>
+        style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Tag className="w-4 h-4 text-purple-400" />
-            <h1 className="text-base font-semibold text-white">Annotation</h1>
+            <h1 className="text-base font-semibold text-text-primary">Annotation</h1>
           </div>
 
           {/* Main tab switcher */}
-          <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: '#161b22', border: '1px solid #21262d' }}>
+          <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
             <button
               onClick={() => setMainTab("hitl")}
               className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all"
               style={{
-                background: mainTab === "hitl" ? '#0d1117' : 'transparent',
-                color: mainTab === "hitl" ? '#e6edf3' : '#484f58',
+                background: mainTab === "hitl" ? 'var(--surface)' : 'transparent',
+                color: mainTab === "hitl" ? 'var(--text-primary)' : 'var(--text-muted)',
               }}>
               <Brain className="w-3 h-3" />
               Review {pendingCount > 0 && <span className="ml-1 px-1 py-0.5 rounded text-[9px] font-bold"
-                style={{ background: 'rgba(234,179,8,0.2)', color: '#eab308' }}>{pendingCount}</span>}
+                style={{ background: 'rgba(234,179,8,0.2)', color: 'var(--warn-text)' }}>{pendingCount}</span>}
             </button>
             <button
               onClick={() => setMainTab("labelstudio")}
               className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-all"
               style={{
-                background: mainTab === "labelstudio" ? '#0d1117' : 'transparent',
-                color: mainTab === "labelstudio" ? '#e6edf3' : '#484f58',
+                background: mainTab === "labelstudio" ? 'var(--surface)' : 'transparent',
+                color: mainTab === "labelstudio" ? 'var(--text-primary)' : 'var(--text-muted)',
               }}>
               <Tags className="w-3 h-3" />
               Label Studio
@@ -1673,16 +1673,16 @@ export default function AnnotationPage() {
         {mainTab === "hitl" && (
           <div className="flex items-center gap-3">
             <div className="flex gap-1 p-0.5 rounded-lg"
-              style={{ background: '#161b22', border: '1px solid #21262d' }}>
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               {(["queue", "jobs", "stats"] as const).map((t) => (
                 <button key={t} onClick={() => setHitlTab(t)}
                   className="px-3 py-1 rounded text-xs font-medium transition-all capitalize"
-                  style={{ background: hitlTab === t ? '#0d1117' : 'transparent', color: hitlTab === t ? '#e6edf3' : '#484f58' }}>
+                  style={{ background: hitlTab === t ? 'var(--surface)' : 'transparent', color: hitlTab === t ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                   {t}{t === "queue" && pendingCount > 0 ? ` (${pendingCount})` : ""}
                 </button>
               ))}
             </div>
-            <button onClick={() => refetchQueue()} className="p-1.5 rounded" style={{ color: '#484f58' }}>
+            <button onClick={() => refetchQueue()} className="p-1.5 rounded" style={{ color: 'var(--text-muted)' }}>
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -1694,10 +1694,10 @@ export default function AnnotationPage() {
               <>
                 <a href={lsStatus?.host} target="_blank" rel="noreferrer"
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg"
-                  style={{ border: "1px solid #21262d", color: "#8b949e" }}>
+                  style={{ border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
                   <ExternalLink className="w-3.5 h-3.5" />Open LS
                 </a>
-                <button onClick={() => refetchProjects()} className="p-2 rounded-lg" style={{ color: "#484f58" }}>
+                <button onClick={() => refetchProjects()} className="p-2 rounded-lg" style={{ color: "var(--text-muted)" }}>
                   <RefreshCw className="w-4 h-4" />
                 </button>
               </>
@@ -1705,10 +1705,10 @@ export default function AnnotationPage() {
             <button
               onClick={() => setLsPanel((p) => p === "settings" ? "projects" : "settings")}
               className="p-2 rounded-lg transition-colors"
-              style={{ background: lsPanel === "settings" ? "#21262d" : "transparent", color: lsPanel === "settings" ? "#e6edf3" : "#484f58" }}>
+              style={{ background: lsPanel === "settings" ? "var(--border)" : "transparent", color: lsPanel === "settings" ? "var(--text-primary)" : "var(--text-muted)" }}>
               <Settings className="w-4 h-4" />
             </button>
-            <button onClick={() => { refetchLsStatus(); refetchProjects(); }} className="p-2 rounded-lg" style={{ color: "#484f58" }}>
+            <button onClick={() => { refetchLsStatus(); refetchProjects(); }} className="p-2 rounded-lg" style={{ color: "var(--text-muted)" }}>
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -1718,15 +1718,15 @@ export default function AnnotationPage() {
       {/* Stats bar (HITL only) */}
       {mainTab === "hitl" && Object.keys(stats).length > 0 && (
         <div className="flex items-center gap-6 px-5 py-2.5 flex-shrink-0"
-          style={{ borderBottom: '1px solid #21262d', background: '#161b22' }}>
+          style={{ borderBottom: '1px solid var(--border)', background: 'var(--panel)' }}>
           {[
-            { label: "Pending", value: stats.total_pending ?? stats.pending_count ?? 0, color: "#eab308" },
-            { label: "Reviewed", value: stats.total_reviewed ?? stats.reviewed_count ?? 0, color: "#22c55e" },
+            { label: "Pending", value: stats.total_pending ?? stats.pending_count ?? 0, color: "var(--warn-text)" },
+            { label: "Reviewed", value: stats.total_reviewed ?? stats.reviewed_count ?? 0, color: "var(--ok-text)" },
             { label: "Throughput", value: `${(stats.throughput_per_hour ?? 0).toFixed(1)}/hr`, color: "#3b82f6" },
             { label: "High Priority", value: stats.high_priority_count ?? 0, color: "#ef4444" },
           ].map(({ label, value, color }) => (
             <div key={label} className="flex items-center gap-1.5">
-              <span className="text-xs" style={{ color: '#484f58' }}>{label}:</span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}:</span>
               <span className="text-xs font-bold font-mono" style={{ color }}>{value}</span>
             </div>
           ))}
@@ -1736,14 +1736,14 @@ export default function AnnotationPage() {
       {/* LS stats bar */}
       {mainTab === "labelstudio" && lsConnected && (
         <div className="flex items-center gap-6 px-5 py-2 flex-shrink-0"
-          style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}>
+          style={{ borderBottom: "1px solid var(--border)", background: "var(--panel)" }}>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs" style={{ color: "#484f58" }}>Projects:</span>
-            <span className="text-xs font-bold text-white">{lsStatus?.project_count ?? projects.length}</span>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>Projects:</span>
+            <span className="text-xs font-bold text-text-primary">{lsStatus?.project_count ?? projects.length}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-xs" style={{ color: "#4ade80" }}>Connected — {lsStatus?.host}</span>
+            <span className="text-xs" style={{ color: "var(--ok-text)" }}>Connected — {lsStatus?.host}</span>
           </div>
         </div>
       )}
@@ -1758,8 +1758,8 @@ export default function AnnotationPage() {
                 <div className="space-y-3">
                   {/* HITL invariant notice */}
                   <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg"
-                    style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                    <FlaskConical className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    style={{ background: 'rgba(47,158,58,0.1)', border: '1px solid rgba(47,158,58,0.2)' }}>
+                    <FlaskConical className="w-4 h-4 text-accent-text flex-shrink-0 mt-0.5" />
                     <p className="text-xs" style={{ color: 'rgba(191,219,254,0.8)' }}>
                       <strong>Human-in-loop enforced:</strong> VLM auto-labels require human approval before entering the training dataset.
                     </p>
@@ -1767,8 +1767,8 @@ export default function AnnotationPage() {
 
                   {/* Status filter */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-medium flex-shrink-0" style={{ color: "#484f58" }}>Filter:</span>
-                    <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "#161b22", border: "1px solid #21262d" }}>
+                    <span className="text-[10px] uppercase font-medium flex-shrink-0" style={{ color: "var(--text-muted)" }}>Filter:</span>
+                    <div className="flex gap-0.5 p-0.5 rounded-lg" style={{ background: "var(--panel)", border: "1px solid var(--border)" }}>
                       {(["all", "pending_review", "approved", "rejected"] as const).map((f) => {
                         const labels: Record<StatusFilter, string> = {
                           all: "All",
@@ -1782,8 +1782,8 @@ export default function AnnotationPage() {
                             onClick={() => { setStatusFilter(f); setSelectedItemIndex(-1); setCheckedIds(new Set()); }}
                             className="px-2.5 py-1 rounded text-[11px] font-medium transition-all"
                             style={{
-                              background: statusFilter === f ? "#0d1117" : "transparent",
-                              color: statusFilter === f ? "#e6edf3" : "#484f58",
+                              background: statusFilter === f ? "var(--surface)" : "transparent",
+                              color: statusFilter === f ? "var(--text-primary)" : "var(--text-muted)",
                             }}
                           >
                             {labels[f]}
@@ -1791,7 +1791,7 @@ export default function AnnotationPage() {
                         );
                       })}
                     </div>
-                    <span className="text-[10px] ml-auto" style={{ color: "#484f58" }}>
+                    <span className="text-[10px] ml-auto" style={{ color: "var(--text-muted)" }}>
                       {sortedItems.length} item{sortedItems.length !== 1 ? "s" : ""}
                     </span>
                   </div>
@@ -1799,12 +1799,12 @@ export default function AnnotationPage() {
                   {/* Bulk action bar */}
                   {someChecked && (
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg"
-                      style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)" }}>
-                      <span className="text-xs font-medium text-blue-300">{checkedIds.size} selected</span>
+                      style={{ background: "rgba(47,158,58,0.1)", border: "1px solid rgba(47,158,58,0.3)" }}>
+                      <span className="text-xs font-medium text-accent-text">{checkedIds.size} selected</span>
                       <button
                         onClick={handleBulkApprove}
                         className="px-2.5 py-1 rounded text-xs font-medium"
-                        style={{ background: "rgba(34,197,94,0.2)", color: "#22c55e" }}>
+                        style={{ background: "rgba(34,197,94,0.2)", color: "var(--ok-text)" }}>
                         Approve all
                       </button>
                       <button
@@ -1816,7 +1816,7 @@ export default function AnnotationPage() {
                       <button
                         onClick={() => setCheckedIds(new Set())}
                         className="text-[11px] ml-auto"
-                        style={{ color: "#484f58" }}>
+                        style={{ color: "var(--text-muted)" }}>
                         Clear selection
                       </button>
                     </div>
@@ -1831,9 +1831,9 @@ export default function AnnotationPage() {
                           checked={allPendingChecked}
                           onChange={(e) => handleSelectAllPending(e.target.checked)}
                           className="w-3.5 h-3.5 rounded"
-                          style={{ accentColor: "#3b82f6" }}
+                          style={{ accentColor: "var(--accent)" }}
                         />
-                        <span className="text-[10px] uppercase font-medium" style={{ color: "#484f58" }}>
+                        <span className="text-[10px] uppercase font-medium" style={{ color: "var(--text-muted)" }}>
                           Select all pending ({pendingItems.length})
                         </span>
                       </label>
@@ -1843,10 +1843,10 @@ export default function AnnotationPage() {
                   {/* Queue list */}
                   {queueLoading ? (
                     <div className="flex items-center justify-center py-16">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                      <Loader2 className="w-6 h-6 animate-spin text-accent-text" />
                     </div>
                   ) : sortedItems.length === 0 ? (
-                    <div className="text-center py-16" style={{ color: '#484f58' }}>
+                    <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>
                       <Tag className="w-10 h-10 mx-auto mb-3 opacity-30" />
                       <p className="text-sm font-medium">Queue is empty</p>
                       <p className="text-xs mt-1">Run VLM auto-labeling or import from Label Studio to populate</p>
@@ -1871,7 +1871,7 @@ export default function AnnotationPage() {
 
                   {/* Keyboard shortcut legend */}
                   {sortedItems.length > 0 && (
-                    <p className="text-center text-[10px] pt-1" style={{ color: "#30363d" }}>
+                    <p className="text-center text-[10px] pt-1" style={{ color: "var(--border-muted)" }}>
                       ↑↓ navigate · <kbd className="font-mono">a</kbd> approve · <kbd className="font-mono">r</kbd> reject · <kbd className="font-mono">Enter</kbd> details · click row to inspect
                     </p>
                   )}
@@ -1881,7 +1881,7 @@ export default function AnnotationPage() {
               {hitlTab === "jobs" && (
                 <div className="space-y-2">
                   {jobs.length === 0 ? (
-                    <div className="text-center py-16" style={{ color: '#484f58' }}>
+                    <div className="text-center py-16" style={{ color: 'var(--text-muted)' }}>
                       <Clock className="w-8 h-8 mx-auto mb-3 opacity-30" />
                       <p className="text-sm">No annotation jobs yet</p>
                     </div>
@@ -1889,7 +1889,7 @@ export default function AnnotationPage() {
                     jobs.map((job, i) => (
                       <div key={job.id ?? job.job_uuid ?? i}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                        style={{ background: '#0d1117', border: '1px solid #21262d' }}>
+                        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                         <div className={cn("w-2 h-2 rounded-full flex-shrink-0")}
                           style={{
                             background: job.status === "running" ? "#3b82f6"
@@ -1897,17 +1897,17 @@ export default function AnnotationPage() {
                               : job.status === "failed" ? "#ef4444" : "#6b7280",
                           }} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm" style={{ color: '#8b949e' }}>{job.job_type ?? job.type ?? "Annotation Job"}</p>
-                          <p className="text-xs" style={{ color: '#484f58' }}>
+                          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{job.job_type ?? job.type ?? "Annotation Job"}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             {job.processed_items ?? 0} / {job.total_items ?? "?"} processed
                           </p>
                         </div>
                         {job.progress !== undefined && (
-                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: '#21262d' }}>
-                            <div className="h-full bg-blue-500 transition-all" style={{ width: `${job.progress}%` }} />
+                          <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
+                            <div className="h-full bg-accent transition-all" style={{ width: `${job.progress}%` }} />
                           </div>
                         )}
-                        <span className="text-xs font-mono" style={{ color: '#484f58' }}>{job.status}</span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{job.status}</span>
                       </div>
                     ))
                   )}
@@ -1918,10 +1918,10 @@ export default function AnnotationPage() {
             </div>
 
             {/* Auto-label sidebar */}
-            <div className="w-80 flex-shrink-0 overflow-y-auto" style={{ borderLeft: '1px solid #21262d' }}>
-              <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid #21262d' }}>
+            <div className="w-80 flex-shrink-0 overflow-y-auto" style={{ borderLeft: '1px solid var(--border)' }}>
+              <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
                 <Wand2 className="w-4 h-4 text-purple-400" />
-                <h2 className="text-sm font-semibold text-white">Auto-Label</h2>
+                <h2 className="text-sm font-semibold text-text-primary">Auto-Label</h2>
               </div>
               <AutoLabelPanel datasets={datasets} />
             </div>
@@ -1935,16 +1935,16 @@ export default function AnnotationPage() {
               {!lsConnected ? (
                 <div className="max-w-sm mx-auto mt-8 text-center space-y-4">
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-                    style={{ background: "rgba(59,130,246,0.1)" }}>
-                    <Tags className="w-8 h-8 text-blue-400" />
+                    style={{ background: "rgba(47,158,58,0.1)" }}>
+                    <Tags className="w-8 h-8 text-accent-text" />
                   </div>
-                  <h2 className="text-lg font-semibold text-white">Label Studio Integration</h2>
-                  <p className="text-sm" style={{ color: "#484f58" }}>
+                  <h2 className="text-lg font-semibold text-text-primary">Label Studio Integration</h2>
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>
                     Connect to your Label Studio instance to import completed annotations into the human review queue.
                   </p>
                   <button onClick={() => setLsPanel("settings")}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-                    style={{ background: "#1d4ed8", color: "white" }}>
+                    style={{ background: "var(--accent)", color: "white" }}>
                     <Settings className="w-4 h-4" />Configure Connection
                   </button>
                 </div>
@@ -1959,22 +1959,22 @@ export default function AnnotationPage() {
                 </div>
               ) : projectsLoading ? (
                 <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-accent-text animate-spin" />
                 </div>
               ) : projects.length === 0 ? (
                 <div className="text-center py-16 space-y-3">
-                  <FolderOpen className="w-10 h-10 mx-auto opacity-30" style={{ color: "#484f58" }} />
-                  <p className="text-sm" style={{ color: "#484f58" }}>No projects in Label Studio</p>
+                  <FolderOpen className="w-10 h-10 mx-auto opacity-30" style={{ color: "var(--text-muted)" }} />
+                  <p className="text-sm" style={{ color: "var(--text-muted)" }}>No projects in Label Studio</p>
                   <a href={lsStatus?.host} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-blue-400 underline">
+                    className="inline-flex items-center gap-2 text-sm text-accent-text underline">
                     <ExternalLink className="w-4 h-4" />Create a project
                   </a>
                 </div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg mb-1"
-                    style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}>
-                    <Upload className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    style={{ background: "rgba(47,158,58,0.08)", border: "1px solid rgba(47,158,58,0.15)" }}>
+                    <Upload className="w-4 h-4 text-accent-text flex-shrink-0 mt-0.5" />
                     <p className="text-xs" style={{ color: "rgba(147,197,253,0.8)" }}>
                       <strong>Workflow:</strong> Annotate in Label Studio → select target dataset → Import to queue → Human review → Training data
                     </p>
@@ -1993,12 +1993,12 @@ export default function AnnotationPage() {
             </div>
 
             {/* Connection sidebar */}
-            <div className="w-72 flex-shrink-0 flex flex-col overflow-y-auto" style={{ borderLeft: "1px solid #21262d" }}>
-              <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid #21262d" }}>
+            <div className="w-72 flex-shrink-0 flex flex-col overflow-y-auto" style={{ borderLeft: "1px solid var(--border)" }}>
+              <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
                 {lsConnected
                   ? <Link2 className="w-4 h-4 text-green-400" />
                   : <Link2Off className="w-4 h-4 text-red-400" />}
-                <h2 className="text-sm font-semibold text-white">Connection</h2>
+                <h2 className="text-sm font-semibold text-text-primary">Connection</h2>
               </div>
               <div className="flex-1 p-4">
                 <ConnectionPanel
@@ -2009,13 +2009,13 @@ export default function AnnotationPage() {
                 />
               </div>
               {lsConnected && (
-                <div className="px-4 py-3 space-y-1" style={{ borderTop: "1px solid #21262d" }}>
-                  <p className="text-[10px] uppercase font-medium mb-2" style={{ color: "#484f58" }}>Quick Links</p>
+                <div className="px-4 py-3 space-y-1" style={{ borderTop: "1px solid var(--border)" }}>
+                  <p className="text-[10px] uppercase font-medium mb-2" style={{ color: "var(--text-muted)" }}>Quick Links</p>
                   {[
                     { href: "/datasets", label: "→ Datasets" },
                     { href: "/training", label: "→ Training" },
                   ].map(({ href, label }) => (
-                    <a key={href} href={href} className="block text-xs py-1" style={{ color: "#484f58" }}>{label}</a>
+                    <a key={href} href={href} className="block text-xs py-1" style={{ color: "var(--text-muted)" }}>{label}</a>
                   ))}
                 </div>
               )}

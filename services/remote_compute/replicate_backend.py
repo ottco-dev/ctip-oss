@@ -130,7 +130,7 @@ class ReplicateBackend(RemoteComputeBackend):
             buf.seek(0)
 
             client = self._client()
-            output = await asyncio.get_event_loop().run_in_executor(
+            output = await asyncio.get_running_loop().run_in_executor(
                 None,
                 lambda: client.run(
                     model_id,
@@ -197,7 +197,7 @@ class ReplicateBackend(RemoteComputeBackend):
             if boxes:
                 inputs["box"] = boxes[0] if boxes else None
 
-            output = await asyncio.get_event_loop().run_in_executor(
+            output = await asyncio.get_running_loop().run_in_executor(
                 None,
                 lambda: client.run(REPLICATE_MODELS["sam2"], input=inputs),
             )

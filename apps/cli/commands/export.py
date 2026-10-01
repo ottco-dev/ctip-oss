@@ -243,7 +243,7 @@ def _export_pdf(
         from analytics.export.pdf_exporter import PdfExporter
         exporter = PdfExporter(
             title=title,
-            author=author or "TrichomeLab",
+            author=author or "CTIP",
             include_crops=include_crops,
             include_heatmaps=include_heatmaps,
             language=language,

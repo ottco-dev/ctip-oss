@@ -24,7 +24,7 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       sidebarCollapsed: false,
       activePageId: 'dashboard',
-      theme: 'dark',
+      theme: 'light',
 
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -35,6 +35,12 @@ export const useUiStore = create<UiState>()(
     }),
     {
       name: 'ctip-ui-store',
+      // v1: the CTIP light design became the default - move stored themes over once
+      version: 1,
+      migrate: (persisted) => ({
+        sidebarCollapsed: Boolean((persisted as Partial<UiState> | undefined)?.sidebarCollapsed),
+        theme: 'light' as Theme,
+      }),
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         theme: state.theme,

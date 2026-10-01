@@ -125,7 +125,7 @@ export function ReliabilityDiagram({
             'text-xs px-2 py-0.5 rounded-full font-medium',
             isOverconfident
               ? 'bg-orange-500/15 text-orange-400'
-              : 'bg-blue-500/15 text-blue-400',
+              : 'bg-accent/15 text-accent-text',
           )}
         >
           {isOverconfident ? '↑ Overconfident' : '↓ Underconfident'}

@@ -80,15 +80,15 @@ export function LossChart({ className }: LossChartProps) {
 
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
             dataKey="epoch"
-            tick={{ fill: '#8b949e', fontSize: 11 }}
-            label={{ value: 'Epoch', position: 'insideBottom', offset: -2, fill: '#484f58', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+            label={{ value: 'Epoch', position: 'insideBottom', offset: -2, fill: 'var(--text-muted)', fontSize: 11 }}
           />
           <YAxis
             yAxisId="loss"
-            tick={{ fill: '#8b949e', fontSize: 11 }}
+            tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
             width={45}
           />
           {hasMap50 && (
@@ -96,17 +96,17 @@ export function LossChart({ className }: LossChartProps) {
               yAxisId="map"
               orientation="right"
               domain={[0, 1]}
-              tick={{ fill: '#8b949e', fontSize: 11 }}
+              tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
               width={40}
             />
           )}
           <Tooltip
             contentStyle={{
-              backgroundColor: '#161b22',
-              border: '1px solid #21262d',
+              backgroundColor: 'var(--panel)',
+              border: '1px solid var(--border)',
               borderRadius: '6px',
               fontSize: '12px',
-              color: '#e6edf3',
+              color: 'var(--text-primary)',
             }}
             formatter={(value: number, name: string) => [
               name.includes('Loss') ? value.toFixed(4) : value.toFixed(4),
@@ -114,7 +114,7 @@ export function LossChart({ className }: LossChartProps) {
             ]}
           />
           <Legend
-            wrapperStyle={{ fontSize: '12px', color: '#8b949e' }}
+            wrapperStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }}
           />
 
           <Line

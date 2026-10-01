@@ -37,22 +37,22 @@ export function CodeBlock({
   return (
     <div
       className={`rounded-xl overflow-hidden ${className}`}
-      style={{ border: "1px solid #21262d", background: "#0d1117" }}
+      style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-2"
-        style={{ background: "#161b22", borderBottom: "1px solid #21262d" }}
+        style={{ background: "var(--panel)", borderBottom: "1px solid var(--border)" }}
       >
         <div className="flex items-center gap-2">
           {title && (
-            <span className="text-xs font-medium" style={{ color: "#e6edf3" }}>
+            <span className="text-xs font-medium" style={{ color: "var(--text-primary)" }}>
               {title}
             </span>
           )}
           <span
             className="text-[10px] px-1.5 py-0.5 rounded"
-            style={{ background: "#21262d", color: "#8b949e" }}
+            style={{ background: "var(--border)", color: "var(--text-secondary)" }}
           >
             {language}
           </span>
@@ -61,7 +61,7 @@ export function CodeBlock({
           onClick={handleCopy}
           className="flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-colors"
           style={{
-            color: copied ? "#4ade80" : "#8b949e",
+            color: copied ? "#4ade80" : "var(--text-secondary)",
             background: "transparent",
           }}
         >
@@ -75,7 +75,7 @@ export function CodeBlock({
         className="overflow-auto p-4 text-[12px] font-mono leading-relaxed"
         style={{
           maxHeight: `${maxHeight}px`,
-          color: "#e6edf3",
+          color: "var(--text-primary)",
           whiteSpace: "pre-wrap",
           wordBreak: "break-all",
         }}

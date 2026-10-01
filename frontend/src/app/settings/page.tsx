@@ -98,7 +98,7 @@ const COMPUTE_BACKENDS = [
     label: 'Apple MPS',
     description: 'Apple Silicon unified memory — macOS only',
     icon: Cpu,
-    color: '#a78bfa',
+    color: 'var(--violet-text)',
   },
   {
     id: 'cpu',
@@ -691,7 +691,7 @@ function ApiSecuritySection() {
           {status?.enabled && (
             <span style={{
               fontSize: 10, padding: '2px 7px', borderRadius: 99,
-              background: 'rgba(34,197,94,0.12)', color: '#22c55e',
+              background: 'rgba(34,197,94,0.12)', color: 'var(--ok-text)',
               border: '1px solid rgba(34,197,94,0.3)',
               fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
             }}>
@@ -973,7 +973,7 @@ export default function SettingsPage() {
           {patchMutation.isSuccess && (
             <div style={{
               padding: '8px 14px', borderRadius: 8, fontSize: 13,
-              background: 'rgba(34,197,94,0.1)', color: '#22c55e',
+              background: 'rgba(34,197,94,0.1)', color: 'var(--ok-text)',
               border: '1px solid rgba(34,197,94,0.3)',
             }}>
               Settings saved successfully

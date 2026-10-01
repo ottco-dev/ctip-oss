@@ -733,21 +733,21 @@ function CreateModal({ onClose }: { onClose: () => void }) {
     >
       <div
         className="w-full max-w-md rounded-2xl p-6 space-y-5"
-        style={{ background: '#0d1117', border: '1px solid #21262d' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">New Experiment</h2>
-          <button onClick={onClose} className="p-1 rounded transition-colors" style={{ color: '#484f58' }}>
+          <h2 className="text-lg font-bold text-text-primary">New Experiment</h2>
+          <button onClick={onClose} className="p-1 rounded transition-colors" style={{ color: 'var(--text-muted)' }}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs mb-1.5 block" style={{ color: '#8b949e' }}>Name *</label>
+            <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>Name *</label>
             <input
               className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
-              style={{ background: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               placeholder="e.g. yolo11s-baseline-v1"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -755,10 +755,10 @@ function CreateModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <label className="text-xs mb-1.5 block" style={{ color: '#8b949e' }}>Description</label>
+            <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>Description</label>
             <textarea
               className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none resize-none"
-              style={{ background: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               rows={3}
               placeholder="Experiment description…"
               value={form.description}
@@ -767,11 +767,11 @@ function CreateModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <label className="text-xs mb-1.5 block" style={{ color: '#8b949e' }}>Tags</label>
+            <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>Tags</label>
             <div className="flex gap-2">
               <input
                 className="flex-1 px-3 py-2 text-sm rounded-lg focus:outline-none"
-                style={{ background: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}
+                style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 placeholder="Add tag…"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
@@ -780,7 +780,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
               <button
                 onClick={addTag}
                 className="px-3 py-2 rounded-lg text-sm transition-colors"
-                style={{ background: '#161b22', border: '1px solid #21262d', color: '#8b949e' }}
+                style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
               >
                 Add
               </button>
@@ -808,14 +808,14 @@ function CreateModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="flex-1 py-2 text-sm rounded-lg transition-colors"
-            style={{ background: '#161b22', border: '1px solid #21262d', color: '#8b949e' }}
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
           >
             Cancel
           </button>
           <button
             onClick={() => createMutation.mutate()}
             disabled={createMutation.isPending || !form.name.trim()}
-            className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex-1 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {createMutation.isPending ? (
               <span className="flex items-center justify-center gap-2">
@@ -867,15 +867,15 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
     <div
       className={cn('rounded-xl p-4 space-y-3 transition-all')}
       style={{
-        background: isArchived ? 'rgba(13,17,23,0.6)' : '#0d1117',
-        border: isArchived ? '1px solid rgba(33,38,45,0.5)' : '1px solid #21262d',
+        background: isArchived ? 'rgba(13,17,23,0.6)' : 'var(--surface)',
+        border: isArchived ? '1px solid rgba(33,38,45,0.5)' : '1px solid var(--border)',
         opacity: isArchived ? 0.7 : 1,
       }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-semibold text-white truncate">{experiment.name}</h3>
+            <h3 className="text-sm font-semibold text-text-primary truncate">{experiment.name}</h3>
             {isArchived && (
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded font-medium"
@@ -890,7 +890,7 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
                 style={{
                   background:
                     experiment.status === 'running'
-                      ? 'rgba(59,130,246,0.2)'
+                      ? 'rgba(47,158,58,0.2)'
                       : 'rgba(34,197,94,0.2)',
                   color:
                     experiment.status === 'running' ? '#60a5fa' : '#22c55e',
@@ -901,7 +901,7 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
             )}
           </div>
           {experiment.description && (
-            <p className="text-xs mt-0.5 line-clamp-2" style={{ color: '#484f58' }}>
+            <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-muted)' }}>
               {experiment.description}
             </p>
           )}
@@ -925,13 +925,13 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
             onClick={() => archiveMutation.mutate()}
             disabled={archiveMutation.isPending}
             className="p-1.5 rounded transition-colors disabled:opacity-50"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
             title={isArchived ? 'Restore' : 'Archive'}
           >
             {archiveMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : isArchived ? (
-              <ArchiveRestore className="w-4 h-4 hover:text-blue-400" />
+              <ArchiveRestore className="w-4 h-4 hover:text-accent-text" />
             ) : (
               <Archive className="w-4 h-4" />
             )}
@@ -944,7 +944,7 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
             }}
             disabled={deleteMutation.isPending}
             className="p-1.5 rounded transition-colors disabled:opacity-50 hover:text-red-400"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
             title="Delete"
           >
             {deleteMutation.isPending ? (
@@ -959,19 +959,19 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
       {/* Stats row */}
       <div className="flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <span style={{ color: '#484f58' }}>Runs:</span>
-          <span className="font-mono font-bold text-white">{runCount}</span>
+          <span style={{ color: 'var(--text-muted)' }}>Runs:</span>
+          <span className="font-mono font-bold text-text-primary">{runCount}</span>
         </div>
         {bestMap50 !== null && bestMap50 !== undefined && bestMap50 > 0 && (
           <div className="flex items-center gap-1.5">
-            <span style={{ color: '#484f58' }}>Best mAP50:</span>
+            <span style={{ color: 'var(--text-muted)' }}>Best mAP50:</span>
             <span className="font-mono font-bold text-green-400">
               {(bestMap50 * 100).toFixed(1)}%
             </span>
           </div>
         )}
         {createdAt && (
-          <span className="ml-auto" style={{ color: '#484f58' }}>{createdAt}</span>
+          <span className="ml-auto" style={{ color: 'var(--text-muted)' }}>{createdAt}</span>
         )}
       </div>
 
@@ -979,7 +979,7 @@ function ExperimentCard({ experiment }: { experiment: Experiment }) {
       {bestMap50 !== null && bestMap50 !== undefined && bestMap50 > 0 && (
         <div
           className="h-1 rounded-full overflow-hidden"
-          style={{ background: '#21262d' }}
+          style={{ background: 'var(--border)' }}
         >
           <div
             className="h-full rounded-full transition-all"
@@ -1035,17 +1035,17 @@ function ExperimentsTab() {
           {experiments.length > 0 && (
             <>
               {[
-                { label: 'Experiments', value: active.length, color: '#e6edf3' },
-                { label: 'Total Runs', value: totalRuns, color: '#8b949e' },
+                { label: 'Experiments', value: active.length, color: 'var(--text-primary)' },
+                { label: 'Total Runs', value: totalRuns, color: 'var(--text-secondary)' },
                 {
                   label: 'Best mAP50',
                   value: bestMap > 0 ? `${(bestMap * 100).toFixed(1)}%` : '—',
-                  color: '#22c55e',
+                  color: 'var(--ok-text)',
                 },
-                { label: 'Archived', value: archived.length, color: '#484f58' },
+                { label: 'Archived', value: archived.length, color: 'var(--text-muted)' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex items-center gap-1.5">
-                  <span style={{ color: '#484f58' }}>{label}:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{label}:</span>
                   <span className="font-bold font-mono" style={{ color }}>{value}</span>
                 </div>
               ))}
@@ -1058,8 +1058,8 @@ function ExperimentsTab() {
             className="px-2.5 py-1 text-xs rounded-lg transition-colors"
             style={{
               background: showArchived ? 'rgba(107,114,128,0.2)' : 'transparent',
-              border: '1px solid #21262d',
-              color: showArchived ? '#9ca3af' : '#484f58',
+              border: '1px solid var(--border)',
+              color: showArchived ? '#9ca3af' : 'var(--text-muted)',
             }}
           >
             {showArchived ? `Hide archived (${archived.length})` : `Show archived (${archived.length})`}
@@ -1067,14 +1067,14 @@ function ExperimentsTab() {
           <button
             onClick={() => refetch()}
             className="p-1.5 rounded transition-colors"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Experiment
@@ -1085,7 +1085,7 @@ function ExperimentsTab() {
       {/* Loading */}
       {isLoading && (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+          <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
         </div>
       )}
 
@@ -1107,7 +1107,7 @@ function ExperimentsTab() {
 
       {/* Empty state */}
       {!isLoading && !isError && displayed.length === 0 && (
-        <div className="text-center py-20" style={{ color: '#484f58' }}>
+        <div className="text-center py-20" style={{ color: 'var(--text-muted)' }}>
           <FlaskConical className="w-12 h-12 mx-auto mb-4 opacity-30" />
           <p className="text-base font-medium">
             {showArchived ? 'No archived experiments' : 'No experiments yet'}
@@ -1263,8 +1263,8 @@ function DistributedTab() {
     const { status } = jobStatus;
     if (status === 'running') {
       return (
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-400">
-          <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-text">
+          <span className="w-2 h-2 rounded-full bg-accent-hover animate-pulse" />
           Running
         </span>
       );
@@ -1455,7 +1455,7 @@ function DistributedTab() {
             <div
               className={cn(
                 'card',
-                jobStatus?.status === 'running' && 'border-blue-500/30 bg-blue-500/5',
+                jobStatus?.status === 'running' && 'border-accent/30 bg-accent/5',
                 (jobStatus?.status === 'complete' || jobStatus?.status === 'completed') &&
                   'border-green-500/30 bg-green-500/5',
                 (jobStatus?.status === 'error' || jobStatus?.status === 'failed') &&
@@ -1573,7 +1573,7 @@ function TrainingPageInner() {
       <div className="flex items-center gap-3">
         <Cpu className="w-5 h-5 text-text-secondary" />
         <div>
-          <h1 className="text-xl font-semibold text-[#e6edf3]">Training</h1>
+          <h1 className="text-xl font-semibold text-[var(--text-primary)]">Training</h1>
           <p className="text-sm text-text-secondary mt-0.5">
             Manage training runs and experiments
           </p>
@@ -1581,7 +1581,7 @@ function TrainingPageInner() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-[#21262d]">
+      <div className="flex border-b border-[var(--border)]">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -1589,8 +1589,8 @@ function TrainingPageInner() {
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors -mb-px',
               activeTab === id
-                ? 'border-b-2 border-blue-400 text-[#e6edf3]'
-                : 'border-b-2 border-transparent text-text-secondary hover:text-[#e6edf3]',
+                ? 'border-b-2 border-accent text-[var(--text-primary)]'
+                : 'border-b-2 border-transparent text-text-secondary hover:text-[var(--text-primary)]',
             )}
           >
             <Icon className="w-4 h-4" />
@@ -1613,7 +1613,7 @@ export default function TrainingPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+        <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
       </div>
     }>
       <TrainingPageInner />

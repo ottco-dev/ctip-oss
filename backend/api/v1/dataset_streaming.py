@@ -249,7 +249,7 @@ async def start_conversion(
     db_url = str(_engine.url)
 
     # Submit to thread pool
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     loop.run_in_executor(
         _conversion_executor,
         _run_conversion_job,

@@ -66,7 +66,6 @@ type NarrativeStyle = "scientific" | "summary" | "technical";
 type NarrativeLanguage = "en" | "de" | "es";
 
 interface NarrativeRequest {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   analysis_result: Record<string, any>;
   style: NarrativeStyle;
   language: NarrativeLanguage;
@@ -179,7 +178,6 @@ function OllamaNarrativePanel() {
 
   const handleGenerate = () => {
     if (!isOnline || !isJsonValid || narrativeMutation.isPending) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parsed = JSON.parse(analysisJson) as Record<string, any>;
     narrativeMutation.mutate({
       analysis_result: parsed,
@@ -201,16 +199,16 @@ function OllamaNarrativePanel() {
   return (
     <div
       className="rounded-xl overflow-hidden"
-      style={{ background: "#161b22", border: "1px solid #21262d" }}
+      style={{ background: "var(--panel)", border: "1px solid var(--border)" }}
     >
       {/* ── Header ── */}
       <div
         className="flex items-center justify-between px-5 py-3"
-        style={{ borderBottom: "1px solid #21262d" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4" style={{ color: "#58a6ff" }} />
-          <h2 className="text-sm font-semibold" style={{ color: "#e6edf3" }}>
+          <Sparkles className="w-4 h-4" style={{ color: "var(--accent-text)" }} />
+          <h2 className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
             AI Narrative
           </h2>
         </div>
@@ -218,7 +216,7 @@ function OllamaNarrativePanel() {
         <div className="flex items-center gap-3">
           {/* Status badge */}
           {statusLoading ? (
-            <span className="flex items-center gap-1.5 text-xs" style={{ color: "#484f58" }}>
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
               <Loader2 className="w-3 h-3 animate-spin" />
               Checking…
             </span>
@@ -239,7 +237,7 @@ function OllamaNarrativePanel() {
             onClick={() => void refetchStatus()}
             disabled={statusRefetching}
             className="p-1 rounded transition-opacity disabled:opacity-40"
-            style={{ color: "#484f58" }}
+            style={{ color: "var(--text-muted)" }}
             title="Re-check Ollama status"
           >
             <RefreshCw className={cn("w-3.5 h-3.5", statusRefetching && "animate-spin")} />
@@ -254,21 +252,21 @@ function OllamaNarrativePanel() {
             className="px-4 py-3 rounded-lg text-xs leading-relaxed"
             style={{
               background: "rgba(72,79,88,0.15)",
-              border: "1px solid #21262d",
-              color: "#8b949e",
+              border: "1px solid var(--border)",
+              color: "var(--text-secondary)",
             }}
           >
             Ollama is not running. Start it with:{" "}
             <code
               className="px-1 py-0.5 rounded text-[11px]"
-              style={{ background: "#0d1117", color: "#e6edf3", fontFamily: "monospace" }}
+              style={{ background: "var(--surface)", color: "var(--text-primary)", fontFamily: "monospace" }}
             >
               ollama serve
             </code>
             {" — "}then install a model:{" "}
             <code
               className="px-1 py-0.5 rounded text-[11px]"
-              style={{ background: "#0d1117", color: "#e6edf3", fontFamily: "monospace" }}
+              style={{ background: "var(--surface)", color: "var(--text-primary)", fontFamily: "monospace" }}
             >
               ollama pull llama3.2:3b
             </code>
@@ -280,17 +278,17 @@ function OllamaNarrativePanel() {
           <div className="flex flex-wrap gap-3">
             {/* Style select */}
             <div className="flex flex-col gap-1 min-w-[130px]">
-              <label className="text-[11px]" style={{ color: "#484f58" }}>
+              <label className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                 Style
               </label>
               <select
                 value={style}
                 onChange={(e) => setStyle(e.target.value as NarrativeStyle)}
-                className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
                 style={{
-                  background: "#0d1117",
-                  border: "1px solid #21262d",
-                  color: "#e6edf3",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
                 }}
               >
                 <option value="scientific">Scientific</option>
@@ -301,17 +299,17 @@ function OllamaNarrativePanel() {
 
             {/* Language select */}
             <div className="flex flex-col gap-1 min-w-[90px]">
-              <label className="text-[11px]" style={{ color: "#484f58" }}>
+              <label className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                 Language
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as NarrativeLanguage)}
-                className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
                 style={{
-                  background: "#0d1117",
-                  border: "1px solid #21262d",
-                  color: "#e6edf3",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
                 }}
               >
                 <option value="en">EN</option>
@@ -322,17 +320,17 @@ function OllamaNarrativePanel() {
 
             {/* Model select */}
             <div className="flex flex-col gap-1 flex-1 min-w-[160px]">
-              <label className="text-[11px]" style={{ color: "#484f58" }}>
+              <label className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                 Model
               </label>
               <select
                 value={selectedModel || effectiveModel || ""}
                 onChange={(e) => setSelectedModel(e.target.value)}
-                className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500/50"
+                className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:ring-1 focus:ring-accent/50"
                 style={{
-                  background: "#0d1117",
-                  border: "1px solid #21262d",
-                  color: "#e6edf3",
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
                 }}
                 disabled={modelOptions.length === 0}
               >
@@ -357,7 +355,7 @@ function OllamaNarrativePanel() {
         {/* ── Analysis JSON textarea ── */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[11px]" style={{ color: "#484f58" }}>
+            <label className="text-[11px]" style={{ color: "var(--text-muted)" }}>
               Analysis data (JSON)
             </label>
             {jsonError && (
@@ -371,9 +369,9 @@ function OllamaNarrativePanel() {
             spellCheck={false}
             className="w-full px-3 py-2.5 text-xs rounded-lg resize-y focus:outline-none focus:ring-1"
             style={{
-              background: "#0d1117",
-              border: `1px solid ${jsonError ? "rgba(239,68,68,0.6)" : "#21262d"}`,
-              color: "#e6edf3",
+              background: "var(--surface)",
+              border: `1px solid ${jsonError ? "rgba(239,68,68,0.6)" : "var(--border)"}`,
+              color: "var(--text-primary)",
               fontFamily: "ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace",
               lineHeight: "1.6",
               transition: "border-color 0.15s",
@@ -386,7 +384,7 @@ function OllamaNarrativePanel() {
           onClick={handleGenerate}
           disabled={!isOnline || !isJsonValid || narrativeMutation.isPending}
           className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-          style={{ background: "#1f6feb", color: "#e6edf3" }}
+          style={{ background: "#1f6feb", color: "var(--text-primary)" }}
         >
           {narrativeMutation.isPending ? (
             <>
@@ -426,9 +424,9 @@ function OllamaNarrativePanel() {
               rows={6}
               className="w-full px-4 py-3 text-sm rounded-lg resize-none focus:outline-none leading-relaxed"
               style={{
-                background: "#0d1117",
-                border: "1px solid #21262d",
-                color: "#e6edf3",
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
                 fontFamily:
                   "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
                 lineHeight: "1.7",
@@ -444,17 +442,17 @@ function OllamaNarrativePanel() {
 
             {/* Meta line + copy button */}
             <div className="flex items-center justify-between">
-              <p className="text-[11px]" style={{ color: "#484f58" }}>
+              <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
                 Generated by{" "}
-                <span style={{ color: "#8b949e" }}>{narrativeMutation.data.model}</span>{" "}
+                <span style={{ color: "var(--text-secondary)" }}>{narrativeMutation.data.model}</span>{" "}
                 in{" "}
-                <span style={{ color: "#8b949e" }}>
+                <span style={{ color: "var(--text-secondary)" }}>
                   {narrativeMutation.data.generation_time_ms}ms
                 </span>{" "}
                 &middot;{" "}
-                <span style={{ color: "#8b949e" }}>{narrativeMutation.data.style}</span>{" "}
+                <span style={{ color: "var(--text-secondary)" }}>{narrativeMutation.data.style}</span>{" "}
                 &middot;{" "}
-                <span style={{ color: "#8b949e" }}>
+                <span style={{ color: "var(--text-secondary)" }}>
                   {narrativeMutation.data.language.toUpperCase()}
                 </span>
               </p>
@@ -463,9 +461,9 @@ function OllamaNarrativePanel() {
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-colors"
                 style={{
-                  background: "#161b22",
-                  border: "1px solid #21262d",
-                  color: copied ? "#3fb950" : "#8b949e",
+                  background: "var(--panel)",
+                  border: "1px solid var(--border)",
+                  color: copied ? "#3fb950" : "var(--text-secondary)",
                 }}
               >
                 {copied ? (
@@ -495,7 +493,7 @@ function OllamaNarrativePanel() {
 const STATUS_COLORS: Record<string, string> = {
   completed: "bg-green-500/20 text-green-400",
   pending: "bg-yellow-500/20 text-yellow-400",
-  generating: "bg-blue-500/20 text-blue-400",
+  generating: "bg-accent/20 text-accent-text",
   failed: "bg-red-500/20 text-red-400",
 };
 
@@ -514,13 +512,13 @@ function ReportCard({ report }: { report: Report }) {
   return (
     <div
       className="flex items-center gap-4 px-4 py-3 rounded-xl"
-      style={{ background: '#0d1117', border: '1px solid #21262d' }}
+      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
     >
       <div className="text-2xl">{FORMAT_ICON[report.format] ?? "📁"}</div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{report.name}</p>
-        <div className="flex items-center gap-3 mt-0.5 text-xs" style={{ color: '#484f58' }}>
+        <p className="text-sm font-medium text-text-primary truncate">{report.name}</p>
+        <div className="flex items-center gap-3 mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
           <span className="uppercase">{report.format}</span>
           {report.size_bytes && <span>{formatBytes(report.size_bytes)}</span>}
           <span>{formatDistanceToNow(new Date(report.created_at))}</span>
@@ -556,7 +554,7 @@ function ReportCard({ report }: { report: Report }) {
         <button
           onClick={handleDownload}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-          style={{ background: '#161b22', border: '1px solid #21262d', color: '#8b949e' }}
+          style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
         >
           <Download className="w-3.5 h-3.5" />
           Download
@@ -595,21 +593,21 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
     >
       <div
         className="w-full max-w-md rounded-2xl p-6 space-y-5"
-        style={{ background: '#0d1117', border: '1px solid #21262d' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Generate Report</h2>
-          <button onClick={onClose} className="p-1 rounded transition-colors" style={{ color: '#484f58' }}>
+          <h2 className="text-lg font-bold text-text-primary">Generate Report</h2>
+          <button onClick={onClose} className="p-1 rounded transition-colors" style={{ color: 'var(--text-muted)' }}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Report name */}
         <div>
-          <label className="text-xs mb-1.5 block" style={{ color: '#8b949e' }}>Report name</label>
+          <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>Report name</label>
           <input
             className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
-            style={{ background: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
@@ -617,10 +615,10 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
 
         {/* Report type */}
         <div>
-          <label className="text-xs mb-1.5 block" style={{ color: '#8b949e' }}>Report type</label>
+          <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>Report type</label>
           <select
             className="w-full px-3 py-2 text-sm rounded-lg focus:outline-none"
-            style={{ background: '#161b22', border: '1px solid #21262d', color: '#8b949e' }}
+            style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
             value={form.report_type}
             onChange={(e) => setForm({ ...form, report_type: e.target.value as GenerateRequest["report_type"] })}
           >
@@ -632,7 +630,7 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
 
         {/* Format */}
         <div>
-          <label className="text-xs mb-1.5 block" style={{ color: '#8b949e' }}>Format</label>
+          <label className="text-xs mb-1.5 block" style={{ color: 'var(--text-secondary)' }}>Format</label>
           <div className="flex gap-2">
             {(["pdf", "json", "csv"] as const).map((fmt) => (
               <button
@@ -640,9 +638,9 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
                 onClick={() => setForm({ ...form, format: fmt })}
                 className="flex-1 py-2 rounded-lg text-sm font-medium border transition-colors"
                 style={{
-                  background: form.format === fmt ? 'rgba(59,130,246,0.15)' : '#161b22',
-                  border: form.format === fmt ? '1px solid rgba(59,130,246,0.5)' : '1px solid #21262d',
-                  color: form.format === fmt ? '#93c5fd' : '#484f58',
+                  background: form.format === fmt ? 'rgba(47,158,58,0.15)' : 'var(--panel)',
+                  border: form.format === fmt ? '1px solid rgba(47,158,58,0.5)' : '1px solid var(--border)',
+                  color: form.format === fmt ? 'var(--accent-text)' : 'var(--text-muted)',
                 }}
               >
                 {FORMAT_ICON[fmt]} {fmt.toUpperCase()}
@@ -662,9 +660,9 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
                 type="checkbox"
                 checked={!!form[key as keyof GenerateRequest]}
                 onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
-                className="accent-blue-500"
+                className="accent-[var(--accent)]"
               />
-              <span className="text-sm" style={{ color: '#8b949e' }}>{label}</span>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
             </label>
           ))}
         </div>
@@ -684,14 +682,14 @@ function GenerateModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="flex-1 py-2 text-sm rounded-lg transition-colors"
-            style={{ background: '#161b22', color: '#8b949e', border: '1px solid #21262d' }}
+            style={{ background: 'var(--panel)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
           >
             Cancel
           </button>
           <button
             onClick={() => generateMutation.mutate()}
             disabled={generateMutation.isPending || !form.name}
-            className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex-1 py-2 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
           >
             {generateMutation.isPending ? (
               <span className="flex items-center justify-center gap-2">
@@ -737,23 +735,23 @@ export default function ReportsPage() {
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 py-3"
-        style={{ borderBottom: '1px solid #21262d' }}
+        style={{ borderBottom: '1px solid var(--border)' }}
       >
         <div className="flex items-center gap-2">
-          <FileText className="w-4 h-4 text-blue-400" />
-          <h1 className="text-base font-semibold text-white">Reports</h1>
+          <FileText className="w-4 h-4 text-accent-text" />
+          <h1 className="text-base font-semibold text-text-primary">Reports</h1>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => refetch()}
             className="p-1.5 rounded transition-colors"
-            style={{ color: '#484f58' }}
+            style={{ color: 'var(--text-muted)' }}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors"
           >
             <Plus className="w-4 h-4" />
             New Report
@@ -786,9 +784,9 @@ export default function ReportsPage() {
               onClick={() => setFilterFormat(fmt)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
               style={{
-                background: filterFormat === fmt ? '#161b22' : 'transparent',
-                border: filterFormat === fmt ? '1px solid #30363d' : '1px solid #21262d',
-                color: filterFormat === fmt ? '#e6edf3' : '#484f58',
+                background: filterFormat === fmt ? 'var(--panel)' : 'transparent',
+                border: filterFormat === fmt ? '1px solid var(--border-muted)' : '1px solid var(--border)',
+                color: filterFormat === fmt ? 'var(--text-primary)' : 'var(--text-muted)',
               }}
             >
               {fmt === "all" ? "All" : fmt.toUpperCase()}
@@ -799,7 +797,7 @@ export default function ReportsPage() {
         {/* Loading */}
         {isLoading && (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+            <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
           </div>
         )}
 
@@ -818,10 +816,10 @@ export default function ReportsPage() {
         {!isLoading && !isError && filtered.length === 0 && (
           <div
             className="rounded-xl p-12 text-center"
-            style={{ background: '#0d1117', border: '1px solid #21262d' }}
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
           >
-            <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: '#484f58' }} />
-            <p className="text-sm" style={{ color: '#484f58' }}>
+            <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" style={{ color: 'var(--text-muted)' }} />
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
               {reports.length === 0
                 ? 'No reports yet. Click "New Report" to generate one.'
                 : `No ${filterFormat.toUpperCase()} reports found.`}

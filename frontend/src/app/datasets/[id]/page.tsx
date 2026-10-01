@@ -83,20 +83,20 @@ function SampleLightbox({
       {/* Top bar */}
       <div
         className="flex items-center gap-3 px-4 py-2.5 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
-        <span className="text-sm font-medium text-white truncate flex-1">{current.filename}</span>
-        <div className="flex items-center gap-3 text-xs" style={{ color: "#484f58" }}>
+        <span className="text-sm font-medium text-text-primary truncate flex-1">{current.filename}</span>
+        <div className="flex items-center gap-3 text-xs" style={{ color: "var(--text-muted)" }}>
           {current.quality_score !== undefined && (
-            <span>Focus: <span className="text-white font-mono">{current.quality_score.toFixed(0)}</span></span>
+            <span>Focus: <span className="text-text-primary font-mono">{current.quality_score.toFixed(0)}</span></span>
           )}
           {current.annotation_count !== undefined && (
-            <span>Annotations: <span className="text-white font-mono">{current.annotation_count}</span></span>
+            <span>Annotations: <span className="text-text-primary font-mono">{current.annotation_count}</span></span>
           )}
           <span
             className={`px-2 py-0.5 rounded-full text-[11px] ${
               current.split === "train"
-                ? "bg-blue-500/20 text-blue-300"
+                ? "bg-accent/20 text-accent-text"
                 : current.split === "val"
                 ? "bg-purple-500/20 text-purple-300"
                 : current.split === "test"
@@ -115,7 +115,7 @@ function SampleLightbox({
         <button
           onClick={onClose}
           className="p-1 rounded transition-colors hover:bg-white/10"
-          style={{ color: "#8b949e" }}
+          style={{ color: "var(--text-secondary)" }}
           title="Close (Esc)"
         >
           <X className="w-4 h-4" />
@@ -137,7 +137,7 @@ function SampleLightbox({
           <button
             onClick={() => navigate(-1)}
             className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors"
-            style={{ background: "rgba(0,0,0,0.6)", color: "#8b949e" }}
+            style={{ background: "rgba(0,0,0,0.6)", color: "var(--text-secondary)" }}
             title="Previous (←)"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -147,7 +147,7 @@ function SampleLightbox({
           <button
             onClick={() => navigate(1)}
             className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full transition-colors"
-            style={{ background: "rgba(0,0,0,0.6)", color: "#8b949e" }}
+            style={{ background: "rgba(0,0,0,0.6)", color: "var(--text-secondary)" }}
             title="Next (→)"
           >
             <ChevronRight className="w-5 h-5" />
@@ -158,7 +158,7 @@ function SampleLightbox({
       {/* Bottom strip: position indicator */}
       <div
         className="flex items-center justify-center px-4 py-2 flex-shrink-0 text-xs"
-        style={{ borderTop: "1px solid #21262d", color: "#484f58" }}
+        style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}
       >
         {idx + 1} / {allSamples.length}
       </div>
@@ -189,10 +189,10 @@ function SampleThumbnail({
     <div
       className={`relative group rounded-lg overflow-hidden cursor-pointer transition-all ${
         selected
-          ? "ring-2 ring-blue-500 ring-offset-1 ring-offset-zinc-950"
+          ? "ring-2 ring-accent ring-offset-1 ring-offset-zinc-950"
           : "hover:ring-1 hover:ring-zinc-600 ring-offset-zinc-950"
       }`}
-      style={{ background: "#0d1117", border: "1px solid #21262d" }}
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       onClick={onClick}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -218,14 +218,14 @@ function SampleThumbnail({
           type="checkbox"
           checked={selected}
           onChange={(e) => onSelect(sample.id, e.target.checked)}
-          className="w-4 h-4 accent-blue-500"
+          className="w-4 h-4 accent-[var(--accent)]"
         />
       </div>
 
       {/* Review badge */}
       {sample.reviewed && (
         <div
-          className="absolute top-1.5 right-1.5 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+          className="absolute top-1.5 right-1.5 text-text-primary text-[10px] px-1.5 py-0.5 rounded-full font-medium"
           style={{ background: "rgba(34,197,94,0.8)" }}
         >
           ✓
@@ -233,15 +233,15 @@ function SampleThumbnail({
       )}
 
       {/* Footer */}
-      <div className="px-2 py-1.5" style={{ borderTop: "1px solid #21262d" }}>
-        <p className="text-xs truncate" style={{ color: "#8b949e" }}>
+      <div className="px-2 py-1.5" style={{ borderTop: "1px solid var(--border)" }}>
+        <p className="text-xs truncate" style={{ color: "var(--text-secondary)" }}>
           {sample.filename}
         </p>
         {sample.quality_score !== undefined && (
           <div className="flex items-center gap-1 mt-1">
             <div
               className="h-1 flex-1 rounded-full overflow-hidden"
-              style={{ background: "#21262d" }}
+              style={{ background: "var(--border)" }}
             >
               <div
                 className="h-full rounded-full"
@@ -256,7 +256,7 @@ function SampleThumbnail({
                 }}
               />
             </div>
-            <span className="text-[10px] font-mono" style={{ color: "#484f58" }}>
+            <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
               {sample.quality_score.toFixed(0)}
             </span>
           </div>
@@ -322,20 +322,20 @@ export default function DatasetDetailPage() {
       {/* Header */}
       <div
         className="px-6 py-4 flex items-center gap-4 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <button
           onClick={() => router.push("/datasets")}
           className="text-sm transition-colors"
-          style={{ color: "#484f58" }}
+          style={{ color: "var(--text-muted)" }}
         >
           ← Datasets
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-white truncate">
+          <h1 className="text-xl font-bold text-text-primary truncate">
             {dataset?.name ?? "Loading…"}
           </h1>
-          <p className="text-xs mt-0.5" style={{ color: "#484f58" }}>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
             {dataset?.num_samples ?? 0} images
           </p>
         </div>
@@ -349,8 +349,8 @@ export default function DatasetDetailPage() {
               className="w-7 h-7 rounded text-xs font-mono transition-colors"
               style={
                 columns === n
-                  ? { background: "#21262d", color: "#e6edf3" }
-                  : { background: "transparent", color: "#484f58" }
+                  ? { background: "var(--border)", color: "var(--text-primary)" }
+                  : { background: "transparent", color: "var(--text-muted)" }
               }
             >
               {n}
@@ -362,7 +362,7 @@ export default function DatasetDetailPage() {
       {/* Toolbar */}
       <div
         className="px-6 py-2.5 flex items-center gap-3 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d" }}
+        style={{ borderBottom: "1px solid var(--border)" }}
       >
         <input
           type="text"
@@ -371,9 +371,9 @@ export default function DatasetDetailPage() {
           onChange={(e) => setSearch(e.target.value)}
           className="px-3 py-1.5 text-sm rounded-lg focus:outline-none w-56"
           style={{
-            background: "#0d1117",
-            border: "1px solid #21262d",
-            color: "#e6edf3",
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            color: "var(--text-primary)",
           }}
         />
 
@@ -386,8 +386,8 @@ export default function DatasetDetailPage() {
               className="px-2.5 py-1 rounded text-xs font-medium transition-colors"
               style={
                 selectedSplit === split
-                  ? { background: "#21262d", color: "#e6edf3" }
-                  : { background: "transparent", color: "#484f58" }
+                  ? { background: "var(--border)", color: "var(--text-primary)" }
+                  : { background: "transparent", color: "var(--text-muted)" }
               }
             >
               {split}
@@ -395,10 +395,10 @@ export default function DatasetDetailPage() {
           ))}
         </div>
 
-        <div className="ml-auto text-xs" style={{ color: "#484f58" }}>
+        <div className="ml-auto text-xs" style={{ color: "var(--text-muted)" }}>
           {filtered.length} / {samples.length}
           {selectedIds.size > 0 && (
-            <span className="ml-2 text-blue-400">{selectedIds.size} selected</span>
+            <span className="ml-2 text-accent-text">{selectedIds.size} selected</span>
           )}
         </div>
 
@@ -406,7 +406,7 @@ export default function DatasetDetailPage() {
           <button
             onClick={handleSelectAll}
             className="text-xs transition-colors px-2 py-1 rounded"
-            style={{ color: "#484f58", border: "1px solid #21262d" }}
+            style={{ color: "var(--text-muted)", border: "1px solid var(--border)" }}
           >
             {selectedIds.size === filtered.length ? "Deselect all" : "Select all"}
           </button>
@@ -416,13 +416,13 @@ export default function DatasetDetailPage() {
       {/* Grid */}
       <div className="flex-1 overflow-auto p-6">
         {isLoading && (
-          <div className="text-center py-12 text-sm" style={{ color: "#484f58" }}>
+          <div className="text-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
             Loading images…
           </div>
         )}
 
         {!isLoading && filtered.length === 0 && (
-          <div className="text-center py-12 text-sm" style={{ color: "#484f58" }}>
+          <div className="text-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
             {search || selectedSplit !== "all"
               ? "No images match the current filters."
               : "No images in this dataset."}

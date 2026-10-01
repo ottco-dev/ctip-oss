@@ -41,7 +41,7 @@ function FileRow({ item, onRemove }: { item: UploadFile; onRemove: () => void })
         ) : item.status === "error" ? (
           <AlertCircle className="w-4 h-4 text-red-400" />
         ) : item.status === "uploading" ? (
-          <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+          <Loader2 className="w-4 h-4 text-accent-text animate-spin" />
         ) : (
           <ImageIcon className="w-4 h-4 text-[var(--color-text-muted)]" />
         )}
@@ -57,7 +57,7 @@ function FileRow({ item, onRemove }: { item: UploadFile; onRemove: () => void })
       {item.status === "uploading" && (
         <div className="w-24 h-1.5 bg-[var(--color-border)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-blue-500 transition-all duration-300"
+            className="h-full bg-accent transition-all duration-300"
             style={{ width: `${item.progress}%` }}
           />
         </div>
@@ -226,15 +226,15 @@ export function UploadZone({
           "relative flex flex-col items-center justify-center p-8 rounded-xl",
           "border-2 border-dashed transition-all duration-150 cursor-pointer",
           isDragActive
-            ? "border-blue-500 bg-blue-500/10 scale-[1.01]"
-            : "border-[var(--color-border)] hover:border-blue-500/50 hover:bg-[var(--color-surface)]"
+            ? "border-accent bg-accent/10 scale-[1.01]"
+            : "border-[var(--color-border)] hover:border-accent/50 hover:bg-[var(--color-surface)]"
         )}
       >
         <input {...getInputProps()} />
         <Upload
           className={cn(
             "w-8 h-8 mb-3 transition-colors",
-            isDragActive ? "text-blue-400" : "text-[var(--color-text-muted)]"
+            isDragActive ? "text-accent-text" : "text-[var(--color-text-muted)]"
           )}
         />
         <p className="text-sm font-medium text-[var(--color-text-secondary)]">
@@ -293,8 +293,8 @@ export function UploadZone({
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
                 isUploading
-                  ? "bg-blue-600/50 text-white/60 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-500 text-white"
+                  ? "bg-accent/50 text-white/60 cursor-not-allowed"
+                  : "bg-accent hover:bg-accent-hover text-white"
               )}
             >
               {isUploading ? (

@@ -125,7 +125,7 @@ function sendBrowserNotif(title: string, body: string, ok: boolean) {
 
 const SUBSYSTEMS: SubsystemStatus[] = [
   { name: "backend", label: "Backend API", icon: Server, endpoint: "/system/health", color: "#3b82f6" },
-  { name: "database", label: "Database", icon: Database, endpoint: "/system/health", color: "#22c55e" },
+  { name: "database", label: "Database", icon: Database, endpoint: "/system/health", color: "var(--ok-text)" },
   { name: "gpu", label: "GPU / CUDA", icon: Cpu, endpoint: "/system/gpu", color: "#a855f7" },
   { name: "vlm", label: "VLM Labeling", icon: Zap, endpoint: "/vlm/status", color: "#f59e0b" },
   { name: "annotation", label: "Annotation Queue", icon: Tag, endpoint: "/annotation/status", color: "#ec4899" },
@@ -152,17 +152,17 @@ function SubsystemCard({ sub }: { sub: SubsystemStatus }) {
   const ok = !isLoading && !!data;
 
   return (
-    <div className="flex items-center gap-2.5 p-2 rounded-lg" style={{ background: "#0d1117", border: "1px solid #21262d" }}>
-      <div className="p-1.5 rounded-md" style={{ background: ok ? `${sub.color}18` : "#21262d" }}>
-        <sub.icon className="w-3.5 h-3.5" style={{ color: ok ? sub.color : "#484f58" }} />
+    <div className="flex items-center gap-2.5 p-2 rounded-lg" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+      <div className="p-1.5 rounded-md" style={{ background: ok ? `${sub.color}18` : "var(--border)" }}>
+        <sub.icon className="w-3.5 h-3.5" style={{ color: ok ? sub.color : "var(--text-muted)" }} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium truncate" style={{ color: ok ? "#e6edf3" : "#8b949e" }}>{sub.label}</div>
-        <div className="text-[10px]" style={{ color: ok ? "#4ade80" : isLoading ? "#484f58" : "#ef4444" }}>
+        <div className="text-xs font-medium truncate" style={{ color: ok ? "var(--text-primary)" : "var(--text-secondary)" }}>{sub.label}</div>
+        <div className="text-[10px]" style={{ color: ok ? "#4ade80" : isLoading ? "var(--text-muted)" : "#ef4444" }}>
           {isLoading ? "checking…" : ok ? "online" : "offline"}
         </div>
       </div>
-      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ok ? "#4ade80" : isLoading ? "#484f58" : "#ef4444" }} />
+      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ok ? "#4ade80" : isLoading ? "var(--text-muted)" : "#ef4444" }} />
     </div>
   );
 }
@@ -172,15 +172,15 @@ function SubsystemCard({ sub }: { sub: SubsystemStatus }) {
 // ---------------------------------------------------------------------------
 
 function LogRow({ entry }: { entry: LogEntry }) {
-  const color = { DEBUG: "#484f58", INFO: "#8b949e", WARNING: "#eab308", ERROR: "#ef4444", CRITICAL: "#f87171" }[entry.level] ?? "#8b949e";
+  const color = { DEBUG: "var(--text-muted)", INFO: "var(--text-secondary)", WARNING: "#eab308", ERROR: "#ef4444", CRITICAL: "#f87171" }[entry.level] ?? "var(--text-secondary)";
   const ts = new Date(entry.ts * 1000).toLocaleTimeString("en-GB", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   return (
     <div className="flex items-start gap-2 py-0.5 px-2 text-[11px] font-mono hover:bg-white/[0.02] rounded">
-      <span className="shrink-0 text-[#484f58]">{ts}</span>
+      <span className="shrink-0 text-[var(--text-muted)]">{ts}</span>
       <span className="shrink-0 w-14" style={{ color }}>{entry.level}</span>
       <span className="shrink-0 text-[#3b82f6] truncate max-w-[120px]">{entry.logger}</span>
-      <span className="text-[#8b949e] break-words min-w-0">{entry.msg}</span>
+      <span className="text-[var(--text-secondary)] break-words min-w-0">{entry.msg}</span>
     </div>
   );
 }
@@ -212,20 +212,20 @@ function ComposeToast({ ok, msg, elapsed, onClose }: ToastProps) {
       }}
     >
       {ok
-        ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "#4ade80" }} />
+        ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "var(--ok-text)" }} />
         : <XCircle className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "#ef4444" }} />}
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold" style={{ color: ok ? "#4ade80" : "#ef4444" }}>
           {ok ? "Stack ready" : "Stack failed"}
         </div>
-        <div className="text-xs mt-0.5" style={{ color: "#8b949e" }}>{msg}</div>
+        <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{msg}</div>
         {elapsed !== null && (
-          <div className="text-[10px] mt-1 flex items-center gap-1" style={{ color: "#484f58" }}>
+          <div className="text-[10px] mt-1 flex items-center gap-1" style={{ color: "var(--text-muted)" }}>
             <Clock className="w-3 h-3" /> {elapsed}s
           </div>
         )}
       </div>
-      <button onClick={onClose} className="text-[#484f58] hover:text-text-muted shrink-0 text-lg leading-none">×</button>
+      <button onClick={onClose} className="text-[var(--text-muted)] hover:text-text-muted shrink-0 text-lg leading-none">×</button>
     </div>
   );
 }
@@ -516,26 +516,26 @@ function ContainersPanel() {
           }}
         >
           <div style={{
-            background: "#161b22", border: "1px solid #30363d", borderRadius: 12,
+            background: "var(--panel)", border: "1px solid var(--border-muted)", borderRadius: 12,
             padding: "28px 32px", maxWidth: 440, width: "90%",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
               <AlertCircle className="w-5 h-5" style={{ color: "#f59e0b", flexShrink: 0 }} />
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#e6edf3" }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>
                 Docker daemon offline
               </span>
             </div>
-            <p style={{ fontSize: 13, color: "#8b949e", marginBottom: 16, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", marginBottom: 16, lineHeight: 1.6 }}>
               {daemonStatus?.error ?? "Could not connect to the Docker daemon."}
             </p>
 
             {daemonStatus?.fix && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "#484f58", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {daemonStatus.kind === "permission" ? "Fix — add user to docker group" : daemonStatus.kind === "stopped" ? "Start docker" : "Reference"}
                 </div>
                 <code style={{
-                  display: "block", background: "#0d1117", border: "1px solid #21262d",
+                  display: "block", background: "var(--surface)", border: "1px solid var(--border)",
                   borderRadius: 6, padding: "8px 12px", fontSize: 12,
                   color: "#79c0ff", fontFamily: "monospace", wordBreak: "break-all",
                 }}>
@@ -555,7 +555,7 @@ function ContainersPanel() {
                 onClick={() => setDaemonModalDismissed(true)}
                 style={{
                   padding: "6px 14px", fontSize: 13, borderRadius: 6, cursor: "pointer",
-                  background: "transparent", border: "1px solid #30363d", color: "#8b949e",
+                  background: "transparent", border: "1px solid var(--border-muted)", color: "var(--text-secondary)",
                 }}
               >
                 Dismiss
@@ -633,7 +633,7 @@ function ContainersPanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
           <div
             className="w-full max-w-md rounded-2xl p-6 shadow-2xl"
-            style={{ background: "#161b22", border: "1px solid rgba(239,68,68,0.4)" }}
+            style={{ background: "var(--panel)", border: "1px solid rgba(239,68,68,0.4)" }}
           >
             {/* Header */}
             <div className="flex items-center gap-3 mb-4">
@@ -641,17 +641,17 @@ function ContainersPanel() {
                 <XCircle className="w-5 h-5" style={{ color: "#ef4444" }} />
               </div>
               <div>
-                <div className="text-sm font-semibold" style={{ color: "#e6edf3" }}>Port Already In Use</div>
-                <div className="text-xs" style={{ color: "#8b949e" }}>
+                <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Port Already In Use</div>
+                <div className="text-xs" style={{ color: "var(--text-secondary)" }}>
                   Host port <span className="font-mono font-bold" style={{ color: "#ef4444" }}>{portConflict.port}</span> is occupied by another process
                 </div>
               </div>
             </div>
 
             {/* Service info */}
-            <div className="rounded-lg p-3 mb-4" style={{ background: "#0d1117", border: "1px solid #21262d" }}>
-              <div className="text-xs mb-1" style={{ color: "#8b949e" }}>Service</div>
-              <div className="text-sm font-medium" style={{ color: "#e6edf3" }}>{portConflict.service}</div>
+            <div className="rounded-lg p-3 mb-4" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+              <div className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>Service</div>
+              <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{portConflict.service}</div>
               {portConflict.env_var && (
                 <div className="text-[11px] font-mono mt-1" style={{ color: "#3b82f6" }}>.env: {portConflict.env_var}=&quot;{portConflict.port}&quot;</div>
               )}
@@ -659,7 +659,7 @@ function ContainersPanel() {
 
             {/* Port input */}
             <div className="mb-4">
-              <label className="block text-xs font-medium mb-1.5" style={{ color: "#8b949e" }}>
+              <label className="block text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>
                 Choose a different host port
               </label>
               <div className="flex gap-2">
@@ -672,9 +672,9 @@ function ContainersPanel() {
                   onKeyDown={(e) => e.key === "Enter" && applyPortChange()}
                   className="flex-1 rounded-lg px-3 py-2 text-sm font-mono outline-none"
                   style={{
-                    background: "#0d1117",
-                    border: `1px solid ${portError ? "#ef4444" : "#30363d"}`,
-                    color: "#e6edf3",
+                    background: "var(--surface)",
+                    border: `1px solid ${portError ? "#ef4444" : "var(--border-muted)"}`,
+                    color: "var(--text-primary)",
                   }}
                   placeholder={`e.g. ${portConflict.port + 10}`}
                   autoFocus
@@ -683,7 +683,7 @@ function ContainersPanel() {
               {portError && (
                 <div className="text-xs mt-1.5" style={{ color: "#ef4444" }}>{portError}</div>
               )}
-              <div className="text-xs mt-1.5" style={{ color: "#484f58" }}>
+              <div className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
                 The new port will be saved to <span className="font-mono">.env</span> and the stack will retry automatically.
               </div>
             </div>
@@ -694,7 +694,7 @@ function ContainersPanel() {
                 onClick={() => { setPortConflict(null); setPortInput(""); setPortError(""); }}
                 disabled={portUpdating}
                 className="flex-1 py-2 rounded-lg text-xs font-medium transition-colors"
-                style={{ background: "#21262d", color: "#8b949e", border: "1px solid #30363d" }}
+                style={{ background: "var(--border)", color: "var(--text-secondary)", border: "1px solid var(--border-muted)" }}
               >
                 Cancel
               </button>
@@ -703,7 +703,7 @@ function ContainersPanel() {
                 disabled={portUpdating || !portInput}
                 className="flex-1 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
                 style={{
-                  background: portUpdating ? "#1f2937" : "#3b82f6",
+                  background: portUpdating ? "var(--border-muted)" : "var(--accent)",
                   color: portUpdating ? "#6b7280" : "#fff",
                   border: "none",
                   cursor: portUpdating ? "not-allowed" : "pointer",
@@ -721,17 +721,17 @@ function ContainersPanel() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid #21262d" }}>
+      <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2">
           <Container className="w-4 h-4 text-accent" />
-          <h1 className="text-base font-semibold text-white">Containers</h1>
+          <h1 className="text-base font-semibold text-text-primary">Containers</h1>
           <span className="text-[10px] px-2 py-0.5 rounded-full font-mono"
-            style={{ background: "rgba(34,197,94,0.1)", color: "#4ade80" }}>
+            style={{ background: "rgba(34,197,94,0.1)", color: "var(--ok-text)" }}>
             {running.length} running
           </span>
           {stopped.length > 0 && (
             <span className="text-[10px] px-2 py-0.5 rounded-full font-mono"
-              style={{ background: "#161b22", color: "#8b949e" }}>
+              style={{ background: "var(--panel)", color: "var(--text-secondary)" }}>
               {stopped.length} stopped
             </span>
           )}
@@ -744,13 +744,13 @@ function ContainersPanel() {
             </span>
           )}
           {notifGranted && (
-            <span className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded" style={{ color: "#4ade80", background: "rgba(34,197,94,0.08)" }}>
+            <span className="text-[10px] flex items-center gap-1 px-2 py-0.5 rounded" style={{ color: "var(--ok-text)", background: "rgba(34,197,94,0.08)" }}>
               <BellRing className="w-3 h-3" /> Notifications on
             </span>
           )}
           <button onClick={() => refetch()} disabled={isLoading}
             className="flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-lg transition-colors"
-            style={{ background: "#161b22", border: "1px solid #21262d", color: "#8b949e" }}>
+            style={{ background: "var(--panel)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
@@ -759,16 +759,16 @@ function ContainersPanel() {
 
       <div className="flex-1 overflow-y-auto">
         {/* Compose actions */}
-        <div className="p-4 space-y-3" style={{ borderBottom: "1px solid #21262d" }}>
-          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#484f58" }}>Annotation Stack</p>
+        <div className="p-4 space-y-3" style={{ borderBottom: "1px solid var(--border)" }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>Annotation Stack</p>
 
           <div className="flex gap-2 flex-wrap">
             {/* Background start */}
             <button onClick={() => startBgTask("annotation")} disabled={bgIsActive}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors flex-1 min-w-0"
               style={{
-                background: bgIsActive ? "rgba(59,130,246,0.08)" : "rgba(35,134,54,0.15)",
-                border: `1px solid ${bgIsActive ? "rgba(59,130,246,0.3)" : "rgba(35,134,54,0.3)"}`,
+                background: bgIsActive ? "rgba(47,158,58,0.08)" : "rgba(35,134,54,0.15)",
+                border: `1px solid ${bgIsActive ? "rgba(47,158,58,0.3)" : "rgba(35,134,54,0.3)"}`,
                 color: bgIsActive ? "#60a5fa" : "#22c55e",
               }}>
               {bgIsActive
@@ -800,10 +800,10 @@ function ContainersPanel() {
                 bgTask.status === "error" ? 'rgba(239,68,68,0.3)'
                 : bgTask.status === "port_conflict" ? 'rgba(251,146,60,0.5)'
                 : bgTask.status === "done" ? 'rgba(34,197,94,0.3)'
-                : 'rgba(59,130,246,0.3)'}` }}>
+                : 'rgba(47,158,58,0.3)'}` }}>
               {/* Title bar */}
               <div className="flex items-center gap-2 px-3 py-1.5 cursor-pointer select-none"
-                style={{ background: "#161b22", borderBottom: showBgLog ? "1px solid #21262d" : "none" }}
+                style={{ background: "var(--panel)", borderBottom: showBgLog ? "1px solid var(--border)" : "none" }}
                 onClick={() => setShowBgLog(v => !v)}>
                 <div className="flex gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-[#ff5f57]" />
@@ -831,7 +831,7 @@ function ContainersPanel() {
                   )}
                   <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
                     style={{
-                      background: bgIsActive ? "rgba(59,130,246,0.12)"
+                      background: bgIsActive ? "rgba(47,158,58,0.12)"
                         : bgTask.status === "port_conflict" ? "rgba(251,146,60,0.12)"
                         : bgTask.ok ? "rgba(34,197,94,0.12)"
                         : "rgba(239,68,68,0.12)",
@@ -850,7 +850,7 @@ function ContainersPanel() {
               {showBgLog && (
                 <pre ref={bgLogRef}
                   className="p-2 font-mono text-[10px] leading-relaxed overflow-y-auto max-h-48 whitespace-pre-wrap break-all"
-                  style={{ background: "#0d1117", color: "#8b949e" }}>
+                  style={{ background: "var(--surface)", color: "var(--text-secondary)" }}>
                   {bgTask.log.length > 0
                     ? bgTask.log.join('\n')
                     : bgIsActive
@@ -864,7 +864,7 @@ function ContainersPanel() {
 
           {/* Notification hint (if not yet granted) */}
           {!notifGranted && !notifBlocked && (
-            <p className="text-[10px]" style={{ color: "#484f58" }}>
+            <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
               💡 Click &ldquo;Start + Notify&rdquo; — you&apos;ll be asked for notification permission so CTIP can alert you when the stack is ready, even if you navigate away.
             </p>
           )}
@@ -872,7 +872,7 @@ function ContainersPanel() {
 
         {/* Container list */}
         <div className="p-4 space-y-2">
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#484f58" }}>All containers</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "var(--text-muted)" }}>All containers</p>
 
           {isLoading && containers.length === 0 && (
             <div className="flex items-center justify-center py-8 gap-2 text-text-muted">
@@ -890,10 +890,10 @@ function ContainersPanel() {
 
             return (
               <div key={c.name} className="rounded-lg overflow-hidden"
-                style={{ border: `1px solid ${c.running ? 'rgba(34,197,94,0.2)' : '#21262d'}` }}>
+                style={{ border: `1px solid ${c.running ? 'rgba(34,197,94,0.2)' : 'var(--border)'}` }}>
                 {/* Container row */}
                 <div className="flex items-center gap-2 px-3 py-2.5"
-                  style={{ background: c.running ? 'rgba(34,197,94,0.04)' : '#0d1117' }}>
+                  style={{ background: c.running ? 'rgba(34,197,94,0.04)' : 'var(--surface)' }}>
                   {/* Status dot */}
                   <div className={`w-2 h-2 rounded-full shrink-0 ${c.running ? 'bg-status-success' : 'bg-border'}`} />
 
@@ -903,7 +903,7 @@ function ContainersPanel() {
                       <span className="font-mono text-xs text-text-primary truncate">{c.name}</span>
                       {c.compose_service && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0"
-                          style={{ background: "#21262d", color: "#8b949e" }}>
+                          style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
                           {c.compose_service}
                         </span>
                       )}
@@ -994,13 +994,13 @@ function ContainersPanel() {
 
                 {/* Expanded log panel */}
                 {isExpanded && (
-                  <div style={{ borderTop: "1px solid #21262d" }}>
+                  <div style={{ borderTop: "1px solid var(--border)" }}>
                     {/* Pull result banner */}
                     {pullResult[c.name] && (
                       <div className="px-3 py-1.5 text-[10px] font-mono flex items-center gap-2"
                         style={{
                           background: pullResult[c.name].ok ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)",
-                          borderBottom: "1px solid #21262d",
+                          borderBottom: "1px solid var(--border)",
                           color: pullResult[c.name].ok ? "#4ade80" : "#ef4444",
                         }}>
                         {pullResult[c.name].ok ? <CheckCircle className="w-3 h-3 shrink-0" /> : <XCircle className="w-3 h-3 shrink-0" />}
@@ -1008,7 +1008,7 @@ function ContainersPanel() {
                       </div>
                     )}
                     <div className="flex items-center justify-between px-3 py-1.5"
-                      style={{ background: "#161b22", borderBottom: "1px solid #21262d" }}>
+                      style={{ background: "var(--panel)", borderBottom: "1px solid var(--border)" }}>
                       <span className="text-[10px] font-mono text-text-muted">
                         {c.name} — logs {logStreaming === c.name && <span className="text-accent animate-pulse">● live</span>}
                       </span>
@@ -1024,7 +1024,7 @@ function ContainersPanel() {
                       </div>
                     </div>
                     <pre className="p-3 font-mono text-[10px] leading-relaxed overflow-y-auto max-h-48 whitespace-pre-wrap break-all"
-                      style={{ background: "#0d1117", color: "#8b949e" }}>
+                      style={{ background: "var(--surface)", color: "var(--text-secondary)" }}>
                       {logs.length ? logs.join('\n') : 'No logs loaded yet — click refresh or live.'}
                     </pre>
                   </div>
@@ -1039,14 +1039,14 @@ function ContainersPanel() {
           <div className="px-4 pb-4">
             <button onClick={() => setShowEnv(v => !v)}
               className="flex items-center gap-2 w-full text-left py-2 text-[10px] font-semibold uppercase tracking-widest"
-              style={{ color: "#484f58" }}>
+              style={{ color: "var(--text-muted)" }}>
               <Settings className="w-3 h-3" />
               .env configuration
               <ChevronRight className={`w-3 h-3 ml-auto transition-transform ${showEnv ? 'rotate-90' : ''}`} />
             </button>
             {showEnv && (
               <div className="rounded-lg overflow-hidden mt-1"
-                style={{ border: "1px solid #21262d", background: "#0d1117" }}>
+                style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>
                 <div className="p-2 space-y-0.5 max-h-60 overflow-y-auto">
                   {Object.entries(rawEnv).map(([k, v]) => (
                     <div key={k} className="flex items-start gap-2 py-0.5 font-mono text-[10px]">
@@ -1100,7 +1100,7 @@ interface ActiveProviderInfo {
 function TierBadge({ tier }: { tier: string }) {
   const colors: Record<string, { bg: string; text: string }> = {
     free:      { bg: "rgba(34,197,94,0.12)",  text: "#4ade80" },
-    freemium:  { bg: "rgba(59,130,246,0.12)", text: "#60a5fa" },
+    freemium:  { bg: "rgba(47,158,58,0.12)", text: "#60a5fa" },
     paid:      { bg: "rgba(251,146,60,0.12)", text: "#fb923c" },
     local:     { bg: "rgba(167,139,250,0.12)", text: "#a78bfa" },
   };
@@ -1149,14 +1149,14 @@ function ProviderCard({
   };
 
   const isActive = provider.is_active;
-  const borderColor = isActive ? "#22c55e" : provider.available ? "#21262d" : "#21262d";
+  const borderColor = isActive ? "#22c55e" : provider.available ? "var(--border)" : "var(--border)";
   const statusDot = provider.available ? "#22c55e" : provider.has_api_key ? "#eab308" : "#374151";
 
   return (
     <div
       className="rounded-xl p-4 flex flex-col gap-3 transition-all"
       style={{
-        background: isActive ? "rgba(34,197,94,0.05)" : "#0d1117",
+        background: isActive ? "rgba(34,197,94,0.05)" : "var(--surface)",
         border: `1px solid ${borderColor}`,
         opacity: provider.available ? 1 : 0.72,
       }}
@@ -1165,14 +1165,14 @@ function ProviderCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: statusDot }} />
-          <span className="text-sm font-semibold text-white truncate">{provider.name}</span>
+          <span className="text-sm font-semibold text-text-primary truncate">{provider.name}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <TierBadge tier={provider.kind === "local" ? "local" : provider.tier} />
           {provider.kind === "local" && <TierBadge tier="local" />}
           {isActive && (
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase"
-              style={{ background: "rgba(34,197,94,0.2)", color: "#22c55e" }}>
+              style={{ background: "rgba(34,197,94,0.2)", color: "var(--ok-text)" }}>
               active
             </span>
           )}
@@ -1180,18 +1180,18 @@ function ProviderCard({
       </div>
 
       {/* Info row */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px]" style={{ color: "#8b949e" }}>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px]" style={{ color: "var(--text-secondary)" }}>
         {provider.vram_gb !== null && (
-          <span><span className="text-white font-mono">{provider.vram_gb} GB</span> VRAM</span>
+          <span><span className="text-text-primary font-mono">{provider.vram_gb} GB</span> VRAM</span>
         )}
         {provider.cost_per_1k_tokens !== null && (
-          <span><span className="text-white font-mono">${provider.cost_per_1k_tokens}</span>/1k tok</span>
+          <span><span className="text-text-primary font-mono">${provider.cost_per_1k_tokens}</span>/1k tok</span>
         )}
         {provider.rate_limit_rpm !== null && (
-          <span><span className="text-white font-mono">{provider.rate_limit_rpm}</span> RPM</span>
+          <span><span className="text-text-primary font-mono">{provider.rate_limit_rpm}</span> RPM</span>
         )}
         {provider.free_tier_note && (
-          <span className="text-[9px]" style={{ color: "#4ade80" }}>{provider.free_tier_note}</span>
+          <span className="text-[9px]" style={{ color: "var(--ok-text)" }}>{provider.free_tier_note}</span>
         )}
       </div>
 
@@ -1199,7 +1199,7 @@ function ProviderCard({
       {provider.models.length > 1 && (
         <select
           className="w-full text-[11px] rounded-lg px-2 py-1.5"
-          style={{ background: "#161b22", border: "1px solid #30363d", color: "#e6edf3" }}
+          style={{ background: "var(--panel)", border: "1px solid var(--border-muted)", color: "var(--text-primary)" }}
           value={selectedModel}
           onChange={(e) => setSelectedModel(e.target.value)}
         >
@@ -1221,7 +1221,7 @@ function ProviderCard({
             style={{
               background: "rgba(34,197,94,0.12)",
               border: "1px solid rgba(34,197,94,0.25)",
-              color: "#4ade80",
+              color: "var(--ok-text)",
             }}
           >
             {activating ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
@@ -1230,13 +1230,13 @@ function ProviderCard({
         )}
         {isActive && (
           <div className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium"
-            style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "#22c55e" }}>
+            style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--ok-text)" }}>
             <CheckCircle className="w-3 h-3" /> Active provider
           </div>
         )}
         {!provider.available && provider.kind === "remote" && (
           <div className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px]"
-            style={{ background: "rgba(107,114,128,0.08)", border: "1px solid #21262d", color: "#6b7280" }}>
+            style={{ background: "rgba(107,114,128,0.08)", border: "1px solid var(--border)", color: "#6b7280" }}>
             <Key className="w-3 h-3" /> API key required
           </div>
         )}
@@ -1247,9 +1247,9 @@ function ProviderCard({
             onClick={() => setKeyExpanded(v => !v)}
             className="p-1.5 rounded-lg transition-colors"
             style={{
-              background: keyExpanded ? "rgba(59,130,246,0.12)" : "transparent",
-              border: "1px solid #21262d",
-              color: keyExpanded ? "#60a5fa" : "#484f58",
+              background: keyExpanded ? "rgba(47,158,58,0.12)" : "transparent",
+              border: "1px solid var(--border)",
+              color: keyExpanded ? "#60a5fa" : "var(--text-muted)",
             }}
             title="Configure API key"
           >
@@ -1264,7 +1264,7 @@ function ProviderCard({
             target="_blank"
             rel="noopener noreferrer"
             className="p-1.5 rounded-lg transition-colors"
-            style={{ border: "1px solid #21262d", color: "#484f58" }}
+            style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
             title="Sign up / get API key"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -1274,16 +1274,16 @@ function ProviderCard({
 
       {/* API key form (collapsible) */}
       {keyExpanded && provider.kind === "remote" && (
-        <div className="flex flex-col gap-2 pt-2" style={{ borderTop: "1px solid #21262d" }}>
-          <p className="text-[10px]" style={{ color: "#8b949e" }}>
-            Set <span className="font-mono text-white">{provider.env_var}</span> — persisted to <span className="font-mono">.env</span>
+        <div className="flex flex-col gap-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+          <p className="text-[10px]" style={{ color: "var(--text-secondary)" }}>
+            Set <span className="font-mono text-text-primary">{provider.env_var}</span> — persisted to <span className="font-mono">.env</span>
           </p>
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <input
                 type={showKey ? "text" : "password"}
                 className="w-full text-[11px] rounded-lg px-2.5 py-1.5 pr-8 font-mono"
-                style={{ background: "#161b22", border: "1px solid #30363d", color: "#e6edf3" }}
+                style={{ background: "var(--panel)", border: "1px solid var(--border-muted)", color: "var(--text-primary)" }}
                 placeholder="Paste API key…"
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
@@ -1291,7 +1291,7 @@ function ProviderCard({
               />
               <button
                 className="absolute right-1.5 top-1/2 -translate-y-1/2"
-                style={{ color: "#484f58" }}
+                style={{ color: "var(--text-muted)" }}
                 onClick={() => setShowKey(v => !v)}
                 type="button"
               >
@@ -1303,8 +1303,8 @@ function ProviderCard({
               disabled={keyStatus === "saving" || !keyInput.trim()}
               className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
               style={{
-                background: keyStatus === "saved" ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.15)",
-                border: "1px solid rgba(59,130,246,0.3)",
+                background: keyStatus === "saved" ? "rgba(34,197,94,0.15)" : "rgba(47,158,58,0.15)",
+                border: "1px solid rgba(47,158,58,0.3)",
                 color: keyStatus === "saved" ? "#4ade80" : "#60a5fa",
               }}
             >
@@ -1315,7 +1315,7 @@ function ProviderCard({
             </button>
           </div>
           {provider.has_api_key && (
-            <p className="text-[9px]" style={{ color: "#4ade80" }}>
+            <p className="text-[9px]" style={{ color: "var(--ok-text)" }}>
               ✓ API key is configured. Enter a new value to replace it.
             </p>
           )}
@@ -1368,25 +1368,25 @@ function VLMProvidersPanel() {
   const remote = providers.filter(p => p.kind === "remote");
 
   return (
-    <div className="flex-1 overflow-y-auto p-5" style={{ background: "#0d1117" }}>
+    <div className="flex-1 overflow-y-auto p-5" style={{ background: "var(--surface)" }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Bot className="w-4 h-4 text-blue-400" />
+          <h2 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+            <Bot className="w-4 h-4 text-accent-text" />
             VLM Providers
           </h2>
           {active && (
-            <p className="text-[11px] mt-0.5" style={{ color: "#8b949e" }}>
-              Active: <span className="text-white font-medium">{active.name}</span>
-              {active.model && <span className="ml-1 font-mono text-[10px]" style={{ color: "#4ade80" }}> — {active.model}</span>}
+            <p className="text-[11px] mt-0.5" style={{ color: "var(--text-secondary)" }}>
+              Active: <span className="text-text-primary font-medium">{active.name}</span>
+              {active.model && <span className="ml-1 font-mono text-[10px]" style={{ color: "var(--ok-text)" }}> — {active.model}</span>}
             </p>
           )}
         </div>
         <button
           onClick={() => queryClient.invalidateQueries({ queryKey: ["vlm-providers"] })}
           className="p-1.5 rounded-lg transition-colors"
-          style={{ border: "1px solid #21262d", color: "#484f58" }}
+          style={{ border: "1px solid var(--border)", color: "var(--text-muted)" }}
           title="Refresh"
         >
           <RefreshCw className="w-3.5 h-3.5" />
@@ -1404,7 +1404,7 @@ function VLMProvidersPanel() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex items-center justify-center h-40 gap-2" style={{ color: "#484f58" }}>
+        <div className="flex items-center justify-center h-40 gap-2" style={{ color: "var(--text-muted)" }}>
           <Loader2 className="w-5 h-5 animate-spin" />
           <span className="text-xs">Loading providers…</span>
         </div>
@@ -1423,7 +1423,7 @@ function VLMProvidersPanel() {
       {local.length > 0 && (
         <section className="mb-6">
           <h3 className="text-[10px] font-semibold uppercase tracking-widest mb-3"
-            style={{ color: "#a78bfa" }}>
+            style={{ color: "var(--violet-text)" }}>
             Local (On-Device)
           </h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1449,7 +1449,7 @@ function VLMProvidersPanel() {
           {/* Free tier highlight */}
           {remote.some(p => p.tier === "free") && (
             <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg text-[11px]"
-              style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", color: "#4ade80" }}>
+              style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", color: "var(--ok-text)" }}>
               <Globe className="w-3.5 h-3.5 shrink-0" />
               Free-tier providers (Groq, Google) require no credit card — recommended for testing.
             </div>
@@ -1469,7 +1469,7 @@ function VLMProvidersPanel() {
 
       {/* Empty state */}
       {!isLoading && !error && providers.length === 0 && (
-        <div className="flex flex-col items-center justify-center h-40 gap-3" style={{ color: "#484f58" }}>
+        <div className="flex flex-col items-center justify-center h-40 gap-3" style={{ color: "var(--text-muted)" }}>
           <Bot className="w-10 h-10 opacity-20" />
           <p className="text-sm">No providers found</p>
         </div>
@@ -1522,10 +1522,10 @@ export function ProcessesTab() {
   return (
     <div className="flex h-full">
       {/* Left: subsystem status */}
-      <div className="w-52 shrink-0 flex flex-col" style={{ borderRight: "1px solid #21262d" }}>
-        <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid #21262d" }}>
+      <div className="w-52 shrink-0 flex flex-col" style={{ borderRight: "1px solid var(--border)" }}>
+        <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
           <Activity className="w-4 h-4 text-green-400" />
-          <h2 className="text-sm font-semibold text-white">Subsystems</h2>
+          <h2 className="text-sm font-semibold text-text-primary">Subsystems</h2>
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {SUBSYSTEMS.map((sub) => <SubsystemCard key={sub.name} sub={sub} />)}
@@ -1535,7 +1535,7 @@ export function ProcessesTab() {
       {/* Right: tabbed panel */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Tab bar */}
-        <div className="flex items-center gap-1 px-3 py-1.5 shrink-0" style={{ borderBottom: "1px solid #21262d", background: "#161b22" }}>
+        <div className="flex items-center gap-1 px-3 py-1.5 shrink-0" style={{ borderBottom: "1px solid var(--border)", background: "var(--panel)" }}>
           <button onClick={() => setTab("containers")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
               tab === "containers" ? "bg-panel text-text-primary" : "text-text-muted hover:text-text-secondary"
@@ -1568,7 +1568,7 @@ export function ProcessesTab() {
           {tab === "logs" && (
             <div className="ml-auto flex items-center gap-1">
               {wsConnected
-                ? <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "#4ade80" }}>
+                ? <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.15)", color: "var(--ok-text)" }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live
                   </span>
                 : <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full" style={{ background: "rgba(107,114,128,0.15)", color: "#6b7280" }}>
@@ -1589,21 +1589,21 @@ export function ProcessesTab() {
         {tab === "logs" && (
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Log toolbar */}
-            <div className="flex items-center justify-between px-4 py-2 gap-3 shrink-0" style={{ borderBottom: "1px solid #21262d" }}>
-              <div className="flex items-center gap-2 text-[11px]" style={{ color: "#484f58" }}>
-                <span>Total: <span className="text-white font-mono">{logs.length}</span></span>
-                <span>Showing: <span className="text-white font-mono">{filteredLogs.length}</span></span>
+            <div className="flex items-center justify-between px-4 py-2 gap-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
+              <div className="flex items-center gap-2 text-[11px]" style={{ color: "var(--text-muted)" }}>
+                <span>Total: <span className="text-text-primary font-mono">{logs.length}</span></span>
+                <span>Showing: <span className="text-text-primary font-mono">{filteredLogs.length}</span></span>
                 {errorCount > 0 && <span style={{ color: "#ef4444" }}>{errorCount} errors</span>}
-                {warnCount > 0 && <span style={{ color: "#eab308" }}>{warnCount} warnings</span>}
+                {warnCount > 0 && <span style={{ color: "var(--warn-text)" }}>{warnCount} warnings</span>}
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "#161b22", border: "1px solid #21262d" }}>
+                <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "var(--panel)", border: "1px solid var(--border)" }}>
                   {(["ALL", "INFO", "WARNING", "ERROR"] as FilterLevel[]).map((lvl) => (
                     <button key={lvl} onClick={() => setFilterLevel(lvl)}
                       className="px-2 py-0.5 rounded text-[10px] font-medium transition-all"
                       style={{
-                        background: filterLevel === lvl ? "#21262d" : "transparent",
-                        color: filterLevel === lvl ? (lvl === "ERROR" ? "#ef4444" : lvl === "WARNING" ? "#eab308" : "#e6edf3") : "#484f58",
+                        background: filterLevel === lvl ? "var(--border)" : "transparent",
+                        color: filterLevel === lvl ? (lvl === "ERROR" ? "#ef4444" : lvl === "WARNING" ? "#eab308" : "var(--text-primary)") : "var(--text-muted)",
                       }}>
                       {lvl}
                     </button>
@@ -1611,24 +1611,24 @@ export function ProcessesTab() {
                 </div>
                 <button onClick={() => setAutoScroll(v => !v)}
                   className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg transition-colors"
-                  style={{ background: autoScroll ? "rgba(59,130,246,0.15)" : "transparent", color: autoScroll ? "#60a5fa" : "#484f58", border: "1px solid #21262d" }}>
+                  style={{ background: autoScroll ? "rgba(47,158,58,0.15)" : "transparent", color: autoScroll ? "#60a5fa" : "var(--text-muted)", border: "1px solid var(--border)" }}>
                   <ChevronDown className="w-3 h-3" /> Scroll
                 </button>
-                <button onClick={() => setLogs([])} className="p-1.5 rounded-lg" style={{ color: "#484f58" }} title="Clear">
+                <button onClick={() => setLogs([])} className="p-1.5 rounded-lg" style={{ color: "var(--text-muted)" }} title="Clear">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
 
             {/* Log stream */}
-            <div className="flex-1 overflow-y-auto py-2 font-mono text-[11px]" style={{ background: "#0d1117" }}
+            <div className="flex-1 overflow-y-auto py-2 font-mono text-[11px]" style={{ background: "var(--surface)" }}
               onScroll={(e) => {
                 const el = e.currentTarget;
                 const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
                 if (!atBottom && autoScroll) setAutoScroll(false);
               }}>
               {filteredLogs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: "#484f58" }}>
+                <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: "var(--text-muted)" }}>
                   <Terminal className="w-10 h-10 opacity-20" />
                   <p className="text-sm">No logs yet</p>
                 </div>

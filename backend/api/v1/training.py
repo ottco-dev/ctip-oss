@@ -291,7 +291,7 @@ async def start_training(
         # Capture the running event loop before the thread starts so sync_callback
         # can schedule coroutines back onto it from the worker thread.
         import asyncio
-        _loop = asyncio.get_event_loop()
+        _loop = asyncio.get_running_loop()
 
         def sync_callback(epoch: int, metrics: dict) -> None:
             try:
@@ -685,7 +685,7 @@ async def prepare_ls_dataset(req: PrepareDatasetRequest) -> PrepareDatasetStarte
     from training.pipelines.ls_dataset_exporter import ExportConfig, export_ls_project
 
     prepare_id = str(uuid.uuid4())
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     def _sync_log(line: str, level: str = "info") -> None:
         asyncio.run_coroutine_threadsafe(

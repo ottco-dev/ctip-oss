@@ -44,7 +44,7 @@ const LIVE_LINES: Record<string, { color: string; dash?: string; label: string }
   'Train Loss': { color: '#60a5fa', label: 'Train box_loss' },
   'Val Loss':   { color: '#f87171', dash: '5 5', label: 'Val box_loss' },
   'mAP50':      { color: '#34d399', label: 'mAP@0.5' },
-  'mAP50-95':   { color: '#a78bfa', dash: '3 3', label: 'mAP@0.5:0.95' },
+  'mAP50-95':   { color: 'var(--violet-text)', dash: '3 3', label: 'mAP@0.5:0.95' },
 };
 
 /** Line config for the comparison (historical) run — muted palette. */
@@ -151,7 +151,7 @@ function ChartTooltip({ active, payload, label }: {
   return (
     <div
       className="rounded-lg px-3 py-2 text-xs space-y-1 min-w-[160px]"
-      style={{ background: '#161b22', border: '1px solid #21262d', color: '#e6edf3' }}
+      style={{ background: 'var(--panel)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
     >
       <div className="font-medium mb-1.5 text-white/60">Epoch {label}</div>
       {payload.map((p) => (
@@ -186,16 +186,16 @@ function SubChart({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <LineChart data={data} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
         <XAxis
           dataKey="epoch"
-          tick={{ fill: '#484f58', fontSize: 10 }}
+          tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
           axisLine={false}
           tickLine={false}
-          label={{ value: 'Epoch', position: 'insideBottomRight', offset: 0, fill: '#484f58', fontSize: 9 }}
+          label={{ value: 'Epoch', position: 'insideBottomRight', offset: 0, fill: 'var(--text-muted)', fontSize: 9 }}
         />
         <YAxis
-          tick={{ fill: '#484f58', fontSize: 10 }}
+          tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
           axisLine={false}
           tickLine={false}
           width={42}
@@ -243,7 +243,7 @@ function SubChart({
           );
         })}
 
-        <Legend wrapperStyle={{ fontSize: 10, color: '#8b949e', paddingTop: 4 }} />
+        <Legend wrapperStyle={{ fontSize: 10, color: 'var(--text-secondary)', paddingTop: 4 }} />
       </LineChart>
     </ResponsiveContainer>
   );

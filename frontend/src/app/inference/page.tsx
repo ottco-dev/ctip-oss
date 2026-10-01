@@ -116,7 +116,7 @@ function ResultsPanel({ result }: { result: DetectionResponse }) {
       {/* KPI cards */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Detections", value: result.detections.length, textClass: "text-blue-400" },
+          { label: "Detections", value: result.detections.length, textClass: "text-accent-text" },
           { label: "Avg Conf", value: formatConfidence(avgConf), textClass: getConfidenceColor(avgConf) },
           {
             label: "Inference",
@@ -127,14 +127,14 @@ function ResultsPanel({ result }: { result: DetectionResponse }) {
           <div
             key={label}
             className="px-3 py-2.5 rounded-lg"
-            style={{ background: "#0d1117", border: "1px solid #21262d" }}
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
-            <p className="text-[10px] uppercase tracking-wide" style={{ color: "#484f58" }}>
+            <p className="text-[10px] uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
               {label}
             </p>
             <p
               className={cn("text-xl font-bold font-mono mt-0.5", textClass)}
-              style={!textClass ? { color: "#8b949e" } : undefined}
+              style={!textClass ? { color: "var(--text-secondary)" } : undefined}
             >
               {value}
             </p>
@@ -147,27 +147,27 @@ function ResultsPanel({ result }: { result: DetectionResponse }) {
         <div className="space-y-2">
           <h3
             className="text-xs font-medium uppercase tracking-wide"
-            style={{ color: "#484f58" }}
+            style={{ color: "var(--text-muted)" }}
           >
             By Class
           </h3>
           <div className="space-y-1.5">
             {Object.entries(classCounts).map(([name, count]) => (
               <div key={name} className="flex items-center gap-2">
-                <span className="text-sm flex-1 capitalize" style={{ color: "#8b949e" }}>
+                <span className="text-sm flex-1 capitalize" style={{ color: "var(--text-secondary)" }}>
                   {name.replace(/_/g, " ")}
                 </span>
                 <div className="flex items-center gap-2">
                   <div
                     className="w-20 h-1.5 rounded-full overflow-hidden"
-                    style={{ background: "#21262d" }}
+                    style={{ background: "var(--border)" }}
                   >
                     <div
-                      className="h-full bg-blue-500"
+                      className="h-full bg-accent"
                       style={{ width: `${(count / result.detections.length) * 100}%` }}
                     />
                   </div>
-                  <span className="text-xs font-mono w-6 text-right" style={{ color: "#484f58" }}>
+                  <span className="text-xs font-mono w-6 text-right" style={{ color: "var(--text-muted)" }}>
                     {count}
                   </span>
                 </div>
@@ -196,14 +196,14 @@ function ResultsPanel({ result }: { result: DetectionResponse }) {
       <button
         onClick={() => setShowRaw((v) => !v)}
         className="text-xs text-left transition-colors"
-        style={{ color: "#484f58" }}
+        style={{ color: "var(--text-muted)" }}
       >
         {showRaw ? "▾" : "▸"} Raw JSON response
       </button>
       {showRaw && (
         <pre
           className="text-[10px] text-green-300/80 rounded-lg p-3 overflow-x-auto max-h-60 font-mono"
-          style={{ background: "#0d1117", border: "1px solid #21262d" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           {JSON.stringify(result, null, 2)}
         </pre>
@@ -233,17 +233,17 @@ function DropzonePlaceholder({
         "border-2 border-dashed cursor-pointer transition-all",
       )}
       style={{
-        borderColor: isDragActive ? "#3b82f6" : "#21262d",
-        background: isDragActive ? "rgba(59,130,246,0.1)" : "transparent",
+        borderColor: isDragActive ? "var(--accent)" : "var(--border)",
+        background: isDragActive ? "rgba(47,158,58,0.1)" : "transparent",
       }}
     >
       <input {...getInputProps()} />
-      <Upload className="w-10 h-10" style={{ color: "#484f58" }} />
+      <Upload className="w-10 h-10" style={{ color: "var(--text-muted)" }} />
       <div className="text-center">
-        <p className="text-sm font-medium" style={{ color: "#8b949e" }}>
+        <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
           {isDragActive ? "Drop image here" : "Drop a microscopy image"}
         </p>
-        <p className="text-xs mt-1" style={{ color: "#484f58" }}>
+        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
           JPG · PNG · TIFF
         </p>
       </div>
@@ -328,10 +328,10 @@ function WorkbenchTab() {
         {/* Toolbar */}
         <div
           className="flex items-center gap-3 px-5 py-3 flex-shrink-0"
-          style={{ borderBottom: "1px solid #21262d" }}
+          style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <Cpu className="w-4 h-4 text-blue-400 flex-shrink-0" />
-          <h1 className="text-base font-semibold text-white">Inference Workbench</h1>
+          <Cpu className="w-4 h-4 text-accent-text flex-shrink-0" />
+          <h1 className="text-base font-semibold text-text-primary">Inference Workbench</h1>
 
           <div className="flex-1" />
 
@@ -348,8 +348,8 @@ function WorkbenchTab() {
                 setModelVariant(val);
               }
             }}
-            className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:border-blue-500/60 max-w-xs"
-            style={{ background: "#0d1117", border: "1px solid #21262d", color: "#8b949e" }}
+            className="px-2.5 py-1.5 text-xs rounded-lg focus:outline-none focus:border-accent/60 max-w-xs"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
           >
             {registeredModels.length > 0 && (
               <optgroup label="Trained models">
@@ -368,7 +368,7 @@ function WorkbenchTab() {
           </select>
 
           {/* Confidence threshold */}
-          <div className="flex items-center gap-1.5 text-xs" style={{ color: "#484f58" }}>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
             <span>Conf:</span>
             <input
               type="range"
@@ -378,14 +378,14 @@ function WorkbenchTab() {
               value={confThreshold}
               onChange={(e) => setConfThreshold(Number(e.target.value))}
               className="w-20 h-1.5 appearance-none rounded cursor-pointer"
-              style={{ background: "#21262d" }}
+              style={{ background: "var(--border)" }}
             />
             <span className="font-mono w-8">{confThreshold.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Image area — ImageViewer handles zoom / pan / overlay toggle */}
-        <div className="flex-1 min-h-0 flex items-center justify-center" style={{ background: "#080b10" }}>
+        <div className="flex-1 min-h-0 flex items-center justify-center" style={{ background: "var(--background)" }}>
           {!imageUrl ? (
             <DropzonePlaceholder
               getRootProps={getRootProps}
@@ -409,7 +409,7 @@ function WorkbenchTab() {
         {imageFile && (
           <div
             className="flex items-center gap-3 px-5 py-3 flex-shrink-0"
-            style={{ borderTop: "1px solid #21262d" }}
+            style={{ borderTop: "1px solid var(--border)" }}
           >
             <button
               onClick={() => detectMutation.mutate(imageFile)}
@@ -418,7 +418,7 @@ function WorkbenchTab() {
                 "flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all",
                 detectMutation.isPending
                   ? "cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-500 text-white",
+                  : "bg-accent hover:bg-accent-hover text-white",
               )}
               style={
                 detectMutation.isPending
@@ -447,7 +447,7 @@ function WorkbenchTab() {
                 detectMutation.reset();
               }}
               className="text-sm transition-colors"
-              style={{ color: "#484f58" }}
+              style={{ color: "var(--text-muted)" }}
             >
               Clear
             </button>
@@ -456,7 +456,7 @@ function WorkbenchTab() {
             <label
               {...getRootProps()}
               className="text-sm cursor-pointer transition-colors"
-              style={{ color: "#484f58" }}
+              style={{ color: "var(--text-muted)" }}
             >
               <input {...getInputProps()} />
               Change image
@@ -475,16 +475,16 @@ function WorkbenchTab() {
       {/* ── Right panel: results ── */}
       <div
         className="w-80 flex-shrink-0 overflow-y-auto"
-        style={{ borderLeft: "1px solid #21262d" }}
+        style={{ borderLeft: "1px solid var(--border)" }}
       >
-        <div className="px-4 py-3" style={{ borderBottom: "1px solid #21262d" }}>
-          <h2 className="text-sm font-semibold text-white">Results</h2>
+        <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--border)" }}>
+          <h2 className="text-sm font-semibold text-text-primary">Results</h2>
         </div>
 
         <div className="p-4">
           {detectMutation.isPending && (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-accent-text animate-spin" />
             </div>
           )}
 
@@ -509,7 +509,7 @@ function WorkbenchTab() {
           {detectMutation.data && <ResultsPanel result={detectMutation.data} />}
 
           {!detectMutation.isPending && !detectMutation.data && !detectMutation.isError && (
-            <div className="text-center py-12" style={{ color: "#484f58" }}>
+            <div className="text-center py-12" style={{ color: "var(--text-muted)" }}>
               <Cpu className="w-8 h-8 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Upload an image and run detection</p>
               <p className="text-xs mt-1 opacity-60">
@@ -559,7 +559,7 @@ function InferencePageInner() {
       {/* ── Tab bar ── */}
       <div
         className="flex items-center gap-1 px-4 py-0 flex-shrink-0"
-        style={{ borderBottom: "1px solid #21262d", background: "#0d1117" }}
+        style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}
       >
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
@@ -568,8 +568,8 @@ function InferencePageInner() {
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px",
               activeTab === id
-                ? "border-blue-500 text-white"
-                : "border-transparent text-[#484f58] hover:text-[#8b949e]",
+                ? "border-accent text-text-primary"
+                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]",
             )}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -585,9 +585,9 @@ function InferencePageInner() {
           href="/inference/batch"
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all mb-0.5"
           style={{
-            background: "rgba(59,130,246,0.12)",
-            border: "1px solid rgba(59,130,246,0.25)",
-            color: "#60a5fa",
+            background: "rgba(47,158,58,0.12)",
+            border: "1px solid rgba(47,158,58,0.25)",
+            color: "var(--accent-text)",
           }}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -616,7 +616,7 @@ export default function InferencePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center" style={{ color: "#484f58" }}>
+        <div className="flex h-full items-center justify-center" style={{ color: "var(--text-muted)" }}>
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
           <span className="text-sm">Loading…</span>
         </div>

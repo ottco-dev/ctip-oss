@@ -1,6 +1,16 @@
 # Current Focus
 
-**Updated: 2026-05-29 (VLM auto-label + Label Studio integration — fully operational)**
+**Updated: 2026-10-01 — public release v0.1.0-alpha**
+
+## Next
+1. First real dataset: images from several sessions with `data.session`, calibrated, reviewed labels
+2. First trained YOLO11 trichome model with a documented evaluation (mAP, calibration, failure cases)
+3. GPU CI runner or a documented manual GPU test run per release
+4. TDB-030 / TDB-031 (see technical_debt.md)
+
+## Done for the release (2026-10-01)
+Session-grouped splits, CI, AGPL licence text, honest README + manuals, clean-install fixes (1667 unit tests),
+frontend build fix and CTIP colour design. Details: implementation_log.md.
 
 ---
 

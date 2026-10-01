@@ -264,7 +264,7 @@ export function ImageViewer({
   const transformCss = `translate(${transform.tx}px, ${transform.ty}px) scale(${transform.scale})`;
 
   return (
-    <div className={cn('relative w-full h-full overflow-hidden bg-[#0d1117] select-none', className)}>
+    <div className={cn('relative w-full h-full overflow-hidden bg-[var(--surface)] select-none', className)}>
       {/* Zoom controls */}
       <div className="absolute top-2 right-2 z-20 flex flex-col gap-1">
         <button
