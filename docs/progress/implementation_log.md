@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-10-01 (2) — Hardening after the release check
+
+### WHAT WAS IMPLEMENTED
+- `backend/api/v1/auth.py` (`GET /auth/status`, `POST|DELETE /auth/session`), cookie support in
+  `backend/middleware/auth.py` (`AUTH_COOKIE`, `websocket_authorized`), WebSocket check in
+  `ConnectionManager.connect`; `frontend/src/lib/auth.ts` (`ensureSession`) used by `providers.tsx` and the axios client
+- `shared/async_utils.py` — `spawn`, `submit_from_thread`, `set_app_loop`
+- `benchmarks/detection/gpu_detection_benchmark.py`, `notebooks/quickstart.ipynb`, `docs/templates/*`,
+  `docs/research/` (moved from `research/`), `docs/assets/` (banner, social preview)
+- `.github/dependabot.yml` (majors ignored), `.github/workflows/codeql.yml`, CI from `uv.lock`, ruff, notebook, timeouts
+- `vlm_labeling/providers/remote/_text.py` — `strip_code_fence`
+
+### WHY
+- Security: the API (which can start containers) was open without a token and the UI could not send one.
+- Reproducibility: the CI pulled OpenCV 5 and exposed a crash; a lock file pins what was tested.
+
+### WHAT WAS FIXED
+- see CHANGELOG 0.1.0-alpha "Fixed"; plus 2500 ruff findings fixed or listed in TDB-033
+
+### WHAT STILL REMAINS
+- TDB-030 history rewrite (needs the maintainer), TDB-033 lint backlog, TDB-034 CPU-bound pipeline,
+  TensorRT benchmark (no toolkit on the dev machine), trained trichome model and public dataset
+
+---
+
 ## 2026-10-01 — Public release preparation (v0.1.0-alpha)
 
 ### WHAT WAS IMPLEMENTED
