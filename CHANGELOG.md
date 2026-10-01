@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Training: the configured gradient accumulation (`batch_size × gradient_accumulation_steps`) was never passed to
+  Ultralytics, which always used a nominal batch of 64 — small datasets made one optimizer step every few dozen
+  epochs. Now passed as `nbs`.
+
 All notable changes to CTIP. The project follows [Semantic Versioning](https://semver.org/); while in alpha, minor
 versions may break APIs.
 

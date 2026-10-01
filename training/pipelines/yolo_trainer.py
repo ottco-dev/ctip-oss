@@ -163,6 +163,9 @@ class TrainingConfig:
             "epochs": self.epochs,
             "patience": self.patience,
             "batch": self.batch_size,
+            # nominal batch: Ultralytics accumulates gradients until nbs images were seen (default 64);
+            # without this the configured accumulation was ignored and tiny datasets barely updated
+            "nbs": self.effective_batch_size,
             "imgsz": self.imgsz,
             "lr0": self.lr0,
             "lrf": self.lrf,

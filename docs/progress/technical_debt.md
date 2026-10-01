@@ -22,6 +22,17 @@ Last updated: 2026-10-01 (release preparation)
 - 1280 px FP16: 95 ms per image, of which 35 ms CPU preprocessing (CLAHE + bilateral). Tiles run one by one.
   Candidates: GPU/tile-parallel preprocessing, batching all tiles of an image into one forward pass.
 
+### TDB-035: Focus score normalisation is uncalibrated
+- `focus/metrics/composite.py` divides by fixed ranges (Laplacian / 3000, Tenengrad / 50000, normalised variance / 1.5)
+  that the comments attribute to a focus-stack dataset the repo does not contain. Real photos score "unusable"
+  (Wikimedia test 2026-10-01: Laplacian 98 → 0.03); normalised variance saturates at 1. Relative / regional scores
+  work. Fix needs real focus stacks per microscope.
+
+### TDB-036: Rule-based maturity over-calls amber on translucent heads
+- Clear heads in front of green/purple tissue take on the background colour; the HSV/LAB baseline labels them
+  cloudy/amber or unknown (test 2026-10-01: 9 "cloudy_amber_mix" where 2-3 amber tips are visible). Needs
+  transmitted light, white balance and a trained maturity classifier on labelled head crops.
+
 ### TDB-032: GPU and integration tests outside CI
 - `-m gpu` / `-m integration` need a CUDA runner and external services; run manually before releases.
 
