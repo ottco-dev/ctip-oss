@@ -89,6 +89,7 @@ docker/secrets/
 # Jupyter
 .ipynb_checkpoints/
 *.ipynb
+!notebooks/quickstart.ipynb
 
 # Local nginx (generated from nginx-local/nginx.conf.template — contains absolute paths)
 nginx-local/nginx.conf
