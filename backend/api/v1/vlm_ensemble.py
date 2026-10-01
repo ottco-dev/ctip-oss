@@ -33,7 +33,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
 from shared.logging.logger import get_logger
-from vlm_labeling.provider_registry import get_registry  # noqa: E402 — imported for mock-patchability
+from vlm_labeling.provider_registry import (
+    get_registry,
+)
 
 logger = get_logger(__name__)
 

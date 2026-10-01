@@ -35,7 +35,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from focus.metrics.composite import compute_focus_score, FocusScoreResult
+from focus.metrics.composite import FocusScoreResult, compute_focus_score
 
 
 @dataclass
@@ -169,7 +169,7 @@ def detect_misalignment(
         g2 = cv2.resize(g2, (g1.shape[1], g1.shape[0]))
 
     # Phase correlation
-    shift, response = cv2.phaseCorrelate(g1, g2)
+    shift, _response = cv2.phaseCorrelate(g1, g2)
     shift_mag = float(np.sqrt(shift[0] ** 2 + shift[1] ** 2))
 
     return shift_mag > max_shift_px, shift_mag

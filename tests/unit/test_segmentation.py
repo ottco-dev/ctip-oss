@@ -5,9 +5,8 @@ No GPU or SAM2 model required. Tests mask utilities, polygon conversions,
 and refinement logic on synthetic masks.
 """
 
-import pytest
 import numpy as np
-
+import pytest
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -90,7 +89,7 @@ def test_morphological_clean_preserves_main_object(square_mask):
 
 def test_refine_mask_pipeline(noisy_mask):
     """Full refinement pipeline should produce valid mask."""
-    from segmentation.domain.mask_refinement import refine_mask, RefinementConfig
+    from segmentation.domain.mask_refinement import RefinementConfig, refine_mask
 
     config = RefinementConfig(
         close_kernel_size=3,
@@ -123,7 +122,7 @@ def test_mask_to_polygon_circle(circular_mask):
 
 def test_polygon_to_mask_and_back():
     """Polygon → mask → polygon should be consistent."""
-    from segmentation.domain.polygon_utils import polygon_to_mask, mask_to_polygon, polygon_area
+    from segmentation.domain.polygon_utils import mask_to_polygon, polygon_area, polygon_to_mask
 
     polygon = [[30, 30], [70, 30], [70, 70], [30, 70]]
     h, w = 100, 100
@@ -169,8 +168,8 @@ def test_polygon_circularity_circle(circular_mask):
 
 def test_polygon_circularity_square():
     """Circularity of a square should be ~0.785 (π/4)."""
+
     from segmentation.domain.polygon_utils import polygon_circularity
-    import math
 
     square = [[0, 0], [10, 0], [10, 10], [0, 10]]
     circ = polygon_circularity(square)

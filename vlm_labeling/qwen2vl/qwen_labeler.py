@@ -22,7 +22,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
-class QwenQuantization(str, Enum):
+class QwenQuantization(StrEnum):
     BITS_4 = "4bit"   # ~5.5 GB VRAM — recommended for RTX 4060
     BITS_8 = "8bit"   # ~9.5 GB — too large for RTX 4060
     NONE = "none"     # ~16 GB — requires datacenter GPU
@@ -221,7 +221,7 @@ class QwenVLLabeler:
 
         try:
             import torch
-            from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+            from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
         except ImportError as e:
             raise ImportError(
                 "transformers>=4.45.0 required for Qwen2-VL. "
@@ -304,7 +304,7 @@ class QwenVLLabeler:
         self._is_loaded = False
         logger.info("Qwen2-VL unloaded")
 
-    def __enter__(self) -> "QwenVLLabeler":
+    def __enter__(self) -> QwenVLLabeler:
         self.load()
         return self
 

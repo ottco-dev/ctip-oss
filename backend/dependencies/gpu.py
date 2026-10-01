@@ -56,10 +56,11 @@ Add `_slot: None = Depends(gpu_slot)` ONLY to endpoints that:
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import HTTPException, status
+
 from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -127,7 +128,7 @@ def wire_task_router_semaphore() -> None:
     """
     global _GPU_SEMAPHORE
     try:
-        from backend.tasks.task_router import task_router  # noqa: PLC0415
+        from backend.tasks.task_router import task_router
 
         if _GPU_SEMAPHORE is None:
             # Use the task_router's semaphore as the canonical one
@@ -168,7 +169,7 @@ async def acquire_gpu_slot(
     if timeout is not None:
         try:
             await asyncio.wait_for(acquire_coro, timeout=timeout)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("GPU slot acquire timeout", timeout_s=timeout)
             raise
     else:
@@ -282,7 +283,7 @@ async def gpu_slot_or_429(
             _waiting_count -= 1
             logger.debug("GPU slot acquired (rate-limited path)", waiting=_waiting_count)
             yield
-    except asyncio.TimeoutError:
+    except TimeoutError:
         _waiting_count -= 1
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

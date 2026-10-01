@@ -43,7 +43,6 @@ Low (<0.4):        Too blurry — reject or flag for review
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
 
 import cv2
 import numpy as np

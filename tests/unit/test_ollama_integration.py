@@ -29,7 +29,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -166,6 +165,7 @@ class TestOllamaProviderIsAvailable:
     @pytest.mark.asyncio
     async def test_unavailable_on_connection_error(self):
         import aiohttp
+
         from vlm_labeling.providers.local.ollama_provider import OllamaProvider
 
         session = MagicMock()
@@ -237,6 +237,7 @@ class TestOllamaProviderListModels:
     @pytest.mark.asyncio
     async def test_empty_list_on_connection_error(self):
         import aiohttp
+
         from vlm_labeling.providers.local.ollama_provider import OllamaProvider
 
         session = MagicMock()
@@ -490,13 +491,12 @@ class TestOllamaProviderGenerateNarrative:
 
     @pytest.mark.asyncio
     async def test_handles_timeout(self):
-        import aiohttp
         from vlm_labeling.providers.local.ollama_provider import OllamaConfig, OllamaProvider
 
         session = MagicMock()
         session.__aenter__ = AsyncMock(return_value=session)
         session.__aexit__ = AsyncMock(return_value=False)
-        session.post = MagicMock(side_effect=asyncio.TimeoutError())
+        session.post = MagicMock(side_effect=TimeoutError())
 
         with patch("aiohttp.ClientSession", return_value=session):
             provider = OllamaProvider(config=OllamaConfig(timeout_s=1.0))
@@ -676,7 +676,6 @@ class TestApiOllamaStatus:
 
 class TestApiOllamaModels:
     def test_models_returned(self, client):
-        import aiohttp
 
         tags_data = {
             "models": [

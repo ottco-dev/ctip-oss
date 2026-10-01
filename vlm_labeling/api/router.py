@@ -17,13 +17,11 @@ Human review is required before labels can be used for training.
 
 from __future__ import annotations
 
-import io
 import time
 from typing import Any
 
 import numpy as np
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from shared.logging.logger import get_logger

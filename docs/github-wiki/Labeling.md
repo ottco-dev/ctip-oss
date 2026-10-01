@@ -101,18 +101,15 @@ Maturity is **not annotated in Label Studio** — it is predicted by the maturit
 ## Export to training format
 
 ```bash
-# Export completed annotations as YOLO format
-trichome export --project 1 --format yolo --output data/datasets/strain-A-v1/
+# Export completed annotations as a YOLO dataset (session-grouped train/val/test split)
+curl -X POST http://localhost:8000/api/v1/training/prepare-ls-dataset \
+  -H "Content-Type: application/json" -d '{"project_id": 1, "seed": 42}'
 
-# Structure created:
-# data/datasets/strain-A-v1/
-# ├── images/
-# │   ├── train/
-# │   └── val/
-# ├── labels/
-# │   ├── train/
-# │   └── val/
-# └── data.yaml
+# Structure created (path returned as dataset_yaml):
+# $DATA_ROOT/datasets/ls_export_<project>_<id>_<timestamp>/
+# ├── images/{train,val,test}/
+# ├── labels/{train,val,test}/
+# └── dataset.yaml
 ```
 
 ```yaml

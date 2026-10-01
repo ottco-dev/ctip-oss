@@ -14,7 +14,6 @@ Endpoints:
 from __future__ import annotations
 
 import asyncio
-import os
 import time
 import uuid
 from typing import Any
@@ -24,11 +23,12 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from backend.database import get_session
-from backend.models.experiment import Experiment, Run, Metric
+from backend.models.experiment import Experiment, Metric, Run
 from backend.models.job import BackgroundJob
 from backend.models.model_registry import RegisteredModel
 from backend.tasks.task_router import task_router
 from backend.websocket.manager import ws_manager
+from shared.async_utils import spawn
 from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -180,6 +180,7 @@ async def start_training(
     """
     # Resolve dataset name → absolute YAML path when caller passes a bare name
     from pathlib import Path as _PPath
+
     from backend.config import get_settings as _get_settings
     _datasets_root = _PPath(_get_settings().data_root) / "datasets"
     if "/" not in request.data_yaml and not request.data_yaml.endswith(".yaml"):
@@ -218,8 +219,8 @@ async def start_training(
 
     # Define training coroutine
     async def run_training():
-        from training.pipelines.yolo_trainer import YOLOTrainer, TrainingConfig
         from backend.config import get_settings
+        from training.pipelines.yolo_trainer import TrainingConfig, YOLOTrainer
 
         config = TrainingConfig(
             mlflow_tracking_uri=get_settings().mlflow_tracking_uri,
@@ -433,7 +434,7 @@ async def stop_training(
     db: Session = Depends(get_session),
 ) -> dict[str, Any]:
     """Request graceful training stop (stops after current epoch)."""
-    job = task_router.get_job_status_by_run_uuid(run_uuid) if hasattr(task_router, 'get_job_status_by_run_uuid') else None
+    task_router.get_job_status_by_run_uuid(run_uuid) if hasattr(task_router, 'get_job_status_by_run_uuid') else None
     cancelled = await task_router.cancel_job(run_uuid)
 
     # Update DB status
@@ -769,7 +770,7 @@ async def prepare_ls_dataset(req: PrepareDatasetRequest) -> PrepareDatasetStarte
             **result.to_dict(),
         })
 
-    asyncio.create_task(_export_task())
+    spawn(_export_task(), name=f"prepare-dataset-{prepare_id}")
 
     return PrepareDatasetStartedResponse(
         prepare_id=prepare_id,

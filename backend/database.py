@@ -18,9 +18,9 @@ For development: create_all_tables() is sufficient.
 
 from __future__ import annotations
 
-from typing import Generator
+from collections.abc import Generator
 
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 
 from backend.config import get_settings
 
@@ -53,8 +53,8 @@ def create_all_tables() -> None:
     For production, use Alembic migrations instead.
     """
     # Import all models to register with SQLModel metadata
-    from backend.models import experiment, dataset, job, model_registry, session  # noqa: F401
     from backend.api.v1 import model_tests  # noqa: F401 — registers ModelTest table
+    from backend.models import dataset, experiment, job, model_registry, session  # noqa: F401
     SQLModel.metadata.create_all(engine)
 
 

@@ -29,11 +29,10 @@ from __future__ import annotations
 
 import json
 import logging
-import tempfile
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -167,10 +166,10 @@ class EvaluationConfig:
     num_bins: int = 15
     """ECE bins (Guo et al. recommend 15 for calibration analysis)."""
 
-    max_images: Optional[int] = None
+    max_images: int | None = None
     """Cap evaluation at N images. None = full validation set."""
 
-    mlflow_run_id: Optional[str] = None
+    mlflow_run_id: str | None = None
     """If set, log calibration artifacts to this existing MLflow run."""
 
     mlflow_tracking_uri: str = "http://localhost:5000"
@@ -196,7 +195,7 @@ class EvaluationResult:
     data_yaml: str
 
     # ── Calibration ─────────────────────────────────────────────────────
-    calibration: Optional[CalibrationResult] = None
+    calibration: CalibrationResult | None = None
     """ECE / MCE / reliability diagram data."""
 
     total_predictions: int = 0
@@ -216,10 +215,10 @@ class EvaluationResult:
     images_evaluated: int = 0
 
     # ── Artifact paths ───────────────────────────────────────────────────
-    mlflow_run_id: Optional[str] = None
-    confidence_scores_path: Optional[str] = None
-    is_correct_path: Optional[str] = None
-    calibration_json_path: Optional[str] = None
+    mlflow_run_id: str | None = None
+    confidence_scores_path: str | None = None
+    is_correct_path: str | None = None
+    calibration_json_path: str | None = None
 
     @property
     def ece(self) -> float:

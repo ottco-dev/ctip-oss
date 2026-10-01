@@ -17,8 +17,6 @@ NOTES:
 
 from __future__ import annotations
 
-import io
-import time
 from typing import Any
 
 import numpy as np
@@ -167,8 +165,9 @@ async def set_active_provider(req: ActiveProviderRequest) -> ActiveProviderRespo
     Changes take effect immediately for new inference requests.
     API key must already be configured (via .env or /providers/{id}/configure).
     """
-    from vlm_labeling.provider_registry import get_registry
     import os
+
+    from vlm_labeling.provider_registry import get_registry
 
     registry = get_registry()
     info = registry.get_info(req.provider_id)
@@ -200,8 +199,8 @@ async def set_active_provider(req: ActiveProviderRequest) -> ActiveProviderRespo
 
     # Persist to .env so the setting survives server restarts, then bust the
     # lru_cache so the next get_settings() re-reads the updated .env.
-    from backend.utils.env_file import write_env_keys
     from backend.config import get_settings
+    from backend.utils.env_file import write_env_keys
     to_write: dict[str, str] = {"ACTIVE_VLM_PROVIDER": req.provider_id}
     to_write["ACTIVE_VLM_MODEL"] = req.model or ""
     write_env_keys(to_write)
@@ -337,8 +336,9 @@ async def configure_provider(
     For permanent configuration, add the key to your .env file instead.
     The appropriate env var name is shown in GET /vlm/providers.
     """
-    from vlm_labeling.provider_registry import get_registry, _ENV_KEY_MAP
     import os
+
+    from vlm_labeling.provider_registry import _ENV_KEY_MAP, get_registry
 
     registry = get_registry()
     if not registry.get_info(provider_id):
@@ -357,8 +357,8 @@ async def configure_provider(
         os.environ["ACTIVE_VLM_MODEL"] = req.model
 
     # Persist to .env so the key survives server restarts, then bust the cache.
-    from backend.utils.env_file import write_env_keys
     from backend.config import get_settings
+    from backend.utils.env_file import write_env_keys
     to_write: dict[str, str] = {env_var: req.api_key}
     if req.model:
         to_write["ACTIVE_VLM_MODEL"] = req.model

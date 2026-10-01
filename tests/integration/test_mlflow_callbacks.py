@@ -23,15 +23,17 @@ Sections:
 
 from __future__ import annotations
 
-import os
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from training.callbacks.metrics_callback import MetricsCallbackConfig
+
 import tempfile
-import time
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -71,7 +73,7 @@ def _make_config(
     tracking_uri: str,
     run_id: str | None = None,
     log_wandb: bool = False,
-) -> "MetricsCallbackConfig":
+) -> MetricsCallbackConfig:
     from training.callbacks.metrics_callback import MetricsCallbackConfig
 
     return MetricsCallbackConfig(
@@ -109,9 +111,10 @@ class TestMLflowMetricsLogging:
 
     def test_metrics_logged_to_mlflow_run(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -132,9 +135,10 @@ class TestMLflowMetricsLogging:
 
     def test_box_loss_logged(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -155,9 +159,10 @@ class TestMLflowMetricsLogging:
 
     def test_lr_logged(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -177,9 +182,10 @@ class TestMLflowMetricsLogging:
 
     def test_multiple_epochs_all_logged(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, uri = mlflow_tmp
         n_epochs = 5
 
         with mlflow.start_run() as run:
@@ -206,9 +212,10 @@ class TestMLflowMetricsLogging:
 
     def test_precision_and_recall_logged(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -242,10 +249,9 @@ class TestMLflowRunScope:
 
     def test_no_run_id_skips_mlflow(self, mlflow_tmp):
         """When mlflow_run_id is None, no metrics should be logged."""
-        import mlflow
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
 
         # No run_id → MLflow logging should be skipped (best-effort)
         cfg = MetricsCallbackConfig(
@@ -261,7 +267,7 @@ class TestMLflowRunScope:
         """log_to_mlflow=False: _log_mlflow should not be called."""
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, uri = mlflow_tmp
 
         import mlflow
         with mlflow.start_run() as run:
@@ -287,9 +293,10 @@ class TestMLflowBestMetrics:
 
     def test_best_map50_updated_across_epochs(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -312,9 +319,10 @@ class TestMLflowBestMetrics:
 
     def test_best_map50_never_decreases(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -339,9 +347,10 @@ class TestMLflowBestMetrics:
 
     def test_get_history_length(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
         n = 10
 
         with mlflow.start_run() as run:
@@ -359,9 +368,10 @@ class TestMLflowBestMetrics:
 
     def test_get_final_metrics_returns_last_epoch(self, mlflow_tmp):
         import mlflow
+
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
 
         with mlflow.start_run() as run:
             run_id = run.info.run_id
@@ -391,6 +401,7 @@ class TestMLflowCheckpointArtifacts:
     def test_checkpoint_artifact_logged_on_train_end(self, mlflow_tmp):
         """CheckpointCallback logs checkpoint as MLflow artifact on train end."""
         import mlflow
+
         from training.callbacks.checkpoint_callback import (
             CheckpointCallback,
             CheckpointCallbackConfig,
@@ -440,6 +451,7 @@ class TestMLflowCheckpointArtifacts:
     def test_no_artifact_when_no_checkpoint_path(self, mlflow_tmp):
         """on_train_end with no best checkpoint → no artifact logged."""
         import mlflow
+
         from training.callbacks.checkpoint_callback import (
             CheckpointCallback,
             CheckpointCallbackConfig,
@@ -466,6 +478,7 @@ class TestMLflowCheckpointArtifacts:
     def test_artifact_not_logged_when_disabled(self, mlflow_tmp):
         """log_to_mlflow=False → no artifact even if checkpoint exists."""
         import mlflow
+
         from training.callbacks.checkpoint_callback import (
             CheckpointCallback,
             CheckpointCallbackConfig,
@@ -501,7 +514,19 @@ class TestMLflowCheckpointArtifacts:
 # ---------------------------------------------------------------------------
 
 class TestWandBIntegration:
-    """Verify W&B logging calls via mock — does not require actual W&B account."""
+    """Verify W&B logging calls via mock — needs neither a W&B account nor the optional `wandb` package."""
+
+    @pytest.fixture(autouse=True)
+    def _wandb_module(self, monkeypatch):
+        import importlib.util
+        import sys
+        import types
+
+        if importlib.util.find_spec("wandb") is None:       # optional extra [wandb] not installed
+            stub = types.ModuleType("wandb")
+            stub.run = None
+            stub.log = lambda *args, **kwargs: None
+            monkeypatch.setitem(sys.modules, "wandb", stub)
 
     def test_wandb_log_called_when_enabled(self):
         """With log_to_wandb=True and wandb.run active, wandb.log is called."""
@@ -593,7 +618,7 @@ class TestCallbackBestEffort:
         """If MLflow log_metric raises, on_epoch_end completes normally."""
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
 
         import mlflow
         with mlflow.start_run() as run:
@@ -615,7 +640,7 @@ class TestCallbackBestEffort:
         """Trainer with non-numeric metrics must not crash on_epoch_end."""
         from training.callbacks.metrics_callback import MetricsCallback, MetricsCallbackConfig
 
-        tmpdir, uri = mlflow_tmp
+        _tmpdir, _uri = mlflow_tmp
 
         cfg = MetricsCallbackConfig(
             mlflow_run_id=None,
@@ -653,7 +678,7 @@ class TestCallbackBestEffort:
             CheckpointCallback,
             CheckpointCallbackConfig,
         )
-        tmpdir, uri = mlflow_tmp
+        tmpdir, _uri = mlflow_tmp
 
         cfg = CheckpointCallbackConfig(
             save_dir=tmpdir,

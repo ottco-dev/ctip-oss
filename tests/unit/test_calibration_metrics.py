@@ -19,7 +19,6 @@ import pytest
 
 from shared.metrics.calibration_metrics import CalibrationResult, compute_calibration
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

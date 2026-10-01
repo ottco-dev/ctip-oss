@@ -18,7 +18,6 @@ SCIENTIFIC CONSTRAINT:
 
 from __future__ import annotations
 
-import asyncio
 import time
 from typing import Any
 
@@ -122,7 +121,7 @@ def _get_ollama_config():
 
 def _get_provider(model_override: str | None = None):
     """Instantiate OllamaProvider with current settings, optionally overriding model."""
-    from vlm_labeling.providers.local.ollama_provider import OllamaConfig, OllamaProvider
+    from vlm_labeling.providers.local.ollama_provider import OllamaProvider
 
     cfg = _get_ollama_config()
     if model_override:
@@ -335,7 +334,7 @@ async def generate_narrative(req: NarrativeRequest) -> NarrativeResponse:
             style=req.style,
             language=req.language,
         )
-    except asyncio.TimeoutError as exc:
+    except TimeoutError as exc:
         raise HTTPException(
             status_code=504,
             detail=f"Ollama request timed out after {provider.config.timeout_s}s",

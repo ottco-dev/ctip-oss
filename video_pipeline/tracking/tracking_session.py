@@ -18,8 +18,8 @@ Design decisions:
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any
 
 from shared.core.entities import Detection
 from shared.logging.logger import get_logger
@@ -77,10 +77,10 @@ class TrackingSummary:
     total_tracks: int
     confirmed_tracks: int
     avg_track_length: float
-    type_distribution: Dict[str, int]
-    trajectory_data: List[Dict[str, Any]]
+    type_distribution: dict[str, int]
+    trajectory_data: list[dict[str, Any]]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_tracks": self.total_tracks,
             "confirmed_tracks": self.confirmed_tracks,
@@ -111,7 +111,7 @@ class TrackingSession:
         Not thread-safe. Use one TrackingSession per concurrent video.
     """
 
-    def __init__(self, config: Optional[TrackingSessionConfig] = None) -> None:
+    def __init__(self, config: TrackingSessionConfig | None = None) -> None:
         self.config = config or TrackingSessionConfig()
         self._tracker = SORTTracker(
             max_age=self.config.max_age,
@@ -121,7 +121,7 @@ class TrackingSession:
         self._frames_processed: int = 0
         # Final snapshot of all-time track metadata (id → TrichomeTrack)
         # keyed by track_id, continuously updated
-        self._all_tracks: Dict[int, TrichomeTrack] = {}
+        self._all_tracks: dict[int, TrichomeTrack] = {}
 
         logger.debug(
             "TrackingSession initialised",
@@ -134,9 +134,9 @@ class TrackingSession:
 
     def process_frame(
         self,
-        detections: List[Detection],
+        detections: list[Detection],
         frame_idx: int,
-    ) -> List[TrichomeTrack]:
+    ) -> list[TrichomeTrack]:
         """
         Process one video frame, updating all active tracks.
 
@@ -201,7 +201,7 @@ class TrackingSession:
             type_name = t.trichome_type or "UNKNOWN"
             type_counts[type_name] += 1
 
-        traj_data: List[Dict[str, Any]] = []
+        traj_data: list[dict[str, Any]] = []
         if self.config.export_trajectories:
             traj_data = self._build_trajectory_data(confirmed)
 
@@ -224,7 +224,7 @@ class TrackingSession:
 
     # --- Trajectory export --------------------------------------------------
 
-    def export_trajectories(self) -> List[Dict[str, Any]]:
+    def export_trajectories(self) -> list[dict[str, Any]]:
         """
         Export all confirmed track trajectories as JSON-serialisable dicts.
 
@@ -275,8 +275,8 @@ class TrackingSession:
 
     def _build_trajectory_data(
         self,
-        tracks: List[TrichomeTrack],
-    ) -> List[Dict[str, Any]]:
+        tracks: list[TrichomeTrack],
+    ) -> list[dict[str, Any]]:
         """Build serialisable trajectory list from a list of TrichomeTracks."""
         result = []
         for t in tracks:

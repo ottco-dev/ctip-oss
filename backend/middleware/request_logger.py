@@ -6,7 +6,8 @@ Pure ASGI middleware — WebSocket-safe.
 from __future__ import annotations
 
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 try:
     from loguru import logger

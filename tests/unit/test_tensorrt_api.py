@@ -8,18 +8,14 @@ happy-path behaviour when TRT is mocked as available.
 
 from __future__ import annotations
 
-import json
-import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
 
 # ── App fixture ───────────────────────────────────────────────────────────────
 
@@ -293,21 +289,19 @@ class TestTRTInfer:
         mock_runner.infer.return_value = mock_result
 
         import cv2
-        import numpy as np
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buf = cv2.imencode(".jpg", img)
         img_bytes = buf.tobytes()
 
-        with patch("backend.api.v1.tensorrt._engines_dir", return_value=tmp_path):
-            with patch(
-                "inference.tensorrt_engine.runner.TensorRTRunner",
-                return_value=mock_runner,
-            ):
-                resp = client.post(
-                    "/tensorrt/infer",
-                    data={"engine_name": "model.engine"},
-                    files={"file": ("img.jpg", img_bytes, "image/jpeg")},
-                )
+        with patch("backend.api.v1.tensorrt._engines_dir", return_value=tmp_path), patch(
+            "inference.tensorrt_engine.runner.TensorRTRunner",
+            return_value=mock_runner,
+        ):
+            resp = client.post(
+                "/tensorrt/infer",
+                data={"engine_name": "model.engine"},
+                files={"file": ("img.jpg", img_bytes, "image/jpeg")},
+            )
 
         assert resp.status_code == 200
         data = resp.json()
@@ -322,8 +316,7 @@ class TestTRTInfer:
 
 class TestRunBuild:
     def test_run_build_success(self, tmp_path):
-        from backend.api.v1.tensorrt import _build_jobs, _run_build
-        from backend.api.v1.tensorrt import BuildRequest
+        from backend.api.v1.tensorrt import BuildRequest, _build_jobs, _run_build
 
         job_id = "test-build-job"
         engine_path = tmp_path / "out.engine"
@@ -348,8 +341,7 @@ class TestRunBuild:
         assert _build_jobs[job_id]["engine_size_mb"] is not None
 
     def test_run_build_failure(self, tmp_path):
-        from backend.api.v1.tensorrt import _build_jobs, _run_build
-        from backend.api.v1.tensorrt import BuildRequest
+        from backend.api.v1.tensorrt import BuildRequest, _build_jobs, _run_build
 
         job_id = "test-build-fail"
         engine_path = tmp_path / "out.engine"

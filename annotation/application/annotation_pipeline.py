@@ -20,7 +20,6 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger("trichome.annotation_pipeline")
 
@@ -83,7 +82,7 @@ class PipelineRunResult:
 
     run_id: str
     started_at: datetime
-    finished_at: Optional[datetime] = None
+    finished_at: datetime | None = None
     total_images: int = 0
     total_detections: int = 0
     total_queue_items: int = 0
@@ -180,7 +179,7 @@ class AnnotationPipeline:
         self._init_vlm()
 
         for img_path in image_paths:
-            t0 = time.perf_counter()
+            time.perf_counter()
             try:
                 img_result = self._process_image(img_path)
                 result.image_results.append(img_result)
@@ -189,7 +188,7 @@ class AnnotationPipeline:
                 result.total_auto_approved += img_result.auto_approved
                 if img_result.errors:
                     result.failed_images += 1
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.error("Failed to annotate %s: %s", img_path, exc)
                 result.failed_images += 1
                 result.image_results.append(
@@ -214,6 +213,7 @@ class AnnotationPipeline:
     def _process_image(self, image_path: str) -> ImageAnnotationResult:
         """Process one image through the full pipeline."""
         import time
+
         import cv2
 
         t0 = time.perf_counter()
@@ -233,7 +233,7 @@ class AnnotationPipeline:
                 det_result = self._detection_pipeline.run(image)
                 detections = det_result.detections if hasattr(det_result, "detections") else []
                 result.detection_count = len(detections)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result.errors.append(f"Detection error: {exc}")
 
         # Step 2: VLM labeling
@@ -244,7 +244,7 @@ class AnnotationPipeline:
                 if vlm_result:
                     vlm_labels = [vlm_result] if isinstance(vlm_result, dict) else vlm_result
                     result.vlm_labels = vlm_labels
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 result.errors.append(f"VLM error: {exc}")
 
         # Step 3: Build queue items and check auto-approval
@@ -327,7 +327,7 @@ class AnnotationPipeline:
     def export_approved(
         self,
         approved_items: list[dict],
-        output_dir: Optional[str] = None,
+        output_dir: str | None = None,
     ) -> dict:
         """
         Export approved annotations to YOLO or COCO format.

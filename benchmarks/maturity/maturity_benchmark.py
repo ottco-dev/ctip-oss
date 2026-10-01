@@ -45,7 +45,7 @@ import json
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -181,7 +181,7 @@ def run_maturity_benchmark(
 ) -> dict:
     """Run full maturity benchmark suite."""
     print(f"\n{'='*62}")
-    print(f"  Maturity Analysis Benchmark")
+    print("  Maturity Analysis Benchmark")
     print(f"  N={n} crops | {crop_size}×{crop_size}px | warmup={warmup}")
     print(f"{'='*62}")
 
@@ -189,31 +189,31 @@ def run_maturity_benchmark(
     # Convert BGR→RGB for functions that expect RGB input (most maturity functions)
     rgb_crops = [cv2.cvtColor(img, cv2.COLOR_BGR2RGB) for img in bgr_crops]
     gray_crops = _make_gray_crops(n, crop_size, crop_size)
-    masks = _make_binary_masks(n, crop_size, crop_size)
+    _make_binary_masks(n, crop_size, crop_size)
     print(f"  Generated {n} synthetic trichome crops ({crop_size}×{crop_size}px)")
 
     metrics: dict[str, dict] = {}
 
     # ── Imports ───────────────────────────────────────────────────────────────
+    from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
     from maturity.domain.color_features import (
         extract_color_features,
         rule_based_maturity_estimate,
     )
+    from maturity.domain.degradation import (
+        assess_degradation,
+        detect_color_degradation,
+        detect_structural_collapse,
+        detect_texture_irregularity,
+    )
     from maturity.domain.texture_features import (
-        compute_lbp,
-        compute_glcm_features,
         compute_gabor_features,
+        compute_glcm_features,
+        compute_lbp,
         compute_shannon_entropy,
         extract_texture_features,
     )
     from maturity.domain.translucency import estimate_translucency
-    from maturity.domain.degradation import (
-        detect_color_degradation,
-        detect_structural_collapse,
-        detect_texture_irregularity,
-        assess_degradation,
-    )
-    from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
     from shared.core.entities import Instance
 
     # Warm up imports / JIT
@@ -325,13 +325,13 @@ def main() -> None:
             print(f"  Pipeline crop FPS: {crop_stat['fps']:.1f}")
 
     # Save
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     output_path = args.output or f"benchmarks/maturity/results_{timestamp}.json"
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     result = {
         "benchmark": "maturity_analysis",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "config": {"n": args.n, "crop_size": args.size, "warmup": args.warmup},
         "metrics": metrics,
     }

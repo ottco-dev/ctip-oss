@@ -22,15 +22,14 @@ Split reproducibility:
 
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from shared.datasets.streaming.hdf5_dataset import HDF5Dataset, HDF5DatasetConfig
-from shared.datasets.streaming.zarr_dataset import ZarrDataset, ZarrDatasetConfig
+from shared.datasets.streaming.hdf5_dataset import HDF5Dataset
+from shared.datasets.streaming.zarr_dataset import ZarrDataset
 from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -357,9 +356,9 @@ class DatasetConverter:
             zarr_path:  Path to the source zarr store directory.
             hdf5_path:  Path for the output HDF5 file.
         """
+        import h5py
         import zarr
         import zarr.storage
-        import h5py
 
         logger.info("Converting zarr → HDF5", source=zarr_path, dest=hdf5_path)
 
@@ -437,9 +436,9 @@ class DatasetConverter:
             split:       HDF5 group name to read (train|val|test).
             chunk_size:  Chunk size for the output zarr arrays.
         """
+        import h5py
         import zarr
         import zarr.storage
-        import h5py
 
         logger.info(
             "Converting HDF5 → zarr",

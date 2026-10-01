@@ -31,7 +31,6 @@ Docs: https://modal.com/docs/guide
 
 from __future__ import annotations
 
-import asyncio
 import os
 from typing import Any
 
@@ -39,10 +38,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from services.remote_compute.base import (
-    RemoteComputeBackend,
     ComputeBackendInfo,
     ComputeBackendKind,
     GpuTier,
+    RemoteComputeBackend,
     RemoteTaskResult,
 )
 from shared.logging.logger import get_logger
@@ -142,9 +141,10 @@ class ModalBackend(RemoteComputeBackend):
             )
 
         try:
-            import modal
             import base64
+
             import cv2
+            import modal
 
             # Serialize image
             _, buf = cv2.imencode(".jpg", cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
@@ -163,9 +163,9 @@ class ModalBackend(RemoteComputeBackend):
             @app.function(image=modal_image, gpu=gpu, timeout=300)
             def _remote_infer(image_b64: str, prompt: str, model_id: str) -> dict:
                 import base64
-                import json
-                import numpy as np
+
                 import cv2
+                import numpy as np
                 from PIL import Image
 
                 # Decode image
@@ -223,7 +223,7 @@ class ModalBackend(RemoteComputeBackend):
         Results (weights) are saved to Modal Volumes and downloadable.
         """
         import time
-        t0 = time.perf_counter()
+        time.perf_counter()
 
         if not self.is_available:
             return RemoteTaskResult(

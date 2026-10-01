@@ -17,11 +17,8 @@ Output formats: markdown, LaTeX table, structured JSON.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Scientific caveats (always included)
@@ -93,25 +90,25 @@ class DetectionResults:
     evaluation_date: str
     seed: int = 42
 
-    map50: Optional[MetricWithCI] = None
-    map50_95: Optional[float] = None
+    map50: MetricWithCI | None = None
+    map50_95: float | None = None
 
     # Per-class AP50
-    ap_capitate_stalked: Optional[float] = None
-    ap_capitate_sessile: Optional[float] = None
-    ap_bulbous: Optional[float] = None
-    ap_non_glandular: Optional[float] = None
+    ap_capitate_stalked: float | None = None
+    ap_capitate_sessile: float | None = None
+    ap_bulbous: float | None = None
+    ap_non_glandular: float | None = None
 
     # Small object performance
-    ap_small: Optional[float] = None  # Objects < 32px²
+    ap_small: float | None = None  # Objects < 32px²
 
     # Calibration
-    ece: Optional[float] = None
-    mce: Optional[float] = None
+    ece: float | None = None
+    mce: float | None = None
 
     # Inference
-    inference_ms: Optional[float] = None
-    vram_gb: Optional[float] = None
+    inference_ms: float | None = None
+    vram_gb: float | None = None
     hardware: str = "RTX 4060"
 
 
@@ -131,9 +128,9 @@ class ScientificReport:
     version: str = "1.0.0"
 
     # Results
-    detection_results: Optional[DetectionResults] = None
-    segmentation_results: Optional[dict] = None
-    maturity_results: Optional[dict] = None
+    detection_results: DetectionResults | None = None
+    segmentation_results: dict | None = None
+    maturity_results: dict | None = None
 
     # Methodology
     methodology: dict = field(default_factory=dict)
@@ -164,7 +161,7 @@ class ScientificReport:
             "references": self.references,
         }
 
-    def _serialize_detection(self) -> Optional[dict]:
+    def _serialize_detection(self) -> dict | None:
         if self.detection_results is None:
             return None
         r = self.detection_results
@@ -198,31 +195,31 @@ class ScientificReport:
         """Generate markdown-formatted scientific report."""
         lines = [
             f"# {self.title}",
-            f"",
+            "",
             f"**Date:** {self.date}  ",
             f"**Version:** {self.version}",
-            f"",
-            f"---",
-            f"",
-            f"## ⚠️ Scientific Caveats",
-            f"",
+            "",
+            "---",
+            "",
+            "## ⚠️ Scientific Caveats",
+            "",
             f"> **Mandatory disclaimer**: {self.caveats.get('maturity_quantification', '')}",
-            f"",
-            f"---",
-            f"",
+            "",
+            "---",
+            "",
         ]
 
         if self.detection_results:
             r = self.detection_results
             lines += [
-                f"## Detection Results",
-                f"",
+                "## Detection Results",
+                "",
                 f"**Model:** {r.model_name}  ",
                 f"**Dataset:** {r.dataset_name} ({r.n_images} images, {r.n_instances} instances)  ",
                 f"**Hardware:** {r.hardware}  ",
-                f"",
-                f"| Metric | Value |",
-                f"|--------|-------|",
+                "",
+                "| Metric | Value |",
+                "|--------|-------|",
             ]
 
             if r.map50:
@@ -301,19 +298,19 @@ class ScientificReportBuilder:
     def __init__(self, title: str = "Trichome Analysis Report") -> None:
         self._report = ScientificReport(title=title)
 
-    def set_detection_results(self, results: DetectionResults) -> "ScientificReportBuilder":
+    def set_detection_results(self, results: DetectionResults) -> ScientificReportBuilder:
         self._report.detection_results = results
         return self
 
-    def add_limitation(self, text: str) -> "ScientificReportBuilder":
+    def add_limitation(self, text: str) -> ScientificReportBuilder:
         self._report.limitations.append(text)
         return self
 
-    def add_reference(self, text: str) -> "ScientificReportBuilder":
+    def add_reference(self, text: str) -> ScientificReportBuilder:
         self._report.references.append(text)
         return self
 
-    def add_standard_references(self) -> "ScientificReportBuilder":
+    def add_standard_references(self) -> ScientificReportBuilder:
         """Add the standard references used in this system."""
         refs = [
             "Jocher, G. et al. (2023). Ultralytics YOLO. github.com/ultralytics/ultralytics",

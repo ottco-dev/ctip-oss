@@ -80,7 +80,7 @@ def configure_logging(
         )
 
 
-def get_logger(name: str) -> "BoundLogger":
+def get_logger(name: str) -> BoundLogger:
     """
     Get a logger bound to a module name.
 
@@ -104,7 +104,7 @@ class BoundLogger:
         self._context = context
         self._logger = _loguru_logger.bind(module=name, **context)
 
-    def bind(self, **kwargs: Any) -> "BoundLogger":
+    def bind(self, **kwargs: Any) -> BoundLogger:
         """Return a new logger with additional context."""
         new = BoundLogger(self._name, **{**self._context, **kwargs})
         return new

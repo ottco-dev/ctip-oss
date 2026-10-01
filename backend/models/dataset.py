@@ -9,9 +9,8 @@ SCHEMA:
 
 import json
 import time
-from typing import Any, List, Optional
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class Dataset(SQLModel, table=True):
@@ -19,7 +18,7 @@ class Dataset(SQLModel, table=True):
 
     __tablename__ = "datasets"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     description: str = ""
 
@@ -42,7 +41,7 @@ class Dataset(SQLModel, table=True):
 
     # Version control
     version: str = "0.1.0"
-    parent_dataset_id: Optional[int] = Field(default=None, foreign_key="datasets.id")
+    parent_dataset_id: int | None = Field(default=None, foreign_key="datasets.id")
 
     # Status
     status: str = "active"
@@ -52,9 +51,9 @@ class Dataset(SQLModel, table=True):
     updated_at: float = Field(default_factory=time.time)
 
     # Relationships
-    samples: List["Sample"] = Relationship(back_populates="dataset")
+    samples: list["Sample"] = Relationship(back_populates="dataset")
 
-    def get_class_names(self) -> List[str]:
+    def get_class_names(self) -> list[str]:
         return json.loads(self.class_names_json)
 
     def get_split_config(self) -> dict:
@@ -81,7 +80,7 @@ class Sample(SQLModel, table=True):
 
     __tablename__ = "samples"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     dataset_id: int = Field(foreign_key="datasets.id", index=True)
 
     # File
@@ -120,8 +119,8 @@ class Sample(SQLModel, table=True):
     created_at: float = Field(default_factory=time.time)
 
     # Relationships
-    dataset: Optional[Dataset] = Relationship(back_populates="samples")
-    annotations: List["Annotation"] = Relationship(back_populates="sample")
+    dataset: Dataset | None = Relationship(back_populates="samples")
+    annotations: list["Annotation"] = Relationship(back_populates="sample")
 
     def get_metadata(self) -> dict:
         return json.loads(self.metadata_json)
@@ -148,7 +147,7 @@ class Annotation(SQLModel, table=True):
 
     __tablename__ = "annotations"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     sample_id: int = Field(foreign_key="samples.id", index=True)
 
     # Label data (YOLO format or structured JSON)
@@ -163,27 +162,27 @@ class Annotation(SQLModel, table=True):
     annotation_type: str = "detection"
     """detection, segmentation, maturity, morphology"""
 
-    class_id: Optional[int] = None
+    class_id: int | None = None
     class_name: str = ""
 
     # Provenance
     source: str = "human"
     """human, vlm_auto, model_prediction, imported"""
 
-    confidence: Optional[float] = None
+    confidence: float | None = None
     """Prediction confidence (for model/VLM annotations)."""
 
     # Review status
     reviewed: bool = False
-    reviewer_id: Optional[str] = None
-    review_action: Optional[str] = None
+    reviewer_id: str | None = None
+    review_action: str | None = None
     """approved, corrected, rejected"""
 
     created_at: float = Field(default_factory=time.time)
     updated_at: float = Field(default_factory=time.time)
 
     # Relationships
-    sample: Optional[Sample] = Relationship(back_populates="annotations")
+    sample: Sample | None = Relationship(back_populates="annotations")
 
     def get_data(self) -> dict:
         return json.loads(self.data_json)

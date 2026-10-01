@@ -14,15 +14,13 @@ All GPU and detection pipeline calls are mocked — no real GPU required.
 from __future__ import annotations
 
 import asyncio
-import io
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 
 # ---------------------------------------------------------------------------
 # Fixtures — reset GPU semaphore between tests
@@ -62,7 +60,8 @@ def client(app):
 
 def _fake_png_bytes() -> bytes:
     """Return minimal valid PNG bytes (1×1 white pixel)."""
-    import struct, zlib
+    import struct
+    import zlib
     # Minimal PNG: signature + IHDR + IDAT + IEND
     def _chunk(name: bytes, data: bytes) -> bytes:
         c = name + data
@@ -285,7 +284,7 @@ class TestRunDetectionHelper:
 
     def test_returns_correct_shape(self):
         """Mock pipeline returns expected DetectionBox list."""
-        from backend.api.v1.inference import _run_detection, DetectionBox
+        from backend.api.v1.inference import _run_detection
 
         fake_det = SimpleNamespace(
             bbox=SimpleNamespace(x1=10.0, y1=20.0, x2=50.0, y2=80.0),

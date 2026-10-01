@@ -24,8 +24,8 @@ from __future__ import annotations
 import sys
 import time
 import traceback
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -151,7 +151,7 @@ def _maturity_texture():
 def _maturity_scientific_rules():
     from maturity.domain.scientific_rules import check_confidence_threshold
     from shared.core.enums import MaturityStage
-    label, note = check_confidence_threshold(0.80, MaturityStage.CLOUDY)
+    _label, note = check_confidence_threshold(0.80, MaturityStage.CLOUDY)
     assert isinstance(note, str)
 
 def _maturity_degradation():
@@ -172,7 +172,7 @@ run("Degradation assessment", _maturity_degradation)
 section("3. Morphology — Geometric Features")
 
 def _morph_geometric():
-    from morphology.domain.geometric import extract_geometric_descriptors, GeometricDescriptors
+    from morphology.domain.geometric import GeometricDescriptors, extract_geometric_descriptors
     for img in imgs:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, mask = cv2.threshold(gray, 90, 255, cv2.THRESH_BINARY)
@@ -181,7 +181,7 @@ def _morph_geometric():
         assert isinstance(desc, GeometricDescriptors) or desc is not None
 
 def _morph_density_map():
-    from morphology.domain.density_map import compute_density_map, TrichomeCentroid
+    from morphology.domain.density_map import TrichomeCentroid, compute_density_map
     img = imgs[0]
     h, w = img.shape[:2]
     # Provide synthetic centroids
@@ -218,7 +218,7 @@ def _px_to_um():
     assert abs(result.head_diameter_um - 50.0) < 0.01
 
 def _uncertainty_propagation():
-    from measurement.domain.propagation import propagate_linear, MeasurementWithUncertainty
+    from measurement.domain.propagation import MeasurementWithUncertainty, propagate_linear
     m = propagate_linear(
         value_px=200.0,
         um_per_pixel=0.5,
@@ -255,6 +255,7 @@ section("5. VLM Schema Enforcer")
 
 def _enforce_maturity():
     import json
+
     from vlm_labeling.prompts.schema_enforcer import enforce_maturity
     raw = json.dumps({
         "maturity_stage": "cloudy",
@@ -267,12 +268,14 @@ def _enforce_maturity():
 
 def _enforce_quality():
     import json
+
     from vlm_labeling.prompts.schema_enforcer import enforce_quality
     r = enforce_quality(json.dumps({"overall_quality": "high", "is_in_focus": True, "focus_score": 0.9}))
     assert r.is_valid
 
 def _enforce_morphology():
     import json
+
     from vlm_labeling.prompts.schema_enforcer import enforce_morphology
     r = enforce_morphology(json.dumps({"dominant_type": "capitate_stalked", "confidence": 0.78}))
     assert r.is_valid
@@ -284,6 +287,7 @@ def _enforce_markdown():
 
 def _enforce_fraction_renorm():
     import json
+
     from vlm_labeling.prompts.schema_enforcer import enforce_maturity
     r = enforce_maturity(json.dumps({"maturity_stage": "cloudy", "clear": 2.0, "cloudy": 2.0, "amber": 2.0, "mixed": 2.0}))
     total = sum(r.data.get(k, 0) for k in ("clear", "cloudy", "amber", "mixed"))
@@ -302,7 +306,7 @@ run("Fraction renormalisation", _enforce_fraction_renorm)
 section("6. VLM Hallucination Filter (HITL gate)")
 
 def _hf_maturity_clean():
-    from vlm_labeling.filtering.hallucination import HallucinationFilter, FilterConfig
+    from vlm_labeling.filtering.hallucination import HallucinationFilter
     hf = HallucinationFilter()
     result = hf.filter_maturity({
         "maturity_stage": "cloudy",
@@ -329,7 +333,7 @@ def _hf_invalid_class():
         "confidence": 0.95,
     })
     # Should flag UNKNOWN_CLASS or not pass
-    passed = result.passed if hasattr(result, "passed") else result.get("passed", True)
+    result.passed if hasattr(result, "passed") else result.get("passed", True)
     # Either flagged or passed with warning — must not crash
     assert result is not None
 
@@ -345,8 +349,11 @@ section("7. Annotation Statistics")
 
 def _annotation_stats():
     from annotation.statistics.stats import (
-        AnnotationStatisticsAggregator, AnnotationEvent,
-        compute_cohens_kappa, compute_class_imbalance_ratio, compute_effective_imbalance,
+        AnnotationEvent,
+        AnnotationStatisticsAggregator,
+        compute_class_imbalance_ratio,
+        compute_cohens_kappa,
+        compute_effective_imbalance,
     )
     agg = AnnotationStatisticsAggregator()
     for i in range(20):
@@ -420,7 +427,7 @@ def _al_entropy_sampler():
 def _al_queue():
     from active_learning.queuing.priority_queue import AnnotationPriorityQueue
     q = AnnotationPriorityQueue()
-    entry = q.push(
+    q.push(
         sample_id="s001", dataset_id="ds1",
         image_path="/tmp/test.png", uncertainty_score=0.9,
     )
@@ -467,6 +474,7 @@ section("9. Analytics Export")
 
 def _json_session():
     import json
+
     from analytics.export.json_exporter import export_session_json
     j = export_session_json({"session_id": "test001", "detections": []})
     parsed = json.loads(j)
@@ -476,6 +484,7 @@ def _json_session():
 
 def _json_coco():
     import json
+
     from analytics.export.json_exporter import export_coco_json
     samples = [{"id": 1, "file_name": "img.png", "width": 960, "height": 960,
                 "annotations": [{"bbox": [100, 100, 50, 80], "category_id": 0}]}]
@@ -502,6 +511,7 @@ def _csv_maturity():
 
 def _json_benchmark():
     import json
+
     from analytics.export.json_exporter import export_benchmark_json
     j = json.loads(export_benchmark_json("yolo11s_v1", {"mAP50": 0.871, "precision": 0.91}))
     assert abs(j["metrics"]["mAP50"] - 0.871) < 0.001
@@ -555,7 +565,7 @@ run("CalibrationResult bin_counts length", _ece_bin_counts)
 section("11. Video Pipeline — Frame Scoring")
 
 def _frame_score():
-    from video_pipeline.domain.scorer import score_frame, FrameQualityScore
+    from video_pipeline.domain.scorer import FrameQualityScore, score_frame
     for img in imgs:
         rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         r = score_frame(rgb)
@@ -564,7 +574,7 @@ def _frame_score():
         assert 0.0 <= r.composite <= 1.0 or r.composite >= 0.0
 
 def _frame_phash():
-    from video_pipeline.domain.hasher import perceptual_hash, hamming_distance
+    from video_pipeline.domain.hasher import hamming_distance, perceptual_hash
     h1 = perceptual_hash(imgs[0])
     h2 = perceptual_hash(imgs[0])  # same image → same hash
     assert isinstance(h1, int)
@@ -575,7 +585,7 @@ def _frame_phash():
     assert d2 >= 0
 
 def _frame_dedup():
-    from video_pipeline.domain.hasher import perceptual_hash, deduplicate_frames
+    from video_pipeline.domain.hasher import deduplicate_frames, perceptual_hash
     # deduplicate_frames takes List[int] hashes, not raw frames
     hashes = [perceptual_hash(img) for img in imgs]
     kept = deduplicate_frames(hashes, threshold=5)
@@ -638,8 +648,8 @@ def _value_objects():
 
 def _entities():
     from shared.core.entities import Detection
-    from shared.core.value_objects import BoundingBox, Confidence
     from shared.core.enums import TrichomeType
+    from shared.core.value_objects import BoundingBox, Confidence
     det = Detection(
         bounding_box=BoundingBox(10, 20, 100, 200),
         confidence=Confidence(0.88),
@@ -649,7 +659,7 @@ def _entities():
     assert det.confidence > Confidence(0.5)
 
 def _enums():
-    from shared.core.enums import MaturityStage, TrichomeType, AnnotationSource
+    from shared.core.enums import AnnotationSource, MaturityStage, TrichomeType
     assert MaturityStage.CLOUDY.value is not None
     assert TrichomeType.BULBOUS in list(TrichomeType)
     # AnnotationSource uses HUMAN_EXPERT not HUMAN

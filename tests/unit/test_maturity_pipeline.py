@@ -20,17 +20,12 @@ Scientific invariants enforced:
 
 from __future__ import annotations
 
-from dataclasses import asdict
-from typing import Optional
-
-import cv2
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
 from shared.core.entities import Instance, MaturityLabel
 from shared.core.enums import MaturityStage
-
 
 # ── Test fixtures ─────────────────────────────────────────────────────────────
 
@@ -73,7 +68,7 @@ def _make_tiny_crop(size: int = 8) -> NDArray[np.uint8]:
 
 
 def _make_instance(
-    crop: Optional[NDArray[np.uint8]] = None,
+    crop: NDArray[np.uint8] | None = None,
     idx: int = 0,
 ) -> Instance:
     """Create a minimal Instance with optional crop attached."""
@@ -143,7 +138,6 @@ class TestAnalyzeCrop:
     """Test MaturityPipeline.analyze_crop() on individual crop images."""
 
     def test_returns_maturity_label(self, pipeline, clear_crop):
-        from shared.core.entities import MaturityLabel
         label = pipeline.analyze_crop(clear_crop)
         assert isinstance(label, MaturityLabel)
 
@@ -302,7 +296,7 @@ class TestFeatureExtraction:
     """Unit tests for individual maturity feature extractors."""
 
     def test_color_features_returns_dataclass(self, clear_crop):
-        from maturity.domain.color_features import extract_color_features, ColorFeatureVector
+        from maturity.domain.color_features import ColorFeatureVector, extract_color_features
         features = extract_color_features(clear_crop)
         assert isinstance(features, ColorFeatureVector)
 
@@ -318,12 +312,12 @@ class TestFeatureExtraction:
         assert 0.0 <= features.mean_value <= 1.0
 
     def test_texture_features_returns_dataclass(self, cloudy_crop):
-        from maturity.domain.texture_features import extract_texture_features, TextureFeatureVector
+        from maturity.domain.texture_features import TextureFeatureVector, extract_texture_features
         features = extract_texture_features(cloudy_crop)
         assert isinstance(features, TextureFeatureVector)
 
     def test_translucency_returns_result(self, clear_crop):
-        from maturity.domain.translucency import estimate_translucency, TranslucencyResult
+        from maturity.domain.translucency import TranslucencyResult, estimate_translucency
         result = estimate_translucency(clear_crop)
         assert isinstance(result, TranslucencyResult)
 
@@ -334,14 +328,17 @@ class TestFeatureExtraction:
             assert hasattr(result, "score") or hasattr(result, "translucency_score") or hasattr(result, "is_translucent")
 
     def test_degradation_returns_degradation_result(self, amber_crop, clear_crop):
-        from maturity.domain.degradation import assess_degradation, DegradationResult
+        from maturity.domain.degradation import DegradationResult, assess_degradation
         for crop in [amber_crop, clear_crop]:
             r = assess_degradation(crop)
             assert isinstance(r, DegradationResult)
             assert hasattr(r, "is_degraded")
 
     def test_rule_based_maturity_estimate(self, clear_crop):
-        from maturity.domain.color_features import extract_color_features, rule_based_maturity_estimate
+        from maturity.domain.color_features import (
+            extract_color_features,
+            rule_based_maturity_estimate,
+        )
         from shared.core.enums import MaturityStage
 
         features = extract_color_features(clear_crop)
@@ -367,7 +364,7 @@ class TestScientificConstraints:
     def test_maturity_label_stage_is_optical(self, pipeline, cloudy_crop):
         """Stage must be an optical observation category, not a cannabinoid metric."""
         label = pipeline.analyze_crop(cloudy_crop)
-        VALID_OPTICAL_STAGES = {s for s in MaturityStage}
+        VALID_OPTICAL_STAGES = set(MaturityStage)
         assert label.stage in VALID_OPTICAL_STAGES
 
     def test_no_thc_in_stage_names(self):
@@ -410,8 +407,8 @@ class TestPopulationStats:
         result = pipeline.analyze(instances)
         for key in result.stage_distribution:
             # Each key should be a valid MaturityStage value or "unknown"
-            valid = {s.value for s in MaturityStage} | {"unknown"}
-            assert key in valid or True, f"Unexpected stage key: {key}"
+            {s.value for s in MaturityStage} | {"unknown"}
+            assert True, f"Unexpected stage key: {key}"
 
     def test_distribution_values_are_fractions(self, pipeline):
         instances = [_make_instance(crop=_make_cloudy_crop(), idx=i) for i in range(5)]
@@ -425,4 +422,3 @@ class TestPopulationStats:
         assert result.high_uncertainty >= 0
 
 
-import math

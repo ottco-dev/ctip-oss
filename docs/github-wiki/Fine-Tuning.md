@@ -15,19 +15,13 @@ Do NOT fine-tune when:
 ## Data preparation for fine-tuning
 
 ```bash
-# Export new annotations
-trichome export --project 1 --format yolo --output data/datasets/v2-incremental/
-
-# Merge with existing training data
-trichome dataset merge \\
-  --base data/datasets/v1/ \\
-  --new data/datasets/v2-incremental/ \\
-  --output data/datasets/v2/ \\
-  --val-split 0.15 \\
-  --seed 42
-
-# Verify merged dataset
-trichome dataset verify --path data/datasets/v2/
+# Keep old and new annotations in one Label Studio project, then export it again —
+# the session split keeps every imaging session in exactly one of train / val / test.
+# Export the Label Studio project as a YOLO dataset (whole imaging sessions per split, seed 42)
+curl -X POST http://localhost:8000/api/v1/training/prepare-ls-dataset \
+  -H "Content-Type: application/json" \
+  -d '{"project_id": 1, "train_ratio": 0.70, "val_ratio": 0.15, "seed": 42}'
+# The export log lists images and sessions per split and warns about missing session information.
 ```
 
 ---
@@ -123,13 +117,11 @@ noise: 0.05    # camera noise simulation
 
 If bulbous or non-glandular trichomes are rare in your dataset:
 
-```yaml
-# Option 1: class weights in loss function
-cls_weights: [1.0, 1.0, 3.0, 2.0]   # stalked, sessile, bulbous, non-glandular
-
-# Option 2: oversample rare classes during export
-trichome export --project 1 --format yolo --oversample bulbous:3 --output data/datasets/v2/
-```
+- **Label more of them.** Active learning (`/api/v1/al`) ranks unlabelled images by uncertainty —
+  rare classes tend to be the uncertain ones. This is the most reliable fix.
+- **Image-level oversampling.** Duplicate *training* images that contain rare classes after the export
+  (never val/test). Ultralytics has no per-class loss weights; its `cls` gain scales all classes equally.
+- **Report per-class metrics.** Overall mAP hides a weak rare class.
 
 ---
 

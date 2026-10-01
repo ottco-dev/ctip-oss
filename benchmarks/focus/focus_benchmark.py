@@ -37,7 +37,7 @@ import json
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -113,7 +113,7 @@ def _run(fn, images: list[np.ndarray], warmup: int = 5) -> dict:
 def run_focus_benchmark(n: int = 200, h: int = 512, w: int = 512, warmup: int = 5) -> dict:
     """Run full focus benchmark suite."""
     print(f"\n{'='*60}")
-    print(f"  Focus Metrics Benchmark")
+    print("  Focus Metrics Benchmark")
     print(f"  N={n} images | {w}×{h}px | warmup={warmup}")
     print(f"{'='*60}")
 
@@ -123,26 +123,26 @@ def run_focus_benchmark(n: int = 200, h: int = 512, w: int = 512, warmup: int = 
     metrics = {}
 
     # ── Laplacian metrics ───────────────────────────────────────────────────
-    from focus.metrics.laplacian import (
-        laplacian_variance,
-        modified_laplacian,
-        squared_laplacian_gradient,
-        laplacian_energy_of_gradient,
-        regional_laplacian_variance,
-    )
-    from focus.metrics.tenengrad import (
-        tenengrad,
-        tenengrad_variance,
-        absolute_gradient_sum,
-    )
+    from focus.guidance.heatmap import generate_focus_heatmap as hm_generate
+    from focus.metrics.composite import compute_focus_score, generate_focus_heatmap
     from focus.metrics.fft_metrics import (
-        fft_high_frequency_ratio,
-        dct_high_frequency_score,
         brenner_focus,
+        dct_high_frequency_score,
+        fft_high_frequency_ratio,
         vollath_f4,
     )
-    from focus.metrics.composite import compute_focus_score, generate_focus_heatmap
-    from focus.guidance.heatmap import generate_focus_heatmap as hm_generate
+    from focus.metrics.laplacian import (
+        laplacian_energy_of_gradient,
+        laplacian_variance,
+        modified_laplacian,
+        regional_laplacian_variance,
+        squared_laplacian_gradient,
+    )
+    from focus.metrics.tenengrad import (
+        absolute_gradient_sum,
+        tenengrad,
+        tenengrad_variance,
+    )
 
     benchmark_fns = {
         "laplacian_variance": laplacian_variance,
@@ -222,13 +222,13 @@ def main() -> None:
             print(f"  Composite FPS: {composite['fps']:.1f}")
 
     # Save results
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     output_path = args.output or f"benchmarks/focus/results_{timestamp}.json"
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     result = {
         "benchmark": "focus_metrics",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "config": {"n": args.n, "image_size": args.size, "warmup": args.warmup},
         "metrics": metrics,
     }

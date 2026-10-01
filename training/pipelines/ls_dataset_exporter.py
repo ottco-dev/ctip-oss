@@ -24,15 +24,14 @@ Image URL resolution:
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import time
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Optional
 
 from shared.logging.logger import get_logger
 from training.pipelines.session_split import split_by_session
@@ -72,10 +71,10 @@ class ExportConfig:
     val_ratio: float = 0.15
     # test_ratio = 1 - train - val
     seed: int = 42
-    output_root: Optional[Path] = None
+    output_root: Path | None = None
     """Directory to write dataset. Auto-generated if None."""
     min_annotations_per_task: int = 1
-    progress_callback: Optional[Callable[[str, str], None]] = None
+    progress_callback: Callable[[str, str], None] | None = None
     """Optional (line, level) callback for live progress reporting."""
 
 
@@ -259,7 +258,7 @@ def export_ls_project(config: ExportConfig) -> ExportResult:
             exported += 1
 
     # ── Dataset YAML ────────────────────────────────────────────────────────
-    _log(f"Writing dataset YAML…", "dim")
+    _log("Writing dataset YAML…", "dim")
     # Use canonical class order; fall back to alphabetical for unknown names
     classes = [c for c in CTIP_CLASS_ORDER if c in class_names_seen]
     unknown = sorted(class_names_seen - set(CTIP_CLASS_ORDER))
@@ -305,7 +304,7 @@ def export_ls_project(config: ExportConfig) -> ExportResult:
 # ---------------------------------------------------------------------------
 
 # Expose alias dict at module level so it can be used in outer scope
-_CLASS_ALIASES = _CLASS_ALIASES  # noqa: SIM900
+_CLASS_ALIASES = _CLASS_ALIASES
 
 
 def _task_in_export(task: dict) -> bool:
@@ -317,7 +316,7 @@ def _fetch_all_tasks(
     headers: dict,
     project_id: int,
     use_predictions: bool,
-    progress_fn: Optional[Callable[[str, str], None]] = None,
+    progress_fn: Callable[[str, str], None] | None = None,
 ) -> list[dict]:
     """Paginate through all project tasks and attach annotations / predictions."""
     import requests
@@ -381,7 +380,7 @@ def _fetch_all_tasks(
     return all_tasks
 
 
-def _resolve_image(url: str, config: ExportConfig) -> Optional[Path]:
+def _resolve_image(url: str, config: ExportConfig) -> Path | None:
     """
     Resolve an LS image URL to a local Path.
 
@@ -412,7 +411,7 @@ def _resolve_image(url: str, config: ExportConfig) -> Optional[Path]:
 
 def _rewrite_labels_for_dynamic_classes(out_dir: Path, classes: list[str]) -> None:
     """Re-index any labels that used CTIP_CLASS_INDEX to the final class list."""
-    new_index = {name: i for i, name in enumerate(classes)}
+    {name: i for i, name in enumerate(classes)}
     # For now the label files already use CTIP_CLASS_INDEX which matches our
     # CTIP_CLASS_ORDER. If unknown classes were added they'd need rewriting.
     # This is a no-op for the typical CTIP workflow.

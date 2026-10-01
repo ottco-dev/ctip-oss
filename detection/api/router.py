@@ -15,21 +15,15 @@ Endpoints:
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import uuid
-from io import BytesIO
 from typing import Annotated, Any
 
 import numpy as np
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from fastapi.responses import JSONResponse
 
 from detection.schemas.schemas import (
-    BatchDetectionRequest,
-    DetectionRequest,
     DetectionResponse,
-    DetectionStats,
 )
 from shared.logging.logger import get_logger
 
@@ -49,7 +43,7 @@ except ImportError:
         yield
 
 
-def _decode_image(image_b64: str) -> "np.ndarray[Any, np.dtype[np.uint8]]":
+def _decode_image(image_b64: str) -> np.ndarray[Any, np.dtype[np.uint8]]:
     """Decode base64-encoded image to numpy array."""
     import cv2
 
@@ -244,7 +238,7 @@ async def health() -> dict[str, Any]:
     vram_free_gb = None
     if gpu_available:
         try:
-            free_bytes, total_bytes = torch.cuda.mem_get_info(0)
+            free_bytes, _total_bytes = torch.cuda.mem_get_info(0)
             vram_free_gb = round(free_bytes / 1e9, 2)
         except Exception:
             pass

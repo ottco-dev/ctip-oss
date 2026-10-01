@@ -28,17 +28,14 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 import time
 import uuid
-from pathlib import Path
-from typing import Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+from collections.abc import Generator
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # App fixture
@@ -101,7 +98,7 @@ class TestReadEnvFile:
 
 class TestWriteEnvKey:
     def test_updates_existing_key(self, tmp_path):
-        from backend.utils.env_file import write_env_key, read_env_file
+        from backend.utils.env_file import read_env_file, write_env_key
         f = tmp_path / ".env"
         f.write_text('FOO="old"\nBAR="keep"\n')
         write_env_key("FOO", "new", path=f)
@@ -110,7 +107,7 @@ class TestWriteEnvKey:
         assert r["BAR"] == "keep"
 
     def test_appends_new_key(self, tmp_path):
-        from backend.utils.env_file import write_env_key, read_env_file
+        from backend.utils.env_file import read_env_file, write_env_key
         f = tmp_path / ".env"
         f.write_text('FOO="bar"\n')
         write_env_key("NEW_KEY", "value", path=f)
@@ -127,13 +124,13 @@ class TestWriteEnvKey:
         assert "# My comment" in content
 
     def test_creates_file_if_missing(self, tmp_path):
-        from backend.utils.env_file import write_env_key, read_env_file
+        from backend.utils.env_file import read_env_file, write_env_key
         f = tmp_path / "new.env"
         write_env_key("KEY", "val", path=f)
         assert read_env_file(f)["KEY"] == "val"
 
     def test_write_env_keys_multiple_atomic(self, tmp_path):
-        from backend.utils.env_file import write_env_keys, read_env_file
+        from backend.utils.env_file import read_env_file, write_env_keys
         f = tmp_path / ".env"
         f.write_text('A="1"\nB="2"\nC="3"\n')
         write_env_keys({"A": "10", "C": "30"}, path=f)
@@ -150,7 +147,7 @@ class TestWriteEnvKey:
 class TestDetectPortConflict:
     def _detect(self, lines, env_overrides=None):
         """Call _detect_port_conflict with controlled env."""
-        from backend.api.v1.containers import _detect_port_conflict, _PORT_REGISTRY
+        from backend.api.v1.containers import _detect_port_conflict
         with patch.dict(os.environ, env_overrides or {}):
             return _detect_port_conflict(lines)
 
@@ -384,8 +381,8 @@ class TestBackgroundTasks:
 
     def test_poll_task_found(self, client, tmp_path):
         # Inject a fake completed task directly into the TaskStore cache
-        from backend.tasks.task_store import TaskRecord, get_task_store
         from backend.api.v1.containers import _TASK_DB
+        from backend.tasks.task_store import TaskRecord, get_task_store
         store = get_task_store(_TASK_DB)
         tid = str(uuid.uuid4())
         rec = TaskRecord(
@@ -410,8 +407,8 @@ class TestBackgroundTasks:
         assert r.status_code == 404
 
     def test_list_tasks_returns_list(self, client):
-        from backend.tasks.task_store import TaskRecord, get_task_store
         from backend.api.v1.containers import _TASK_DB
+        from backend.tasks.task_store import TaskRecord, get_task_store
         store = get_task_store(_TASK_DB)
         tid = str(uuid.uuid4())
         rec = TaskRecord(
@@ -429,8 +426,8 @@ class TestBackgroundTasks:
 
     def test_port_conflict_in_task(self, client):
         """Task with status=port_conflict exposes PortConflictInfo."""
-        from backend.tasks.task_store import TaskRecord, PortConflictData, get_task_store
         from backend.api.v1.containers import _TASK_DB
+        from backend.tasks.task_store import PortConflictData, TaskRecord, get_task_store
         store = get_task_store(_TASK_DB)
         tid = str(uuid.uuid4())
         rec = TaskRecord(

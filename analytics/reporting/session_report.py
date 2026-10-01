@@ -16,9 +16,6 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Scientific disclaimer (required on all reports)
@@ -48,7 +45,7 @@ class TrichomeTypeSummary:
     fraction: float
     mean_confidence: float
     mean_area_px: float = 0.0
-    mean_diameter_um: Optional[float] = None
+    mean_diameter_um: float | None = None
 
 
 @dataclass
@@ -125,11 +122,11 @@ class ImageResult:
     image_path: str
     detection_count: int
     mean_confidence: float = 0.0
-    maturity: Optional[MaturitySummary] = None
+    maturity: MaturitySummary | None = None
     focus_score: float = 0.0
     exposure_ok: bool = True
     processing_ms: float = 0.0
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
@@ -156,7 +153,7 @@ class SessionReport:
     type_summaries: list[TrichomeTypeSummary] = field(default_factory=list)
 
     # Maturity aggregate
-    maturity_summary: Optional[MaturitySummary] = None
+    maturity_summary: MaturitySummary | None = None
 
     # Quality metrics
     mean_focus_score: float = 0.0
@@ -229,11 +226,11 @@ class SessionReportBuilder:
         image_path: str,
         detection_count: int = 0,
         mean_confidence: float = 0.0,
-        maturity_fractions: Optional[dict] = None,
+        maturity_fractions: dict | None = None,
         focus_score: float = 0.0,
         exposure_ok: bool = True,
         processing_ms: float = 0.0,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> None:
         """Add a result from raw pipeline outputs."""
         maturity = None

@@ -4,6 +4,36 @@ Hardware target: RTX 4060 8 GB / i5-13400F / 16 GB RAM / Python 3.12.3
 
 ---
 
+## 2026-10-01 — GPU detection pipeline (`benchmarks/detection/gpu_detection_benchmark.py`)
+
+**Runtime only.** Generic COCO `yolo11s.pt` (no trichome model released yet — detection counts are meaningless),
+synthetic microscopy-like frames (seed 42), full CTIP pipeline (CLAHE + bilateral denoise + YOLO11s + filtering),
+30 timed runs after 3 warm-up runs. RTX 4060 8 GB, torch 2.14.1+cu130, CUDA 13.0, i5-13400F.
+
+| Image | Mode | Precision | p50 ms | p95 ms | FPS | Peak VRAM (torch) |
+|---|---|---|---|---|---|---|
+| 1280×1280 | full | FP16 | 95.6 | 104.2 | 10.4 | 173 MB |
+| 1280×1280 | full | FP32 | 107.5 | 110.1 | 9.3 | 296 MB |
+| 3840×2160 | full (downscaled to 1280) | FP16 | 439.8 | 514.3 | 2.3 | 188 MB |
+| 3840×2160 | tiled 1280 px, 20 % overlap (8 tiles) | FP16 | 817.0 | 875.7 | 1.2 | 225 MB |
+| 3840×2160 | tiled 1280 px, 20 % overlap (8 tiles) | FP32 | 847.2 | 875.5 | 1.2 | 347 MB |
+
+Process RAM (RSS): 1.3 GB.
+
+**Where the time goes (1280×1280, FP16, p50):** full pipeline 94.9 ms · without denoise 78.8 ms · without CLAHE and
+denoise 59.3 ms · preprocessing alone 34.5 ms (CPU, OpenCV). On an 8 GB card VRAM is not the limit (< 350 MB);
+CPU preprocessing and per-tile Python post-processing are.
+
+**Findings**
+- FP16 saves ~40 % VRAM and ~10 % latency at 1280 px; tiled 4K is CPU-bound, so FP16 barely changes it.
+- Tiling a 4K frame costs ~1.9× the downscaled full-image pass but keeps small sessile/bulbous heads at native
+  resolution — the accuracy side of that trade-off needs a trained trichome model (pending).
+- Optimisation candidates (TDB-034): GPU or tile-parallel preprocessing, batching tiles into one forward pass.
+
+TensorRT not measured: no `tensorrt`/`pycuda` on this machine (no CUDA toolkit / nvcc for pycuda).
+
+---
+
 ## 2026-05-25 — First Full Benchmark Run
 
 ### Platform

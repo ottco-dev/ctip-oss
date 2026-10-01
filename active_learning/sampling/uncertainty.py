@@ -37,7 +37,7 @@ REFERENCES:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -183,7 +183,7 @@ def _enable_mc_dropout(model: Any) -> None:
     """Enable dropout layers for MC Dropout inference."""
     import torch.nn as nn
     for module in model.modules():
-        if isinstance(module, nn.Dropout) or isinstance(module, nn.Dropout2d):
+        if isinstance(module, (nn.Dropout, nn.Dropout2d)):
             module.train()
 
 
@@ -191,7 +191,7 @@ def _disable_mc_dropout(model: Any) -> None:
     """Disable dropout (restore eval mode)."""
     import torch.nn as nn
     for module in model.modules():
-        if isinstance(module, nn.Dropout) or isinstance(module, nn.Dropout2d):
+        if isinstance(module, (nn.Dropout, nn.Dropout2d)):
             module.eval()
 
 
@@ -200,8 +200,8 @@ def _preprocess_for_model(
     device: str,
 ) -> Any:
     """Preprocess image for PyTorch model input."""
-    import torch
     import cv2
+    import torch
 
     # Resize to 224x224 (standard CNN input)
     resized = cv2.resize(image, (224, 224), interpolation=cv2.INTER_LANCZOS4)

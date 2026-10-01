@@ -3,28 +3,30 @@
 from fastapi import APIRouter
 
 from backend.api.v1 import (
-    system,
-    training,
-    datasets,
     annotation,
-    video,
-    reports,
-    models,
+    auth,
+    containers,
+    dataset_streaming,
+    datasets,
+    distributed_training,
+    experiments,  # TDB-008: extracted from inline block
     inference,
     labelstudio,
-    experiments,  # TDB-008: extracted from inline block
-    setup,
-    containers,
     model_tests,
-    settings,
-    tensorrt,
+    models,
     morphology_training,
-    dataset_streaming,
-    distributed_training,
+    reports,
+    settings,
+    setup,
+    system,
+    tensorrt,
+    training,
+    video,
 )
 
 router = APIRouter()
 
+router.include_router(auth.router)
 router.include_router(setup.router)
 router.include_router(containers.router)
 router.include_router(system.router)

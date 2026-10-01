@@ -12,9 +12,8 @@ Default host: http://localhost:8090 (docker-compose.annotation.yml)
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 try:
     import requests
@@ -160,7 +159,7 @@ class LabelStudioClient:
     def create_project(
         self,
         title: str,
-        label_config: Optional[str] = None,
+        label_config: str | None = None,
     ) -> int:
         """
         Create a Label Studio project for trichome annotation.
@@ -195,7 +194,7 @@ class LabelStudioClient:
         self,
         project_id: int,
         image_paths: list[str],
-        predictions: Optional[list[dict]] = None,
+        predictions: list[dict] | None = None,
     ) -> list[int]:
         """
         Import images as tasks into a project.

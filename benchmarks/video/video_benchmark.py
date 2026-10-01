@@ -40,10 +40,8 @@ import json
 import statistics
 import sys
 import time
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import List, Optional
 
 import cv2
 import numpy as np
@@ -154,7 +152,7 @@ def run_video_benchmark(
 ) -> dict:
     """Run full video pipeline benchmark suite."""
     print(f"\n{'='*62}")
-    print(f"  Video Pipeline Benchmark")
+    print("  Video Pipeline Benchmark")
     print(f"  N={n} frames | {frame_size}×{frame_size}px | warmup={warmup}")
     print(f"{'='*62}")
 
@@ -164,19 +162,19 @@ def run_video_benchmark(
     metrics: dict[str, dict] = {}
 
     # ── Imports ───────────────────────────────────────────────────────────────
-    from video_pipeline.domain.scorer import score_frame, FrameQualityScore
     from video_pipeline.domain.hasher import (
-        perceptual_hash,
-        hamming_distance,
         deduplicate_frames,
+        hamming_distance,
+        perceptual_hash,
     )
-    from video_pipeline.domain.motion import estimate_motion, classify_motion_sequence
+    from video_pipeline.domain.motion import classify_motion_sequence, estimate_motion
     from video_pipeline.domain.ranker import (
         RankedFrame,
-        rank_top_n,
-        rank_diverse_n,
         rank_adaptive,
+        rank_diverse_n,
+        rank_top_n,
     )
+    from video_pipeline.domain.scorer import score_frame
 
     # ── Pre-build supporting data ─────────────────────────────────────────────
 
@@ -200,7 +198,7 @@ def run_video_benchmark(
     pool_hashes = [perceptual_hash(f) for f in pool_frames]
 
     # Pre-compute motion estimates for classify_motion_sequence
-    print(f"  Pre-computing motion estimates for sequence benchmark...")
+    print("  Pre-computing motion estimates for sequence benchmark...")
     motion_estimates = []
     for i in range(min(20, n - 1)):
         m = estimate_motion(frames[i], frames[i + 1])
@@ -311,13 +309,13 @@ def main() -> None:
             speedup = comp_score["avg_ms"] / fast_score["avg_ms"] if fast_score["avg_ms"] > 0 else 1.0
             print(f"  score_frame speedup (fast vs composite): {speedup:.1f}×")
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     output_path = args.output or f"benchmarks/video/results_{timestamp}.json"
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     result = {
         "benchmark": "video_pipeline",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "config": {"n": args.n, "frame_size": args.size, "warmup": args.warmup},
         "metrics": metrics,
     }

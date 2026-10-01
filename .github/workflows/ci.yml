@@ -25,13 +25,19 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: System libraries (OpenCV, WeasyPrint)
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0 libpango-1.0-0 libpangoft2-1.0-0
-      - name: Install (CPU PyTorch first, keeps the runner small)
+      - name: Install from uv.lock (CPU PyTorch wheels keep the runner small)
         run: |
+          uv lock --check
+          uv export --frozen --extra dev --no-hashes --no-emit-project > constraints.txt
           uv venv .venv --python 3.12
-          uv pip install --python .venv/bin/python torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-          uv pip install --python .venv/bin/python -e ".[dev]"
+          uv pip install --python .venv/bin/python torch torchvision -c constraints.txt --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --python .venv/bin/python -e ".[dev]" -c constraints.txt
+      - name: Lint
+        run: .venv/bin/ruff check .
       - name: Unit tests
         run: .venv/bin/python -m pytest -m "not gpu and not integration" -q -o addopts="" -p no:cacheprovider
+      - name: Quickstart notebook runs
+        run: .venv/bin/jupyter nbconvert --to notebook --execute --stdout notebooks/quickstart.ipynb > /dev/null
 
   frontend:
     name: Frontend (types + build)

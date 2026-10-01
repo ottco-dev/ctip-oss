@@ -9,24 +9,22 @@ Cost: claude-3-5-haiku $0.80/1M input, $4/1M output (best cost-per-quality)
 
 from __future__ import annotations
 
-import base64
 import json
 import time
 
 import numpy as np
 from numpy.typing import NDArray
 
+from shared.logging.logger import get_logger
 from vlm_labeling.providers.base import (
+    ProviderCapabilities,
+    ProviderKind,
+    ProviderTier,
     VLMProvider,
     VLMProviderInfo,
     VLMResponse,
-    ProviderKind,
-    ProviderTier,
-    ProviderCapabilities,
     image_to_base64,
 )
-from vlm_labeling.prompts.trichome_prompts import PROMPT_REGISTRY
-from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
 

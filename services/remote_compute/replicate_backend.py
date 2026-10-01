@@ -34,10 +34,10 @@ import numpy as np
 from numpy.typing import NDArray
 
 from services.remote_compute.base import (
-    RemoteComputeBackend,
     ComputeBackendInfo,
     ComputeBackendKind,
     GpuTier,
+    RemoteComputeBackend,
     RemoteTaskResult,
 )
 from shared.logging.logger import get_logger
@@ -118,9 +118,8 @@ class ReplicateBackend(RemoteComputeBackend):
             )
 
         try:
-            import base64
             import io
-            import cv2
+
             from PIL import Image as PILImage
 
             # Convert to PNG for Replicate (no base64 overhead with file)
@@ -183,6 +182,7 @@ class ReplicateBackend(RemoteComputeBackend):
 
         try:
             import io
+
             from PIL import Image as PILImage
 
             pil = PILImage.fromarray(image)

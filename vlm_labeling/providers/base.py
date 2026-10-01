@@ -13,23 +13,21 @@ from __future__ import annotations
 
 import abc
 import base64
-import time
-from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
+from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
 
-class ProviderKind(str, Enum):
+class ProviderKind(StrEnum):
     """Whether the provider runs locally or via remote API."""
     LOCAL = "local"
     REMOTE = "remote"
 
 
-class ProviderTier(str, Enum):
+class ProviderTier(StrEnum):
     """Cost tier for capacity planning / UI display."""
     FREE = "free"           # Always free (e.g., Groq free tier, HF free)
     FREEMIUM = "freemium"   # Free with limits, paid above

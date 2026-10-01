@@ -20,7 +20,6 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -209,7 +208,7 @@ class LocalPyTorchRunner:
         self._is_loaded = False
         logger.info("Model unloaded")
 
-    def __enter__(self) -> "LocalPyTorchRunner":
+    def __enter__(self) -> LocalPyTorchRunner:
         self.load()
         return self
 

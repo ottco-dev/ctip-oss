@@ -25,9 +25,6 @@ Temporal diversity ensures comprehensive sample coverage.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
-
-import numpy as np
 
 from video_pipeline.domain.scorer import FrameQualityScore
 
@@ -45,26 +42,26 @@ class RankedFrame:
     quality: FrameQualityScore
     """Quality assessment for this frame."""
 
-    phash: Optional[int] = None
+    phash: int | None = None
     """Perceptual hash (for deduplication)."""
 
     @property
     def score(self) -> float:
         return self.quality.composite
 
-    def __lt__(self, other: "RankedFrame") -> bool:
+    def __lt__(self, other: RankedFrame) -> bool:
         return self.score < other.score
 
-    def __gt__(self, other: "RankedFrame") -> bool:
+    def __gt__(self, other: RankedFrame) -> bool:
         return self.score > other.score
 
 
 def rank_top_n(
-    frames: List[RankedFrame],
+    frames: list[RankedFrame],
     n: int,
     *,
     min_score: float = 0.0,
-) -> List[RankedFrame]:
+) -> list[RankedFrame]:
     """
     Select the N highest-scoring frames.
 
@@ -81,11 +78,11 @@ def rank_top_n(
 
 
 def rank_diverse_n(
-    frames: List[RankedFrame],
+    frames: list[RankedFrame],
     n: int,
     *,
     min_score: float = 0.20,
-) -> List[RankedFrame]:
+) -> list[RankedFrame]:
     """
     Select N frames with temporal diversity.
 
@@ -113,7 +110,7 @@ def rank_diverse_n(
         return rank_top_n(frames, n, min_score=min_score)
 
     segment_duration = (ts_max - ts_min) / n
-    selected: List[RankedFrame] = []
+    selected: list[RankedFrame] = []
 
     for seg in range(n):
         seg_start = ts_min + seg * segment_duration
@@ -138,12 +135,12 @@ def rank_diverse_n(
 
 
 def rank_adaptive(
-    frames: List[RankedFrame],
+    frames: list[RankedFrame],
     n: int,
     *,
     min_focus: float = 0.30,
     diversity_weight: float = 0.5,
-) -> List[RankedFrame]:
+) -> list[RankedFrame]:
     """
     Adaptive ranking combining quality and temporal diversity.
 
@@ -178,7 +175,7 @@ def rank_adaptive(
     ts_max = max(f.timestamp_s for f in eligible)
     ts_range = ts_max - ts_min if ts_max > ts_min else 1.0
 
-    selected: List[RankedFrame] = []
+    selected: list[RankedFrame] = []
     remaining = list(eligible)
 
     # Seed: pick the best quality frame first

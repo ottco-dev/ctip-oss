@@ -28,15 +28,12 @@ Scientific note on depth of field at microscopy magnifications:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable
 
 import numpy as np
 from numpy.typing import NDArray
 
 from focus.metrics.composite import (
-    FocusScoreResult,
     compute_focus_score,
-    _compute_regional_scores,
 )
 
 

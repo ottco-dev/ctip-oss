@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -77,7 +76,6 @@ def run_calibration(
         if auto:
             # Auto-detect scale bar
             import cv2
-            import numpy as np
 
             console.print("[dim]Running Hough-line scale bar detection…[/dim]")
             gray = cv2.cvtColor(cv2.imread(str(image)), cv2.COLOR_BGR2GRAY)
@@ -251,7 +249,7 @@ def estimate_scale(
             sensor_pixel_size_um=sensor_pixel_size,
             adapter_magnification=camera_adapter,
         )
-        console.print(f"\n[bold]Estimated Scale[/bold]")
+        console.print("\n[bold]Estimated Scale[/bold]")
         console.print(f"  Objective:    {objective}×")
         console.print(f"  Sensor pixel: {sensor_pixel_size} µm")
         console.print(f"  Adapter:      {camera_adapter}×")
@@ -312,8 +310,8 @@ def _auto_detect_scale_bar(gray, spacing_um: float = 10.0) -> list[float]:
 
         # Collect horizontal line y-coordinates
         h_lines: list[float] = []
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
+        # OpenCV 4 returns (N, 1, 4), OpenCV 5 (N, 4)
+        for x1, y1, x2, y2 in np.asarray(lines).reshape(-1, 4).tolist():
             angle = abs(np.degrees(np.arctan2(y2 - y1, x2 - x1)))
             if angle < 5 or angle > 175:  # Near-horizontal
                 h_lines.append((y1 + y2) / 2.0)
@@ -321,7 +319,7 @@ def _auto_detect_scale_bar(gray, spacing_um: float = 10.0) -> list[float]:
         if len(h_lines) < 2:
             return []
 
-        h_lines_sorted = sorted(set(round(y) for y in h_lines))
+        h_lines_sorted = sorted({round(y) for y in h_lines})
         spacings = [abs(h_lines_sorted[i + 1] - h_lines_sorted[i]) for i in range(len(h_lines_sorted) - 1)]
 
         # Filter plausible spacings (10–2000 px)

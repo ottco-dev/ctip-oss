@@ -24,7 +24,6 @@ Performance reference (RTX 4060, YOLO11s, 1280px FP16):
 
 from __future__ import annotations
 
-import io
 import time
 import uuid
 from pathlib import Path

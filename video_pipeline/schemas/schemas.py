@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -32,7 +30,7 @@ class RankedFrameSchema(BaseModel):
     frame_index: int
     timestamp_s: float
     quality: FrameQualitySchema
-    output_path: Optional[str] = None
+    output_path: str | None = None
 
 
 class VideoAnalysisRequest(BaseModel):
@@ -44,8 +42,8 @@ class VideoAnalysisRequest(BaseModel):
     )
     min_focus_score: float = Field(default=0.25, ge=0, le=1)
     every_n_frames: int = Field(default=5, ge=1)
-    max_dimension: Optional[int] = Field(default=1920, ge=64)
-    output_dir: Optional[str] = None
+    max_dimension: int | None = Field(default=1920, ge=64)
+    output_dir: str | None = None
     compute_motion: bool = False
 
 
@@ -53,6 +51,6 @@ class VideoAnalysisResponse(BaseModel):
     video_info: VideoInfoSchema
     total_frames_analyzed: int
     n_selected: int
-    selected_frames: List[RankedFrameSchema]
-    motion_summary: Optional[Dict] = None
+    selected_frames: list[RankedFrameSchema]
+    motion_summary: dict | None = None
     processing_time_s: float = 0.0

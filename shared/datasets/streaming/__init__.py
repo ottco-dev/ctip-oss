@@ -27,14 +27,14 @@ Both formats use the same logical layout:
     /meta     (N,)  string  JSON-encoded per-sample metadata
 """
 
-from shared.datasets.streaming.zarr_dataset import ZarrDataset, ZarrDatasetConfig
-from shared.datasets.streaming.hdf5_dataset import HDF5Dataset, HDF5DatasetConfig
 from shared.datasets.streaming.dataset_converter import DatasetConverter
+from shared.datasets.streaming.hdf5_dataset import HDF5Dataset, HDF5DatasetConfig
+from shared.datasets.streaming.zarr_dataset import ZarrDataset, ZarrDatasetConfig
 
 __all__ = [
-    "ZarrDataset",
-    "ZarrDatasetConfig",
+    "DatasetConverter",
     "HDF5Dataset",
     "HDF5DatasetConfig",
-    "DatasetConverter",
+    "ZarrDataset",
+    "ZarrDatasetConfig",
 ]

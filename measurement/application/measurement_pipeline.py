@@ -15,18 +15,15 @@ OUTPUT: Instance objects with head_diameter_um, stalk_length_um, total_height_um
 from __future__ import annotations
 
 import logging
-import math
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
 
+from measurement.domain.measurer import Measurer, TrichomeMeasurements
+from measurement.domain.profile_manager import MicroscopeProfile, ProfileManager
 from shared.core.entities import Instance
 from shared.core.value_objects import CalibrationScale, Micrometer
-from measurement.domain.profile_manager import MicroscopeProfile, ProfileManager
-from measurement.domain.measurer import Measurer, TrichomeMeasurements
-from measurement.domain.propagation import propagate_linear, propagate_area
 
 logger = logging.getLogger(__name__)
 
@@ -38,23 +35,23 @@ class PopulationStats:
     n: int = 0
     """Number of successfully measured instances."""
 
-    head_diameter_mean_um: Optional[float] = None
-    head_diameter_std_um: Optional[float] = None
-    head_diameter_median_um: Optional[float] = None
-    head_diameter_iqr_um: Optional[float] = None
+    head_diameter_mean_um: float | None = None
+    head_diameter_std_um: float | None = None
+    head_diameter_median_um: float | None = None
+    head_diameter_iqr_um: float | None = None
 
-    stalk_length_mean_um: Optional[float] = None
-    stalk_length_std_um: Optional[float] = None
-    stalk_length_median_um: Optional[float] = None
+    stalk_length_mean_um: float | None = None
+    stalk_length_std_um: float | None = None
+    stalk_length_median_um: float | None = None
 
-    total_height_mean_um: Optional[float] = None
-    total_height_std_um: Optional[float] = None
+    total_height_mean_um: float | None = None
+    total_height_std_um: float | None = None
 
-    head_area_mean_um2: Optional[float] = None
-    head_area_std_um2: Optional[float] = None
+    head_area_mean_um2: float | None = None
+    head_area_std_um2: float | None = None
 
-    head_stalk_ratio_mean: Optional[float] = None
-    head_stalk_ratio_std: Optional[float] = None
+    head_stalk_ratio_mean: float | None = None
+    head_stalk_ratio_std: float | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -89,8 +86,8 @@ class PopulationStats:
 class MeasurementPipelineResult:
     """Complete result of the measurement pipeline."""
 
-    instances: List[Instance]
-    measurements: List[TrichomeMeasurements]
+    instances: list[Instance]
+    measurements: list[TrichomeMeasurements]
     population: PopulationStats
     profile: MicroscopeProfile
     total: int = 0
@@ -112,9 +109,9 @@ class MeasurementPipeline:
 
     def __init__(
         self,
-        profile: Optional[MicroscopeProfile] = None,
-        profile_manager: Optional[ProfileManager] = None,
-        profile_id: Optional[str] = None,
+        profile: MicroscopeProfile | None = None,
+        profile_manager: ProfileManager | None = None,
+        profile_id: str | None = None,
     ) -> None:
         if profile is not None:
             self.profile = profile
@@ -138,9 +135,9 @@ class MeasurementPipeline:
 
     def measure_instances(
         self,
-        instances: List[Instance],
+        instances: list[Instance],
         *,
-        focus_score: Optional[float] = None,
+        focus_score: float | None = None,
     ) -> MeasurementPipelineResult:
         """
         Measure physical dimensions of all instances in the list.
@@ -155,7 +152,7 @@ class MeasurementPipeline:
         Returns:
             MeasurementPipelineResult with all measurements and population stats.
         """
-        measurements: List[TrichomeMeasurements] = []
+        measurements: list[TrichomeMeasurements] = []
         skipped_no_mask = 0
         skipped_small = 0
         failed = 0
@@ -217,7 +214,7 @@ class MeasurementPipeline:
     def _measure_one(
         self,
         mask: NDArray[np.uint8],
-        focus_score: Optional[float] = None,
+        focus_score: float | None = None,
     ) -> TrichomeMeasurements:
         """Measure a single trichome mask."""
         from morphology.domain.geometric import extract_geometric_descriptors
@@ -226,14 +223,12 @@ class MeasurementPipeline:
         geo = extract_geometric_descriptors(mask)
         stalk, head = detect_stalk_and_head(mask)
 
-        focus_unc_px = 0.0
         if focus_score is not None:
             from measurement.domain.propagation import focus_induced_uncertainty
-            focus_unc_px = focus_induced_uncertainty(
+            focus_induced_uncertainty(
                 focus_score, self.profile.um_per_pixel
             )
 
-        cal_unc = self.profile.uncertainty_um or 0.0
 
         return self._measurer.measure(
             head_diameter_px=head.head_diameter_px if head else None,
@@ -247,7 +242,7 @@ class MeasurementPipeline:
 
 
 def _compute_population_stats(
-    measurements: List[TrichomeMeasurements],
+    measurements: list[TrichomeMeasurements],
 ) -> PopulationStats:
     """Compute population-level statistics from a list of measurements."""
     if not measurements:

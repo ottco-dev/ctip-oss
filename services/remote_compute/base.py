@@ -8,21 +8,21 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
 
-class ComputeBackendKind(str, Enum):
+class ComputeBackendKind(StrEnum):
     MODAL = "modal"
     REPLICATE = "replicate"
     HF_SPACES = "hf_spaces"
     LOCAL = "local"
 
 
-class GpuTier(str, Enum):
+class GpuTier(StrEnum):
     """GPU class for capacity/cost planning."""
     T4 = "t4"           # ~$0.35/hr
     A10G = "a10g"       # ~$1.10/hr (Modal default)

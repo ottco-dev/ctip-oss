@@ -6,8 +6,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 from vlm_labeling.providers.base import (
-    VLMProvider, VLMProviderInfo, VLMResponse,
-    ProviderKind, ProviderTier, ProviderCapabilities,
+    ProviderCapabilities,
+    ProviderKind,
+    ProviderTier,
+    VLMProvider,
+    VLMProviderInfo,
+    VLMResponse,
 )
 
 _INFO = VLMProviderInfo(

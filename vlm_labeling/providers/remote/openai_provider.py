@@ -17,17 +17,17 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from shared.logging.logger import get_logger
+from vlm_labeling.prompts.trichome_prompts import PROMPT_REGISTRY, PromptTemplate
 from vlm_labeling.providers.base import (
+    ProviderCapabilities,
+    ProviderKind,
+    ProviderTier,
     VLMProvider,
     VLMProviderInfo,
     VLMResponse,
-    ProviderKind,
-    ProviderTier,
-    ProviderCapabilities,
     image_to_base64,
 )
-from vlm_labeling.prompts.trichome_prompts import PROMPT_REGISTRY, PromptTemplate
-from shared.logging.logger import get_logger
 
 
 def _get_user_prompt(key: str, fallback: str) -> str:

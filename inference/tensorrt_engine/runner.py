@@ -24,12 +24,10 @@ Performance on RTX 4060 (expected):
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Availability guard
@@ -38,8 +36,8 @@ import numpy as np
 def tensorrt_available() -> bool:
     """Return True if TensorRT + pycuda Python bindings are importable."""
     try:
-        import tensorrt  # noqa: F401
         import pycuda.driver  # noqa: F401
+        import tensorrt  # noqa: F401
         return True
     except ImportError:
         return False
@@ -164,9 +162,9 @@ class TensorRTRunner:
                 "Or use ONNXRuntimeRunner as fallback."
             )
 
-        import tensorrt as trt
         import pycuda.autoinit  # noqa: F401 — creates default CUDA context
         import pycuda.driver as cuda
+        import tensorrt as trt
 
         logger = trt.Logger(trt.Logger.WARNING)
         runtime = trt.Runtime(logger)
@@ -436,7 +434,7 @@ class TensorRTRunner:
 
     # ---------------------------------------------------------------- context
 
-    def __enter__(self) -> "TensorRTRunner":
+    def __enter__(self) -> TensorRTRunner:
         self.load()
         return self
 

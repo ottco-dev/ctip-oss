@@ -21,8 +21,6 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from threading import Lock
-from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -199,7 +197,7 @@ class AnnotationPriorityQueue:
 
         return entry
 
-    def pop(self) -> Optional[QueueEntry]:
+    def pop(self) -> QueueEntry | None:
         """
         Pop the highest-priority pending item.
 

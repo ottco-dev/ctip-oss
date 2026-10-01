@@ -34,13 +34,12 @@ SCIENTIFIC REFERENCES ENCODED IN RULES:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
-from typing import NamedTuple
+from enum import StrEnum
 
 from shared.core.enums import MaturityStage
 
 
-class ClaimStrength(str, Enum):
+class ClaimStrength(StrEnum):
     """Epistemic strength of a scientific claim."""
     DIRECTLY_OBSERVABLE = "directly_observable"
     INFERRED = "inferred"

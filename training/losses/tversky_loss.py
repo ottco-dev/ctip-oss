@@ -215,7 +215,7 @@ class MultiClassTverskyLoss(nn.Module):
             probs = inputs
 
         # One-hot encode targets
-        b, c, h, w = probs.shape
+        b, c, _h, _w = probs.shape
         targets_one_hot = F.one_hot(targets.long(), num_classes=c)  # (B, H, W, C)
         targets_one_hot = targets_one_hot.permute(0, 3, 1, 2).float()  # (B, C, H, W)
 

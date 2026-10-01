@@ -28,7 +28,6 @@ Coverage:
 from __future__ import annotations
 
 import uuid
-from typing import Any
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -36,13 +35,12 @@ import pytest
 
 from detection.domain.tiled_inference import (
     TileConfig,
-    TileInfo,
     TiledInferenceEngine,
+    TileInfo,
 )
-from shared.core.value_objects import BoundingBox, Confidence
 from shared.core.entities import Detection
 from shared.core.enums import TrichomeType
-
+from shared.core.value_objects import BoundingBox, Confidence
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -214,13 +212,13 @@ class TestComputeTiles:
     def test_wide_image_multiple_columns(self):
         engine = _make_engine(tile_size=640, overlap=0.0)
         tiles = engine.compute_tiles(640, 3200)   # 5 columns expected
-        x_starts = sorted(set(t.x_start for t in tiles))
+        x_starts = sorted({t.x_start for t in tiles})
         assert len(x_starts) >= 5
 
     def test_portrait_image(self):
         engine = _make_engine(tile_size=640, overlap=0.0)
         tiles = engine.compute_tiles(3200, 640)   # tall image
-        y_starts = sorted(set(t.y_start for t in tiles))
+        y_starts = sorted({t.y_start for t in tiles})
         assert len(y_starts) >= 5
 
     def test_large_4k_image_tile_count(self):
@@ -518,7 +516,7 @@ class TestDetectTiledWithMock:
 
         # Constant-colour 640×640 image → single tile with variance 0 → skipped
         image = np.full((640, 640, 3), 100, dtype=np.uint8)
-        merged, tiles, diag = engine.detect_tiled(image)
+        _merged, _tiles, diag = engine.detect_tiled(image)
 
         detector.detect.assert_not_called()
         assert diag[0]["skipped"] is True
@@ -544,7 +542,7 @@ class TestDetectTiledWithMock:
 
         rng = np.random.default_rng(2)
         image = rng.integers(0, 256, (1280, 1280, 3), dtype=np.uint8)
-        merged, tiles, _ = engine.detect_tiled(image)
+        merged, _tiles, _ = engine.detect_tiled(image)
 
         # Find tile at (640, 640) — bottom-right for 1280×1280, 0% overlap
         # Tiles: (0,0,640,640), (640,0,1280,640), (0,640,640,1280), (640,640,1280,1280)

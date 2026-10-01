@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 try:
     import requests
@@ -70,7 +70,7 @@ class CVATJob:
     id: int
     task_id: int
     status: str  # new | in progress | completed | rejected
-    assignee: Optional[str] = None
+    assignee: str | None = None
     start_frame: int = 0
     stop_frame: int = 0
 
@@ -97,7 +97,7 @@ class CVATClient:
     def __init__(self, config: CVATConfig | None = None) -> None:
         self.config = config or CVATConfig()
         self._session: Any = None
-        self._auth_token: Optional[str] = None
+        self._auth_token: str | None = None
 
     def connect(self) -> None:
         """Authenticate and create HTTP session."""
@@ -187,7 +187,7 @@ class CVATClient:
     def create_project(
         self,
         name: str,
-        labels: Optional[list[dict]] = None,
+        labels: list[dict] | None = None,
     ) -> CVATProject:
         """
         Create a CVAT project with trichome labels.
@@ -212,7 +212,7 @@ class CVATClient:
     # Tasks
     # ------------------------------------------------------------------
 
-    def list_tasks(self, project_id: Optional[int] = None) -> list[CVATTask]:
+    def list_tasks(self, project_id: int | None = None) -> list[CVATTask]:
         path = f"/api/tasks?project_id={project_id}" if project_id else "/api/tasks"
         data = self._get(path)
         return [

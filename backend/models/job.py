@@ -9,13 +9,12 @@ JOB LIFECYCLE:
 
 import json
 import time
-from enum import Enum
-from typing import Any, Optional
+from enum import StrEnum
 
 from sqlmodel import Field, SQLModel
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -28,7 +27,7 @@ class BackgroundJob(SQLModel, table=True):
 
     __tablename__ = "jobs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     job_uuid: str = Field(index=True)
 
     job_type: str = Field(index=True)
@@ -36,23 +35,23 @@ class BackgroundJob(SQLModel, table=True):
 
     # Progress tracking
     progress: float = 0.0
-    total_items: Optional[int] = None
+    total_items: int | None = None
     processed_items: int = 0
 
     # Configuration & results
     params_json: str = Field(default="{}")
     result_json: str = Field(default="{}")
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
     # Timing
     created_at: float = Field(default_factory=time.time)
-    started_at: Optional[float] = None
-    finished_at: Optional[float] = None
+    started_at: float | None = None
+    finished_at: float | None = None
 
     # Association
-    experiment_id: Optional[int] = Field(default=None, foreign_key="experiments.id")
-    dataset_id: Optional[int] = Field(default=None, foreign_key="datasets.id")
-    run_uuid: Optional[str] = None
+    experiment_id: int | None = Field(default=None, foreign_key="experiments.id")
+    dataset_id: int | None = Field(default=None, foreign_key="datasets.id")
+    run_uuid: str | None = None
 
     def get_params(self) -> dict:
         return json.loads(self.params_json)
@@ -60,7 +59,7 @@ class BackgroundJob(SQLModel, table=True):
     def get_result(self) -> dict:
         return json.loads(self.result_json)
 
-    def get_duration_s(self) -> Optional[float]:
+    def get_duration_s(self) -> float | None:
         if self.started_at and self.finished_at:
             return self.finished_at - self.started_at
         return None

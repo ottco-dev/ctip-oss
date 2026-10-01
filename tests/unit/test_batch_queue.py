@@ -22,7 +22,6 @@ Coverage:
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
@@ -35,7 +34,6 @@ from backend.tasks.batch_queue import (
     get_batch_queue,
     reset_batch_queue,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -61,14 +59,14 @@ def _new_future() -> asyncio.Future:
 
 
 def _make_entry(**kwargs) -> _QueueEntry:
-    defaults = dict(
-        image=_make_image(),
-        conf_threshold=0.35,
-        iou_threshold=0.45,
-        model_variant="yolo11s",
-        use_tiled=False,
-        model_path=None,
-    )
+    defaults = {
+        "image": _make_image(),
+        "conf_threshold": 0.35,
+        "iou_threshold": 0.45,
+        "model_variant": "yolo11s",
+        "use_tiled": False,
+        "model_path": None,
+    }
     defaults.update(kwargs)
     defaults["future"] = _new_future()
     import time
@@ -307,7 +305,7 @@ class TestSyncBatch:
             patch("backend.api.v1.inference._run_detection", return_value=([], 8.0)) as mock_seq,
             patch("backend.api.v1.inference._run_detection_batch") as mock_batch,
         ):
-            results = q._sync_batch(entries)
+            q._sync_batch(entries)
 
         mock_seq.assert_called_once()
         mock_batch.assert_not_called()
@@ -356,7 +354,6 @@ class TestSyncBatch:
 
     def test_result_order_preserved(self):
         q = DetectionBatchQueue()
-        from unittest.mock import MagicMock
         box_a = MagicMock(confidence=0.9)
         box_b = MagicMock(confidence=0.5)
 
@@ -503,7 +500,6 @@ class TestSingleton:
         assert q1 is not q2
 
     def test_get_batch_queue_uses_settings(self):
-        from unittest.mock import MagicMock
         fake_settings = MagicMock()
         fake_settings.batch_queue_window_ms = 75.0
         fake_settings.batch_queue_max_size = 4
@@ -556,8 +552,9 @@ class TestBatchQueueEndpoints:
     """Smoke tests for /inference/batch_queue/stats and /inference/detect/queued."""
 
     def _get_client(self):
-        from fastapi.testclient import TestClient
         from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
         from backend.api.v1.inference import router
 
         app = FastAPI()
@@ -599,8 +596,7 @@ class TestBatchQueueEndpoints:
         )
 
         with patch("backend.tasks.batch_queue.DetectionBatchQueue.submit", new=AsyncMock(return_value=fake_result)):
-            img_bytes = io.BytesIO()
-            import struct
+            io.BytesIO()
 
             # Minimal valid PNG (1×1 white pixel)
             png_header = (

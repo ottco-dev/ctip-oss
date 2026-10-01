@@ -22,7 +22,6 @@ import asyncio
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Reset module-level semaphore before each test to avoid cross-test pollution
 # ---------------------------------------------------------------------------
@@ -72,7 +71,7 @@ class TestAcquireGpuSlot:
 
     @pytest.mark.asyncio
     async def test_slot_acquired_and_released(self):
-        from backend.dependencies.gpu import acquire_gpu_slot, _get_semaphore
+        from backend.dependencies.gpu import _get_semaphore, acquire_gpu_slot
         sem = _get_semaphore()
 
         assert sem._value == 1
@@ -82,7 +81,7 @@ class TestAcquireGpuSlot:
 
     @pytest.mark.asyncio
     async def test_slot_released_on_exception(self):
-        from backend.dependencies.gpu import acquire_gpu_slot, _get_semaphore
+        from backend.dependencies.gpu import _get_semaphore, acquire_gpu_slot
         sem = _get_semaphore()
 
         with pytest.raises(ValueError):
@@ -150,7 +149,7 @@ class TestGpuSlotDependency:
 
     @pytest.mark.asyncio
     async def test_dependency_yields_and_releases(self):
-        from backend.dependencies.gpu import gpu_slot, _get_semaphore
+        from backend.dependencies.gpu import _get_semaphore, gpu_slot
         sem = _get_semaphore()
 
         # Simulate FastAPI calling the dependency as an async generator
@@ -200,6 +199,7 @@ class TestWireTaskRouterSemaphore:
     def test_wire_does_not_raise_without_task_router(self, monkeypatch):
         """wire_task_router_semaphore must not raise even if task_router is absent."""
         import sys
+
         import backend.dependencies.gpu as gpu_mod
 
         # Temporarily hide task_router from sys.modules
@@ -239,6 +239,7 @@ class TestGpuSlotOr429:
     async def test_429_when_slot_busy_and_depth_zero(self):
         """With depth=0, any busy slot triggers 429."""
         from fastapi import HTTPException
+
         from backend.dependencies.gpu import acquire_gpu_slot, gpu_slot_or_429
 
         held = asyncio.Event()
@@ -265,7 +266,7 @@ class TestGpuSlotOr429:
     @pytest.mark.asyncio
     async def test_no_429_when_slot_free(self):
         """With depth=0, a free slot is acquired normally."""
-        from backend.dependencies.gpu import gpu_slot_or_429, _get_semaphore
+        from backend.dependencies.gpu import _get_semaphore, gpu_slot_or_429
 
         sem = _get_semaphore()
         gen = gpu_slot_or_429(max_queue_depth=0)
@@ -280,8 +281,8 @@ class TestGpuSlotOr429:
     @pytest.mark.asyncio
     async def test_queues_when_depth_allows(self):
         """With depth=1, one request may queue rather than get 429."""
-        from backend.dependencies.gpu import acquire_gpu_slot, gpu_slot_or_429
         import backend.dependencies.gpu as gpu_mod
+        from backend.dependencies.gpu import acquire_gpu_slot, gpu_slot_or_429
 
         held = asyncio.Event()
         released = asyncio.Event()
@@ -321,8 +322,9 @@ class TestGpuSlotOr429:
     async def test_429_when_depth_exceeded(self):
         """With depth=1, a second waiter gets 429."""
         from fastapi import HTTPException
-        from backend.dependencies.gpu import acquire_gpu_slot, gpu_slot_or_429
+
         import backend.dependencies.gpu as gpu_mod
+        from backend.dependencies.gpu import acquire_gpu_slot, gpu_slot_or_429
 
         held = asyncio.Event()
         released = asyncio.Event()
@@ -351,8 +353,8 @@ class TestGpuSlotOr429:
     @pytest.mark.asyncio
     async def test_waiting_count_decremented_on_error(self):
         """If acquire raises, _waiting_count must return to its original value."""
-        from backend.dependencies.gpu import gpu_slot_or_429, _get_semaphore
         import backend.dependencies.gpu as gpu_mod
+        from backend.dependencies.gpu import _get_semaphore, gpu_slot_or_429
 
         # Fill the slot manually by acquiring the semaphore without a holder
         sem = _get_semaphore()
@@ -381,15 +383,15 @@ class TestGpuSlotOr429:
 class TestConfigureGpuRateLimit:
 
     def test_sets_max_queue_depth(self):
-        from backend.dependencies.gpu import configure_gpu_rate_limit
         import backend.dependencies.gpu as gpu_mod
+        from backend.dependencies.gpu import configure_gpu_rate_limit
 
         configure_gpu_rate_limit(3)
         assert gpu_mod._MAX_GPU_QUEUE_DEPTH == 3
 
     def test_zero_allowed(self):
-        from backend.dependencies.gpu import configure_gpu_rate_limit
         import backend.dependencies.gpu as gpu_mod
+        from backend.dependencies.gpu import configure_gpu_rate_limit
 
         configure_gpu_rate_limit(0)
         assert gpu_mod._MAX_GPU_QUEUE_DEPTH == 0
@@ -407,15 +409,15 @@ class TestConfigureGpuRateLimit:
 class TestGpuSemaphoreStatusExtended:
 
     def test_includes_waiting_requests(self):
-        from backend.dependencies.gpu import gpu_semaphore_status
         import backend.dependencies.gpu as gpu_mod
+        from backend.dependencies.gpu import gpu_semaphore_status
 
         gpu_mod._waiting_count = 2
         status = gpu_semaphore_status()
         assert status["waiting_requests"] == 2
 
     def test_includes_max_queue_depth(self):
-        from backend.dependencies.gpu import gpu_semaphore_status, configure_gpu_rate_limit
+        from backend.dependencies.gpu import configure_gpu_rate_limit, gpu_semaphore_status
         configure_gpu_rate_limit(5)
         status = gpu_semaphore_status()
         assert status["max_queue_depth"] == 5

@@ -11,12 +11,12 @@
 ## Before training
 
 ```bash
-# 1. Export annotations from Label Studio
-trichome export --project 1 --format yolo --output data/datasets/v1/
-
-# 2. Verify dataset
-trichome dataset verify --path data/datasets/v1/
-# Checks: class distribution, image sizes, empty labels, train/val split
+# 1-2. Export annotations from Label Studio
+# Export the Label Studio project as a YOLO dataset (whole imaging sessions per split, seed 42)
+curl -X POST http://localhost:8000/api/v1/training/prepare-ls-dataset \
+  -H "Content-Type: application/json" \
+  -d '{"project_id": 1, "train_ratio": 0.70, "val_ratio": 0.15, "seed": 42}'
+# The export log lists images and sessions per split and warns about missing session information.
 
 # 3. Check GPU
 nvidia-smi

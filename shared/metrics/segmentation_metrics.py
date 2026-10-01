@@ -142,7 +142,7 @@ def boundary_iou(
 
     h, w = mask_a.shape
     diag = (h ** 2 + w ** 2) ** 0.5
-    dilation_px = max(1, int(round(dilation_ratio * diag)))
+    dilation_px = max(1, round(dilation_ratio * diag))
 
     # Create boundary masks via morphological erosion
     kernel = cv2.getStructuringElement(

@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -95,7 +94,7 @@ def run_annotation(
     # Always show HITL notice
     console.print(Panel(_HITL_NOTICE, title="[yellow]⚠ Human Review Required[/yellow]", border_style="yellow"))
 
-    console.print(f"\n[bold cyan]VLM Auto-Labeling[/bold cyan]")
+    console.print("\n[bold cyan]VLM Auto-Labeling[/bold cyan]")
     console.print(f"  VLM:       {vlm}")
     console.print(f"  Task:      {task}")
     console.print(f"  Images:    {len(images)}")
@@ -110,7 +109,7 @@ def run_annotation(
         return
 
     try:
-        from vlm_labeling.application.auto_label_pipeline import AutoLabelPipeline, AutoLabelConfig
+        from vlm_labeling.application.auto_label_pipeline import AutoLabelConfig, AutoLabelPipeline
 
         config = AutoLabelConfig(
             vlm_model=vlm,
@@ -169,7 +168,7 @@ def run_annotation(
             console.print(f"  [green]Label Studio:[/green] {ls_path}")
 
         if queue_review:
-            console.print(f"\n[cyan]→ Review queue: http://localhost:3000/annotation/review[/cyan]")
+            console.print("\n[cyan]→ Review queue: http://localhost:3000/annotation/review[/cyan]")
             console.print(f"[dim]  {len(high_conf)} proposals awaiting human approval[/dim]")
 
     except ImportError as e:
@@ -184,7 +183,7 @@ def run_annotation(
 @app.command("review")
 def show_review_queue(
     queue_dir: Path = typer.Option(Path("./output/annotations"), "--dir"),
-    task: Optional[str] = typer.Option(None, "--task"),
+    task: str | None = typer.Option(None, "--task"),
 ) -> None:
     """Show pending human review queue."""
     proposal_files = sorted(queue_dir.glob("proposals_*.json"))
@@ -220,7 +219,7 @@ def show_review_queue(
 
     console.print(table)
     console.print(f"\n  Total pending: [bold]{total_pending}[/bold] proposals")
-    console.print(f"  Review UI: [cyan]http://localhost:3000/annotation/review[/cyan]")
+    console.print("  Review UI: [cyan]http://localhost:3000/annotation/review[/cyan]")
 
 
 @app.command("stats")

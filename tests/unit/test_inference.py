@@ -14,8 +14,6 @@ Tests:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -26,9 +24,8 @@ from inference.local.runner import (
     LocalPyTorchRunner,
     LocalRunnerConfig,
 )
-from inference.onnx_runtime.runner import ONNXDetection, ONNXResult, ONNXRunnerConfig
+from inference.onnx_runtime.runner import ONNXDetection, ONNXRunnerConfig
 from inference.tensorrt_engine.runner import tensorrt_available
-
 
 # ---------------------------------------------------------------------------
 # LocalRunnerConfig
@@ -357,13 +354,13 @@ class TestIoUMatching:
     def test_match_false_positive(self):
         preds = [{"x1": 0, "y1": 0, "x2": 100, "y2": 100, "confidence": 0.9, "class_id": 0}]
         gts = [{"x1": 500, "y1": 500, "x2": 600, "y2": 600, "class_id": 0}]
-        confs, correct = self.match_detections(preds, gts, iou_threshold=0.5)
+        _confs, correct = self.match_detections(preds, gts, iou_threshold=0.5)
         assert correct[0] is False
 
     def test_class_mismatch_prevents_match(self):
         preds = [{"x1": 0, "y1": 0, "x2": 100, "y2": 100, "confidence": 0.9, "class_id": 1}]
         gts = [{"x1": 0, "y1": 0, "x2": 100, "y2": 100, "class_id": 0}]
-        confs, correct = self.match_detections(preds, gts, iou_threshold=0.5)
+        _confs, correct = self.match_detections(preds, gts, iou_threshold=0.5)
         # Class mismatch → false positive
         assert correct[0] is False
 
@@ -401,7 +398,7 @@ class TestIoUMatching:
             {"x1": 5, "y1": 5, "x2": 95, "y2": 95, "confidence": 0.6, "class_id": 0},
             {"x1": 0, "y1": 0, "x2": 100, "y2": 100, "confidence": 0.9, "class_id": 0},
         ]
-        confs, correct = self.match_detections(preds, gts, iou_threshold=0.5)
+        _confs, correct = self.match_detections(preds, gts, iou_threshold=0.5)
         # After sorting by conf desc, the 0.9 pred should get matched → TP
         # The 0.6 pred → FP (GT already consumed)
         assert sum(correct) == 1

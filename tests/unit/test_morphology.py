@@ -12,19 +12,19 @@ Tests:
 from __future__ import annotations
 
 import math
+
 import numpy as np
 import pytest
 
-from morphology.domain.geometric import extract_geometric_descriptors, _degenerate_descriptors
-from morphology.domain.stalk_detector import detect_stalk_and_head
-from morphology.domain.density_map import compute_density_map, TrichomeCentroid
 from morphology.classification.classifier import (
+    GeometricFeatures,
     MorphologyClassifier,
     classify_morphology_geometric,
-    GeometricFeatures,
 )
+from morphology.domain.density_map import TrichomeCentroid, compute_density_map
+from morphology.domain.geometric import extract_geometric_descriptors
+from morphology.domain.stalk_detector import detect_stalk_and_head
 from shared.core.enums import TrichomeType
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -137,7 +137,7 @@ class TestStalkDetector:
         assert head is not None
 
     def test_stalked_has_stalk(self, elongated_mask):
-        stalk, head = detect_stalk_and_head(elongated_mask, min_stalk_length_px=5.0)
+        stalk, _head = detect_stalk_and_head(elongated_mask, min_stalk_length_px=5.0)
         # Elongated = stalked
         assert stalk.stalk_length_px > 0 or not stalk.has_visible_stalk
         # At minimum, should not crash
@@ -150,7 +150,7 @@ class TestStalkDetector:
     def test_small_mask_returns_no_stalk(self):
         tiny = np.zeros((10, 10), dtype=np.uint8)
         tiny[3:7, 3:7] = 255
-        stalk, head = detect_stalk_and_head(tiny)
+        stalk, _head = detect_stalk_and_head(tiny)
         assert stalk.has_visible_stalk is False
 
     def test_empty_mask_returns_no_stalk(self):

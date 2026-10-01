@@ -16,15 +16,13 @@ Usage:
 
 from __future__ import annotations
 
-import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 console = Console()
 
@@ -100,7 +98,7 @@ def export_onnx(
     """
     _require_file(model, "Model weights")
 
-    from inference.tensorrt_engine.exporter import YOLOExportConfig, YOLOToTensorRT, ExportError
+    from inference.tensorrt_engine.exporter import ExportError, YOLOExportConfig, YOLOToTensorRT
 
     try:
         cfg = YOLOExportConfig(
@@ -116,7 +114,7 @@ def export_onnx(
         console.print(f"[red]Invalid configuration:[/red] {exc}")
         raise typer.Exit(code=1)
 
-    console.print(f"\n[bold cyan]YOLO → ONNX Export[/bold cyan]")
+    console.print("\n[bold cyan]YOLO → ONNX Export[/bold cyan]")
     console.print(f"  Model:      {model}")
     console.print(f"  Output dir: {output_dir}")
     console.print(f"  imgsz:      {imgsz}  opset={opset}  fp16={fp16}  simplify={simplify}")
@@ -190,7 +188,7 @@ def export_tensorrt(
     """
     _require_file(model, "Model weights")
 
-    from inference.tensorrt_engine.exporter import YOLOExportConfig, YOLOToTensorRT, ExportError
+    from inference.tensorrt_engine.exporter import ExportError, YOLOExportConfig, YOLOToTensorRT
 
     try:
         cfg = YOLOExportConfig(
@@ -206,7 +204,7 @@ def export_tensorrt(
         console.print(f"[red]Invalid configuration:[/red] {exc}")
         raise typer.Exit(code=1)
 
-    console.print(f"\n[bold cyan]YOLO → ONNX → TensorRT Pipeline[/bold cyan]")
+    console.print("\n[bold cyan]YOLO → ONNX → TensorRT Pipeline[/bold cyan]")
     console.print(f"  Model:        {model}")
     console.print(f"  Output dir:   {output_dir}")
     console.print(f"  imgsz:        {imgsz}")
@@ -268,7 +266,7 @@ def validate_onnx(
     )
     exporter = YOLOToTensorRT(cfg)
 
-    console.print(f"\n[bold cyan]ONNX Validation[/bold cyan]")
+    console.print("\n[bold cyan]ONNX Validation[/bold cyan]")
     console.print(f"  File: {onnx_path}")
     console.print()
 

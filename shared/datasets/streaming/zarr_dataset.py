@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any
 
 import numpy as np
 import torch
@@ -300,7 +301,7 @@ class ZarrDataset(torch.utils.data.IterableDataset):
         output_path: str,
         chunk_size: int = 64,
         image_size: int = 640,
-    ) -> "ZarrDataset":
+    ) -> ZarrDataset:
         """Build a zarr store from image files and annotation dicts.
 
         Writes data in batches of ``chunk_size`` images to avoid OOM on
@@ -336,6 +337,9 @@ class ZarrDataset(torch.utils.data.IterableDataset):
         n_total = len(image_paths)
 
         # Determine output image dimensions by reading the first image.
+        # check the file first: ultralytics patches PIL.Image.open to install pi-heif on any failure
+        if not Path(image_paths[0]).is_file():
+            raise FileNotFoundError(f"Cannot read image: {image_paths[0]}")
         try:
             _first_pil = Image.open(str(image_paths[0])).convert("RGB")
         except (FileNotFoundError, OSError) as exc:
@@ -399,6 +403,8 @@ class ZarrDataset(torch.utils.data.IterableDataset):
             for local_i, global_i in enumerate(range(start, end)):
                 path = str(image_paths[global_i])
                 try:
+                    if not Path(path).is_file():          # see above: never reach the patched open
+                        raise FileNotFoundError(path)
                     pil_img = Image.open(path).convert("RGB")
                     if image_size > 0 and (pil_img.height != out_h or pil_img.width != out_w):
                         pil_img = pil_img.resize((out_w, out_h), Image.BILINEAR)
@@ -410,7 +416,7 @@ class ZarrDataset(torch.utils.data.IterableDataset):
                 imgs_batch[local_i] = img
 
                 ann_list = annotations[global_i]
-                img_h_orig, img_w_orig = img.shape[:2]
+                _img_h_orig, _img_w_orig = img.shape[:2]
                 for box_i, ann in enumerate(ann_list[:max_boxes]):
                     # Convert xyxy pixel coords → normalised cxcywh
                     x_min = float(ann.get("x_min", ann.get("xmin", 0.0)))

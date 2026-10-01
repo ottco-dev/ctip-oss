@@ -14,12 +14,10 @@ drift, queue, and trigger modules.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("trichome.active_learning")
 
@@ -116,9 +114,9 @@ class ActiveLearningPipeline:
     def _init_components(self) -> None:
         """Lazily initialize AL components on first use."""
         if self._entropy_sampler is None:
-            from active_learning.sampling.entropy import EntropySampler
             from active_learning.queuing.priority_queue import get_global_queue
             from active_learning.retraining.trigger import RetrainingTrigger, TriggerConfig
+            from active_learning.sampling.entropy import EntropySampler
 
             self._entropy_sampler = EntropySampler()
             self._priority_queue = get_global_queue()
@@ -219,7 +217,7 @@ class ActiveLearningPipeline:
                 decision = self._trigger.evaluate()
                 result.trigger_decision = decision.to_dict()
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.error("AL cycle %s error: %s", cycle_id, exc, exc_info=True)
             result.errors.append(str(exc))
 
@@ -261,7 +259,9 @@ class ActiveLearningPipeline:
             pred = pred_map.get(sample_id)
 
             if pred and "probabilities" in pred:
-                from active_learning.sampling.entropy import compute_entropy, compute_normalized_entropy
+                from active_learning.sampling.entropy import (
+                    compute_entropy,
+                )
                 probs = pred["probabilities"]
                 entropy = compute_entropy(probs)
                 num_classes = len(probs)
@@ -310,7 +310,7 @@ class ActiveLearningPipeline:
                 "drifted": report.overall_drifted if report else False,
                 "score": report.max_drift_score if report else 0.0,
             }
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.debug("Drift check failed: %s", exc)
             return {"drifted": False, "score": 0.0, "error": str(exc)}
 
@@ -329,7 +329,7 @@ class ActiveLearningPipeline:
                     predicted_class=sample.get("predicted_class", -1),
                     predicted_confidence=sample.get("predicted_confidence", 0.0),
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.debug("Failed to queue sample %s: %s", sample.get("sample_id"), exc)
 
         return top_k

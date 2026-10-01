@@ -65,13 +65,13 @@ class ProviderRegistry:
 
     def _load_infos(self) -> None:
         """Eagerly load metadata without instantiating providers."""
-        from vlm_labeling.providers.remote.openai_provider import _INFO as OAI
+        from vlm_labeling.providers.local.moondream_provider import _INFO as MD
         from vlm_labeling.providers.remote.anthropic_provider import _INFO as ANT
         from vlm_labeling.providers.remote.google_provider import _INFO as GGL
-        from vlm_labeling.providers.remote.together_provider import _INFO as TOG
         from vlm_labeling.providers.remote.groq_provider import _INFO as GRQ
         from vlm_labeling.providers.remote.hf_provider import _INFO as HF
-        from vlm_labeling.providers.local.moondream_provider import _INFO as MD
+        from vlm_labeling.providers.remote.openai_provider import _INFO as OAI
+        from vlm_labeling.providers.remote.together_provider import _INFO as TOG
 
         self._infos: dict[str, VLMProviderInfo] = {
             "openai":       OAI,

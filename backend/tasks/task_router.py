@@ -23,10 +23,12 @@ from __future__ import annotations
 import asyncio
 import traceback
 import uuid
-from typing import Any, Callable, Coroutine
+from collections.abc import Callable, Coroutine
+from typing import Any
 
-from shared.logging.logger import get_logger
 from backend.websocket.manager import ws_manager
+from shared.async_utils import spawn
+from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -69,6 +71,7 @@ class TaskRouter:
         import time as _time
         try:
             from sqlmodel import select
+
             from backend.models.job import BackgroundJob
 
             cutoff = _time.time() - 24 * 3600  # last 24 h
@@ -163,7 +166,7 @@ class TaskRouter:
             db_session.commit()
 
         # Launch as background task
-        asyncio.create_task(
+        spawn(
             self._run_gpu_task(job_id, task_fn, on_progress, db_session)
         )
 
@@ -193,7 +196,7 @@ class TaskRouter:
             "is_gpu": False,
         }
 
-        asyncio.create_task(self._run_cpu_task(job_id, task_fn, db_session))
+        spawn(self._run_cpu_task(job_id, task_fn, db_session), name=f"cpu-{job_id}")
         logger.info("CPU task submitted", job_id=job_id, job_type=job_type)
         return job_id
 
@@ -245,7 +248,7 @@ class TaskRouter:
 
             except Exception as e:
                 error_msg = f"{type(e).__name__}: {e}"
-                tb = traceback.format_exc()
+                traceback.format_exc()
                 self._active_jobs[job_id]["status"] = "failed"
 
                 await ws_manager.send_job_update(job_id, "failed", 0.0, error_msg)
@@ -269,7 +272,6 @@ class TaskRouter:
         db_session: Any | None,
     ) -> None:
         """Run CPU task without GPU semaphore."""
-        import time
 
         try:
             await task_fn()
@@ -299,6 +301,7 @@ class TaskRouter:
         """Update job record in database."""
         try:
             from sqlmodel import select
+
             from backend.models.job import BackgroundJob
 
             job = db_session.exec(

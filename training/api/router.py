@@ -14,6 +14,8 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from shared.async_utils import spawn
+
 router = APIRouter(prefix="/training", tags=["training"])
 
 
@@ -98,9 +100,8 @@ async def start_training(request: TrainingStartRequest):
     orchestrator = _get_orchestrator()
 
     # Ensure worker is running
-    import asyncio
     if orchestrator._worker_task is None or orchestrator._worker_task.done():
-        asyncio.create_task(orchestrator.start())
+        spawn(orchestrator.start(), name="training-orchestrator")
 
     job_id = await orchestrator.submit(
         model=request.model,

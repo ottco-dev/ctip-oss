@@ -26,7 +26,6 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-
 # ── Test fixtures ─────────────────────────────────────────────────────────────
 
 def _make_sharp_gray(size: int = 256) -> NDArray[np.uint8]:
@@ -139,8 +138,9 @@ class TestLaplacianMetrics:
 
     def test_accepts_rgb_input(self, sharp_rgb):
         """Laplacian should handle RGB by converting internally or accepting grayscale."""
-        from focus.metrics.laplacian import laplacian_variance
         import cv2
+
+        from focus.metrics.laplacian import laplacian_variance
         gray = cv2.cvtColor(sharp_rgb, cv2.COLOR_RGB2GRAY)
         val = laplacian_variance(gray)
         assert val >= 0.0
@@ -267,7 +267,7 @@ class TestCompositeFocusScore:
     def test_is_acceptable_property(self, sharp_gray, blurred_gray):
         from focus.metrics.composite import compute_focus_score
         r_sharp = compute_focus_score(sharp_gray)
-        r_blurred = compute_focus_score(blurred_gray)
+        compute_focus_score(blurred_gray)
         assert r_sharp.is_acceptable, "Sharp image should be acceptable"
         # Blurred may or may not be acceptable depending on blur degree
 
@@ -310,7 +310,7 @@ class TestCompositeFocusScore:
         assert heatmap.ndim == 3 and heatmap.shape[2] == 3, "Heatmap should be RGB"
 
     def test_rank_frames_by_focus(self):
-        from focus.metrics.composite import rank_frames_by_focus, compute_focus_score
+        from focus.metrics.composite import compute_focus_score, rank_frames_by_focus
         rng = np.random.default_rng(42)
         frames = [rng.integers(0, 256, (64, 64, 3), dtype=np.uint8) for _ in range(5)]
         frames.append(_make_sharp_rgb(64))  # Add one known-sharp frame
@@ -329,7 +329,7 @@ class TestFocusHeatmap:
     """Tests for focus/guidance/heatmap.py"""
 
     def test_generate_focus_heatmap_returns_result(self, sharp_gray):
-        from focus.guidance.heatmap import generate_focus_heatmap, FocusHeatmapResult
+        from focus.guidance.heatmap import FocusHeatmapResult, generate_focus_heatmap
         result = generate_focus_heatmap(sharp_gray)
         assert isinstance(result, FocusHeatmapResult)
 
@@ -398,7 +398,7 @@ class TestAutofocusGuidance:
         return frames
 
     def test_analyze_focus_curve_returns_result(self):
-        from focus.guidance.autofocus import analyze_focus_curve, FocusCurveResult
+        from focus.guidance.autofocus import FocusCurveResult, analyze_focus_curve
         frames = self._make_gaussian_zstack(n=5)
         result = analyze_focus_curve(frames)
         assert isinstance(result, FocusCurveResult)
@@ -496,10 +496,10 @@ class TestFocusConsistency:
 
     def test_focus_metrics_agree_on_sharp_vs_blurred(self):
         """All metrics should rank sharp > blurred."""
+        from focus.metrics.composite import compute_focus_score
+        from focus.metrics.fft_metrics import fft_high_frequency_ratio
         from focus.metrics.laplacian import laplacian_variance
         from focus.metrics.tenengrad import tenengrad
-        from focus.metrics.fft_metrics import fft_high_frequency_ratio
-        from focus.metrics.composite import compute_focus_score
 
         sharp = _make_sharp_gray(256)
         blurred = _make_blurred_gray(sharp, ksize=51)

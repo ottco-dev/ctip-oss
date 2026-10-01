@@ -19,6 +19,8 @@
 
 import axios, { AxiosError, type AxiosInstance } from 'axios';
 
+import { ensureSession } from './auth';
+
 // Relative URL — works from any host.  Override via env var for remote backends.
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
 
@@ -34,6 +36,7 @@ function _wsBase(): string {
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -49,6 +52,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    if (error.response?.status === 401) void ensureSession();   // API_TOKEN set: ask once, then reload
     const message =
       (error.response?.data as { detail?: string })?.detail ||
       error.message ||

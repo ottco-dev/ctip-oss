@@ -26,16 +26,14 @@ remains importable in environments where the full backend package is unavailable
 
 from __future__ import annotations
 
-import io
 import time
-from typing import Annotated, Any
+from typing import Annotated
 
 import numpy as np
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-
-from backend.config import get_settings
-from backend.database import get_session
 from sqlmodel import Session
+
+from backend.database import get_session
 
 router = APIRouter(prefix="/inference", tags=["inference"])
 
@@ -55,7 +53,7 @@ except ImportError:
 # Schemas
 # ---------------------------------------------------------------------------
 
-from pydantic import BaseModel, Field  # noqa: E402 (after router setup)
+from pydantic import BaseModel
 
 
 class DetectionBox(BaseModel):

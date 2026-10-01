@@ -32,11 +32,9 @@ Usage:
 from __future__ import annotations
 
 import logging
-import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -165,9 +163,9 @@ class YOLOToTensorRT:
         onnx_path = self.export_onnx_only()
 
         # Step 2 — TensorRT build
-        engine_path: Optional[str] = None
+        engine_path: str | None = None
         try:
-            from inference.tensorrt_engine.builder import build_engine_from_onnx, TRTBuildConfig
+            from inference.tensorrt_engine.builder import TRTBuildConfig, build_engine_from_onnx
         except ImportError:
             logger.warning(
                 "inference.tensorrt_engine.builder not importable. "

@@ -18,14 +18,10 @@ import pytest
 from annotation.statistics.stats import (
     AnnotationEvent,
     AnnotationStatisticsAggregator,
-    ThroughputStats,
-    QualityStats,
-    AgreementStats,
-    compute_cohens_kappa,
     compute_class_imbalance_ratio,
+    compute_cohens_kappa,
     compute_effective_imbalance,
 )
-
 
 # ─────────────────────────────────────────────────────────────────
 # Helpers

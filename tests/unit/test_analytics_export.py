@@ -13,19 +13,9 @@ from __future__ import annotations
 import csv
 import io
 import json
-import tempfile
-from pathlib import Path
 
 import pytest
 
-from analytics.export.json_exporter import (
-    EXPORT_SCHEMA_VERSION,
-    SCIENTIFIC_CAVEATS,
-    export_benchmark_json,
-    export_coco_json,
-    export_detections_json,
-    export_session_json,
-)
 from analytics.export.csv_exporter import (
     export_dataset_stats_csv,
     export_detections_csv,
@@ -33,8 +23,14 @@ from analytics.export.csv_exporter import (
     export_morphology_csv,
     export_training_metrics_csv,
 )
+from analytics.export.json_exporter import (
+    EXPORT_SCHEMA_VERSION,
+    export_benchmark_json,
+    export_coco_json,
+    export_detections_json,
+    export_session_json,
+)
 from analytics.export.pdf_exporter import reportlab_available
-
 
 # ─────────────────────────────────────────────────────────────────
 # Helpers

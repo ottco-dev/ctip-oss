@@ -1,0 +1,67 @@
+{
+  "benchmark": "gpu_detection",
+  "date": "2026-10-01T11:48:56",
+  "note": "runtime only - generic COCO yolo11s weights, synthetic frames (seed 42)",
+  "gpu": "NVIDIA GeForce RTX 4060",
+  "torch": "2.14.1+cu130",
+  "cuda": "13.0",
+  "cpu": "x86_64",
+  "process_rss_mb": 1312.6,
+  "results": [
+    {
+      "p50_ms": 95.59,
+      "p95_ms": 104.19,
+      "mean_ms": 96.14,
+      "fps": 10.4,
+      "peak_vram_mb": 173.3,
+      "runs": 30,
+      "image": "1280x1280",
+      "tiled": false,
+      "precision": "fp16"
+    },
+    {
+      "p50_ms": 107.52,
+      "p95_ms": 110.13,
+      "mean_ms": 107.2,
+      "fps": 9.33,
+      "peak_vram_mb": 296.2,
+      "runs": 30,
+      "image": "1280x1280",
+      "tiled": false,
+      "precision": "fp32"
+    },
+    {
+      "p50_ms": 439.8,
+      "p95_ms": 514.28,
+      "mean_ms": 444.58,
+      "fps": 2.25,
+      "peak_vram_mb": 187.9,
+      "runs": 30,
+      "image": "3840x2160",
+      "tiled": false,
+      "precision": "fp16"
+    },
+    {
+      "p50_ms": 816.98,
+      "p95_ms": 875.65,
+      "mean_ms": 817.11,
+      "fps": 1.22,
+      "peak_vram_mb": 225.1,
+      "runs": 30,
+      "image": "3840x2160",
+      "tiled": true,
+      "precision": "fp16"
+    },
+    {
+      "p50_ms": 847.15,
+      "p95_ms": 875.51,
+      "mean_ms": 850.3,
+      "fps": 1.18,
+      "peak_vram_mb": 346.7,
+      "runs": 30,
+      "image": "3840x2160",
+      "tiled": true,
+      "precision": "fp32"
+    }
+  ]
+}

@@ -34,33 +34,29 @@ Coverage:
 from __future__ import annotations
 
 import sys
-import types
-import tempfile
-import importlib
 from pathlib import Path
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
+from inference.tensorrt_engine.builder import (
+    TRTBuildConfig,
+    build_engine_from_onnx,
+    inspect_engine,
+)
+
 # ---------------------------------------------------------------------------
 # Import module under test (no GPU required at import time)
 # ---------------------------------------------------------------------------
-
 from inference.tensorrt_engine.runner import (
+    TRICHOME_CLASSES,
     TensorRTRunner,
-    TRTRunnerConfig,
     TRTDetection,
     TRTResult,
-    TRICHOME_CLASSES,
+    TRTRunnerConfig,
     tensorrt_available,
 )
-from inference.tensorrt_engine.builder import (
-    build_engine_from_onnx,
-    inspect_engine,
-    TRTBuildConfig,
-)
-
 
 # ===========================================================================
 # Helpers
@@ -108,9 +104,7 @@ class TestTensorRTAvailable:
         mock_cuda = MagicMock()
         with patch.dict(sys.modules, {"tensorrt": mock_trt, "pycuda": mock_cuda, "pycuda.driver": mock_cuda}):
             # Force reimport
-            import importlib as il
-            import inference.tensorrt_engine.runner as m
-            orig = m.tensorrt_available
+            pass
             # Patch builtins.__import__ approach is complex; test the real path
         # With real imports (TRT + pycuda available in this env)
         result = tensorrt_available()
@@ -539,12 +533,9 @@ class TestBuildEngineFromOnnx:
         # Should return without touching TRT (no ImportError even without TRT)
         with patch("inference.tensorrt_engine.builder.Path.exists", return_value=True):
             # Override exists for engine but let onnx check pass
-            import inference.tensorrt_engine.builder as mod
 
-            original_build = mod.build_engine_from_onnx
 
             # Test that the function returns early when engine exists
-            call_log = []
 
             def patched(*args, **kwargs):
                 # Patch check_engine_exists_logic
@@ -604,7 +595,6 @@ class TestTensorRTRunnerGPU:
         return path
 
     def test_load_and_infer(self, engine_path):
-        import cv2
         cfg = TRTRunnerConfig(engine_path=engine_path, imgsz=640, warmup_runs=1)
         runner = TensorRTRunner(cfg)
         runner.load()

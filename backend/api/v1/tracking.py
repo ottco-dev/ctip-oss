@@ -25,11 +25,10 @@ Architecture:
 
 from __future__ import annotations
 
-import asyncio
 import random
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
@@ -62,12 +61,12 @@ class _SessionRecord:
         self.status: str = "running"  # "running" | "complete" | "error"
         self.frames_processed: int = 0
         self.track_count: int = 0
-        self.error_message: Optional[str] = None
-        self.summary: Optional[TrackingSummary] = None
-        self.trajectories: Optional[List[Dict[str, Any]]] = None
+        self.error_message: str | None = None
+        self.summary: TrackingSummary | None = None
+        self.trajectories: list[dict[str, Any]] | None = None
         self.created_at: float = time.time()
 
-    def to_status_dict(self) -> Dict[str, Any]:
+    def to_status_dict(self) -> dict[str, Any]:
         return {
             "session_id": self.session_id,
             "video_id": self.video_id,
@@ -78,7 +77,7 @@ class _SessionRecord:
         }
 
 
-_SESSIONS: Dict[str, _SessionRecord] = {}
+_SESSIONS: dict[str, _SessionRecord] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -117,7 +116,7 @@ class SessionStatusResponse(BaseModel):
     status: str
     frames_processed: int
     track_count: int
-    error: Optional[str] = None
+    error: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +136,7 @@ def _generate_synthetic_detections(
     rng: random.Random,
     img_w: int = 1280,
     img_h: int = 720,
-) -> List[Detection]:
+) -> list[Detection]:
     """
     Generate deterministic synthetic detections for a single frame.
 
@@ -326,7 +325,7 @@ def get_tracking_status(session_id: str) -> SessionStatusResponse:
 
 
 @router.get("/{session_id}/summary")
-def get_tracking_summary(session_id: str) -> Dict[str, Any]:
+def get_tracking_summary(session_id: str) -> dict[str, Any]:
     """
     Return the tracking summary for a completed session.
 
@@ -361,7 +360,7 @@ def get_tracking_summary(session_id: str) -> Dict[str, Any]:
 
 
 @router.get("/{session_id}/trajectories")
-def get_trajectories(session_id: str) -> Dict[str, Any]:
+def get_trajectories(session_id: str) -> dict[str, Any]:
     """
     Return full trajectory data for frontend overlay rendering.
 

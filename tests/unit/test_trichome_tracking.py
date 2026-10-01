@@ -15,11 +15,6 @@ Coverage:
 
 from __future__ import annotations
 
-import math
-import time
-from typing import List
-from unittest.mock import patch
-
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -38,7 +33,6 @@ from video_pipeline.tracking.tracking_session import (
     TrackingSessionConfig,
     TrackingSummary,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -735,6 +729,7 @@ class TestTrackingSummary:
 def api_client():
     """Create a FastAPI test client for the tracking router."""
     from fastapi import FastAPI
+
     from backend.api.v1.tracking import router
 
     app = FastAPI()
@@ -820,7 +815,6 @@ class TestTrackingAPI:
     def test_summary_400_for_running_session(self, api_client: TestClient) -> None:
         """If session is still running, summary returns 400."""
         from backend.api.v1 import tracking as tracking_module
-        from unittest.mock import patch
 
         resp_start = api_client.post("/video/tracking/start", json={
             "video_id": "running-test",

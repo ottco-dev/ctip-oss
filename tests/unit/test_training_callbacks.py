@@ -14,14 +14,11 @@ import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from training.callbacks.metrics_callback import (
     MetricsCallback,
     MetricsCallbackConfig,
     normalize_metrics,
 )
-
 
 # ---------------------------------------------------------------------------
 # normalize_metrics

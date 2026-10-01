@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import time
 import uuid as _uuid
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/model-tests", tags=["model-tests"])
 class ModelTest(SQLModel, table=True):
     __tablename__ = "model_tests"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     test_uuid: str = Field(index=True, unique=True)
     name: str = Field(default="Untitled test")
     description: str = Field(default="")

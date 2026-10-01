@@ -155,7 +155,7 @@ class SAM2TinyBackend(BaseSegmentor):
         self._is_loaded = False
         logger.info("SAM2 unloaded")
 
-    def __enter__(self) -> "SAM2TinyBackend":
+    def __enter__(self) -> SAM2TinyBackend:
         self.load()
         return self
 

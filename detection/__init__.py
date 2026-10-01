@@ -22,16 +22,16 @@ Pipeline:
     → output: List[Detection]
 """
 
+from detection.application.detect_pipeline import DetectionPipeline
 from detection.domain.detector import TrichomeDetector
 from detection.domain.ensemble import DetectionEnsemble
 from detection.domain.tiled_inference import TiledInferenceEngine
 from detection.infrastructure.yolo_backend import YOLODetector
-from detection.application.detect_pipeline import DetectionPipeline
 
 __all__ = [
-    "TrichomeDetector",
     "DetectionEnsemble",
-    "TiledInferenceEngine",
-    "YOLODetector",
     "DetectionPipeline",
+    "TiledInferenceEngine",
+    "TrichomeDetector",
+    "YOLODetector",
 ]

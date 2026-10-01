@@ -25,10 +25,10 @@ Scientific basis:
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
 import numpy as np
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import Response
 
 from analytics.api.schemas import (
     BinStats,
@@ -38,7 +38,6 @@ from analytics.api.schemas import (
     ConfidenceHistogramRequest,
     ConfidenceHistogramResponse,
 )
-from fastapi.responses import Response
 from shared.metrics.calibration_metrics import CalibrationResult, compute_calibration
 
 logger = logging.getLogger(__name__)
@@ -91,7 +90,7 @@ def _build_bin_stats(
     total_n: int,
 ) -> tuple:
     """Convert CalibrationResult per-bin arrays → BinStats list."""
-    bins: List[BinStats] = []
+    bins: list[BinStats] = []
     num_bins = result.num_bins
     bin_width = 1.0 / num_bins
 
@@ -134,7 +133,7 @@ def _calibration_result_to_response(
     result: CalibrationResult,
     total_n: int,
     source: str = "direct",
-    mlflow_run_id: Optional[str] = None,
+    mlflow_run_id: str | None = None,
 ) -> CalibrationResponse:
     """Translate a CalibrationResult into the API response schema."""
     bins, overconfident_non_empty, non_empty_count = _build_bin_stats(result, total_n)
@@ -392,7 +391,6 @@ async def _load_mlflow_predictions(
 
         # Try to load numpy artifacts from the run
         import tempfile
-        import os
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Attempt to download artifacts
@@ -473,7 +471,7 @@ async def calibration_report(
         model_id: Model identifier shown in the report title (default: "model").
     """
     try:
-        from analytics.export.pdf_exporter import export_calibration_pdf, REPORTLAB_AVAILABLE
+        from analytics.export.pdf_exporter import REPORTLAB_AVAILABLE, export_calibration_pdf
         if not REPORTLAB_AVAILABLE:
             raise ImportError("reportlab not installed")
     except ImportError:

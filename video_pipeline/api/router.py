@@ -16,25 +16,25 @@ import os
 import tempfile
 import time
 import zipfile
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Optional
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response, StreamingResponse
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 
-from video_pipeline.domain.extractor import get_video_info, extract_frames_fixed_rate
+from video_pipeline.domain.extractor import extract_frames_fixed_rate, get_video_info
+from video_pipeline.domain.hasher import deduplicate_frames, perceptual_hash
+from video_pipeline.domain.ranker import RankedFrame, rank_adaptive, rank_diverse_n, rank_top_n
 from video_pipeline.domain.scorer import score_frame
-from video_pipeline.domain.hasher import perceptual_hash, deduplicate_frames
-from video_pipeline.domain.ranker import RankedFrame, rank_top_n, rank_diverse_n, rank_adaptive
 from video_pipeline.schemas.schemas import (
-    VideoInfoSchema,
     FrameQualitySchema,
     RankedFrameSchema,
     VideoAnalysisRequest,
     VideoAnalysisResponse,
+    VideoInfoSchema,
 )
 
 router = APIRouter(prefix="/video", tags=["Video Pipeline"])
@@ -113,8 +113,8 @@ async def extract_best_frames(
     content = await file.read()
     with _temp_video(file, content) as tmp_path:
         try:
-            frames_and_metadata: List[tuple] = []  # (frame_rgb, score, frame_info)
-            hashes: List[int] = []
+            frames_and_metadata: list[tuple] = []  # (frame_rgb, score, frame_info)
+            hashes: list[int] = []
 
             # Stream frames and score
             for frame_rgb, fi in extract_frames_fixed_rate(
@@ -216,7 +216,7 @@ async def analyze_video(body: VideoAnalysisRequest) -> VideoAnalysisResponse:
 
     frames_data: list = []
     hashes: list = []
-    prev_frame: Optional[np.ndarray] = None
+    prev_frame: np.ndarray | None = None
     motions = []
 
     for frame_rgb, fi in extract_frames_fixed_rate(

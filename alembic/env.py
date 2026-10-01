@@ -36,13 +36,14 @@ import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
-from alembic import context
 from sqlmodel import SQLModel
+
+from alembic import context
 
 # ── Import all models so their metadata is registered ──────────────────────
 # Add any new model modules here so Alembic detects schema changes.
 try:
-    from backend.models.experiment import Experiment, Run, Metric  # noqa: F401
+    from backend.models.experiment import Experiment, Metric, Run  # noqa: F401
 except ImportError:
     pass
 

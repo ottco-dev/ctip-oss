@@ -4,9 +4,8 @@ tests/unit/test_detection_metrics.py — Unit tests for detection metrics.
 No GPU required — all tests use synthetic data.
 """
 
-import pytest
 import numpy as np
-
+import pytest
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -85,8 +84,9 @@ def test_iou_symmetry():
 
 def test_entropy_uniform():
     """Uniform distribution should have maximum entropy."""
-    from active_learning.sampling.entropy import compute_entropy
     import math
+
+    from active_learning.sampling.entropy import compute_entropy
 
     probs = [0.25, 0.25, 0.25, 0.25]
     h = compute_entropy(probs)
@@ -113,8 +113,8 @@ def test_entropy_nonnegative():
 
 def test_normalized_entropy_bounds():
     """Normalized entropy should be in [0, 1]."""
+
     from active_learning.sampling.entropy import compute_normalized_entropy
-    import math
 
     for probs in [
         [0.25, 0.25, 0.25, 0.25],  # max entropy
@@ -173,7 +173,7 @@ def test_disagreement_composite_nonnegative():
     )
 
     for _ in range(20):
-        probs = np.random.dirichlet([1, 1, 1, 1]).tolist()
+        np.random.dirichlet([1, 1, 1, 1]).tolist()
         preds = [
             EnsemblePrediction("s1", np.random.dirichlet([1, 1, 1, 1]).tolist(), 0, 0.5)
             for _ in range(3)
@@ -235,8 +235,9 @@ def test_priority_queue_len():
 
 def test_trigger_cooldown():
     """Should not trigger during cooldown period."""
-    from active_learning.retraining.trigger import RetrainingTrigger, TriggerConfig
     from datetime import datetime, timedelta
+
+    from active_learning.retraining.trigger import RetrainingTrigger, TriggerConfig
 
     config = TriggerConfig(min_retraining_interval_hours=2.0)
     trigger = RetrainingTrigger(config=config)
@@ -250,8 +251,8 @@ def test_trigger_cooldown():
 
 def test_trigger_annotation_threshold():
     """Should trigger when annotation count threshold is met."""
+
     from active_learning.retraining.trigger import RetrainingTrigger, TriggerConfig
-    from datetime import datetime, timedelta
 
     config = TriggerConfig(
         annotation_count_threshold=10,
@@ -282,7 +283,7 @@ def test_polygon_area_square():
 
 def test_polygon_to_mask_roundtrip():
     """Converting polygon → mask → polygon should approximately preserve shape."""
-    from segmentation.domain.polygon_utils import polygon_to_mask, mask_to_polygon, polygon_area
+    from segmentation.domain.polygon_utils import mask_to_polygon, polygon_area, polygon_to_mask
 
     polygon = [[50, 50], [150, 50], [150, 150], [50, 150]]
     mask = polygon_to_mask(polygon, height=200, width=200)
@@ -297,8 +298,9 @@ def test_polygon_to_mask_roundtrip():
 
 def test_mask_to_rle_roundtrip():
     """RLE encode → decode should produce identical mask."""
-    from segmentation.domain.polygon_utils import mask_to_rle, rle_to_mask
     import numpy as np
+
+    from segmentation.domain.polygon_utils import mask_to_rle, rle_to_mask
 
     mask = np.zeros((50, 60), dtype=np.uint8)
     mask[10:40, 15:50] = 255

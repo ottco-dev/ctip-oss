@@ -146,7 +146,6 @@ def report_annotated(payload: AnnotatedReport):
         pipeline.update_model_metrics(payload.map50)
 
     # Evaluate trigger (non-firing — just returns decision)
-    from active_learning.retraining.trigger import RetrainingTrigger
     trigger = pipeline._trigger
     if trigger is None:
         return {"trigger": None}

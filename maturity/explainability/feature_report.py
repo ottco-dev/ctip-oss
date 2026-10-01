@@ -18,19 +18,15 @@ OUTPUT FORMATS:
 
 from __future__ import annotations
 
-import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-import numpy as np
-
-from shared.core.enums import MaturityStage
 from maturity.domain.scientific_rules import (
-    get_stage_caveat,
     get_report_preamble,
-    APPROVED_CLAIMS,
+    get_stage_caveat,
 )
+from shared.core.enums import MaturityStage
 
 
 @dataclass
@@ -142,11 +138,11 @@ class InstanceFeatureReport:
     def to_markdown(self) -> str:
         """Generate human-readable Markdown report."""
         lines = [
-            f"# Trichome Maturity Analysis Report",
+            "# Trichome Maturity Analysis Report",
             f"**ID:** `{self.trichome_id}`  |  **Time:** {self.timestamp}",
             "",
             "## Classification Result",
-            f"| Property | Value |",
+            "| Property | Value |",
             "| --- | --- |",
             f"| **Predicted Stage** | {self.predicted_stage.upper()} |",
             f"| **Confidence** | {self.confidence:.1%} |",

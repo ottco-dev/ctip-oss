@@ -31,7 +31,6 @@ Reference:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -73,7 +72,7 @@ class DensityMapResult:
     total_count: int
     """Total number of trichomes contributing to the map."""
 
-    peak_density_cell: Tuple[int, int]
+    peak_density_cell: tuple[int, int]
     """(row, col) of the highest-density grid cell."""
 
     uniformity_index: float
@@ -83,25 +82,25 @@ class DensityMapResult:
     Useful for quality assessment of coverage.
     """
 
-    density_per_mm2: Optional[float]
+    density_per_mm2: float | None
     """
     Absolute trichome density in trichomes/mm².
     Only populated if um_per_pixel is provided.
     """
 
-    image_shape: Tuple[int, int]
+    image_shape: tuple[int, int]
     """(H, W) of the source image."""
 
 
 def compute_density_map(
-    centroids: List[TrichomeCentroid],
+    centroids: list[TrichomeCentroid],
     image_height: int,
     image_width: int,
     *,
     grid_rows: int = 8,
     grid_cols: int = 8,
     kde_bandwidth: float = 30.0,
-    um_per_pixel: Optional[float] = None,
+    um_per_pixel: float | None = None,
 ) -> DensityMapResult:
     """
     Compute trichome density maps from centroid positions.
@@ -155,7 +154,7 @@ def compute_density_map(
     heatmap = _kde_to_heatmap(kde_map, image_height, image_width)
 
     # --- Physical density ---
-    density_mm2: Optional[float] = None
+    density_mm2: float | None = None
     if um_per_pixel is not None and um_per_pixel > 0:
         image_area_um2 = (image_height * um_per_pixel) * (image_width * um_per_pixel)
         image_area_mm2 = image_area_um2 / (1000.0 ** 2)

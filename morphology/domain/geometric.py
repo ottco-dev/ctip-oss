@@ -31,7 +31,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -155,7 +154,7 @@ class GeometricDescriptors:
 def extract_geometric_descriptors(
     mask: NDArray[np.uint8],
     *,
-    contour: Optional[NDArray] = None,
+    contour: NDArray | None = None,
 ) -> GeometricDescriptors:
     """
     Extract geometric descriptors from a binary trichome mask.
@@ -286,7 +285,7 @@ def _degenerate_descriptors() -> GeometricDescriptors:
     )
 
 
-def contour_from_mask(mask: NDArray[np.uint8]) -> Optional[NDArray]:
+def contour_from_mask(mask: NDArray[np.uint8]) -> NDArray | None:
     """
     Extract the largest outer contour from a binary mask.
 

@@ -13,9 +13,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Optional
-
+from datetime import datetime
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -30,7 +28,7 @@ class AnnotationEvent:
     sample_id: str
     action: str  # approved | rejected | edited
     timestamp: datetime
-    class_id: Optional[int] = None
+    class_id: int | None = None
     confidence: float = 0.0
     annotator_id: str = "annotator_1"
     time_spent_s: float = 0.0
@@ -69,7 +67,7 @@ class QualityStats:
 class AgreementStats:
     """Inter-annotator agreement statistics."""
 
-    cohens_kappa: Optional[float]
+    cohens_kappa: float | None
     agreement_rate: float
     disagreement_pairs: int
     total_pairs: int
@@ -105,8 +103,8 @@ def compute_cohens_kappa(
 
     n = len(annotations_a)
     classes = list(set(annotations_a + annotations_b))
-    k = len(classes)
-    class_to_idx = {c: i for i, c in enumerate(classes)}
+    len(classes)
+    {c: i for i, c in enumerate(classes)}
 
     # Observed agreement
     agree = sum(1 for a, b in zip(annotations_a, annotations_b) if a == b)
@@ -210,7 +208,7 @@ class AnnotationStatisticsAggregator:
         time_spent = [e.time_spent_s for e in self._events if e.time_spent_s > 0]
         mean_time = sum(time_spent) / len(time_spent) if time_spent else 0.0
 
-        unique_images = len(set(e.sample_id for e in self._events))
+        unique_images = len({e.sample_id for e in self._events})
 
         return ThroughputStats(
             total_annotations=total,

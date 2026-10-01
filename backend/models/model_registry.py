@@ -2,7 +2,6 @@
 
 import json
 import time
-from typing import Optional
 
 from sqlmodel import Field, SQLModel
 
@@ -12,7 +11,7 @@ class RegisteredModel(SQLModel, table=True):
 
     __tablename__ = "model_versions"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
 
     model_type: str = ""
@@ -31,10 +30,10 @@ class RegisteredModel(SQLModel, table=True):
     # Performance
     metrics_json: str = Field(default="{}")
     vram_required_gb: float = 0.0
-    inference_speed_ms: Optional[float] = None
+    inference_speed_ms: float | None = None
 
     # Provenance
-    training_run_uuid: Optional[str] = None
+    training_run_uuid: str | None = None
     base_model: str = ""
 
     # Status

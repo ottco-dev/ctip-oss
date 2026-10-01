@@ -29,17 +29,12 @@ Structure
 
 from __future__ import annotations
 
-import time
-import unittest.mock as mock
-from dataclasses import dataclass
-from typing import List, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import cv2
 import numpy as np
 import pytest
 from numpy.typing import NDArray
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -97,10 +92,9 @@ def _make_detection_dict(
 @pytest.fixture(scope="module")
 def detection_imports():
     """Import all detection domain objects."""
-    from detection.domain.detector import Detection, DetectionConfig, DetectionResult
-    from shared.core.entities import Detection as DetectionEntity
-    from shared.core.value_objects import BoundingBox, Confidence
+    from detection.domain.detector import DetectionConfig
     from shared.core.enums import TrichomeType
+    from shared.core.value_objects import BoundingBox, Confidence
     return {
         "DetectionConfig": DetectionConfig,
         "BoundingBox": BoundingBox,
@@ -113,20 +107,17 @@ def detection_imports():
 def segmentation_imports():
     """Import all segmentation domain objects."""
     from segmentation.application.segment_pipeline import (
+        SegmentedInstance,
         SegmentPipeline,
         SegmentPipelineConfig,
         SegmentPipelineResult,
-        SegmentedInstance,
-    )
-    from segmentation.domain.segmentor import (
-        BoxPrompt,
-        PointPrompt,
-        SegmentationResult,
-        BatchSegmentationResult,
-        SegmentorConfig,
     )
     from segmentation.domain.mask_refinement import refine_mask
-    from segmentation.domain.polygon_utils import mask_to_polygon, polygon_to_mask
+    from segmentation.domain.polygon_utils import mask_to_polygon
+    from segmentation.domain.segmentor import (
+        BoxPrompt,
+        SegmentorConfig,
+    )
     return {
         "SegmentPipeline": SegmentPipeline,
         "SegmentPipelineConfig": SegmentPipelineConfig,
@@ -143,8 +134,8 @@ def segmentation_imports():
 def shared_imports():
     """Import shared domain objects."""
     from shared.core.entities import Detection, Instance
+    from shared.core.enums import MaturityStage, TrichomeType
     from shared.core.value_objects import BoundingBox, Confidence, Mask
-    from shared.core.enums import TrichomeType, MaturityStage
     return {
         "Detection": Detection,
         "Instance": Instance,
@@ -376,7 +367,7 @@ class TestDetectToSegmentPipeline:
         """Generate N realistic detection dicts."""
         rng = np.random.default_rng(42)
         dets = []
-        for i in range(n):
+        for _i in range(n):
             cx = rng.integers(50, image_size - 50)
             cy = rng.integers(50, image_size - 50)
             w = rng.integers(20, 60)
@@ -550,7 +541,6 @@ class TestMaturityIntegration:
     def test_maturity_pipeline_processes_instance(self):
         """Full Instance → MaturityLabel flow."""
         from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
-        from shared.core.enums import MaturityStage
 
         cfg = MaturityPipelineConfig(use_analyzer=False)
         pipeline = MaturityPipeline(cfg)
@@ -571,7 +561,7 @@ class TestMaturityIntegration:
         cfg = MaturityPipelineConfig(use_analyzer=False)
         pipeline = MaturityPipeline(cfg)
 
-        valid_stages = set(s.value for s in MaturityStage)
+        valid_stages = {s.value for s in MaturityStage}
         for style in ["clear", "cloudy", "amber", "degraded"]:
             inst = self._make_instance_with_crop(style)
             result = pipeline.analyze([inst])
@@ -662,7 +652,8 @@ class TestMorphologyIntegration:
     def test_morphology_pipeline_processes_instance(self):
         """Full Instance → MorphologyType flow."""
         from morphology.application.morphology_pipeline import (
-            MorphologyPipeline, MorphologyPipelineConfig
+            MorphologyPipeline,
+            MorphologyPipelineConfig,
         )
 
         cfg = MorphologyPipelineConfig(classifier_model_path=None)
@@ -677,7 +668,8 @@ class TestMorphologyIntegration:
     def test_morphology_type_distribution_keys_valid(self):
         """type_distribution keys must be TrichomeType values."""
         from morphology.application.morphology_pipeline import (
-            MorphologyPipeline, MorphologyPipelineConfig
+            MorphologyPipeline,
+            MorphologyPipelineConfig,
         )
         from shared.core.enums import TrichomeType
 
@@ -690,7 +682,7 @@ class TestMorphologyIntegration:
         ]
         result = pipeline.analyze(instances, image_shape=(128, 128))
 
-        valid_keys = set(t.value for t in TrichomeType)
+        valid_keys = {t.value for t in TrichomeType}
         for key in result.type_distribution:
             assert key in valid_keys or isinstance(key, str), (
                 f"Unexpected key in type_distribution: {key!r}"
@@ -699,7 +691,8 @@ class TestMorphologyIntegration:
     def test_morphology_batch_processed_count(self):
         """total_analyzed + failed should equal len(instances)."""
         from morphology.application.morphology_pipeline import (
-            MorphologyPipeline, MorphologyPipelineConfig
+            MorphologyPipeline,
+            MorphologyPipelineConfig,
         )
 
         cfg = MorphologyPipelineConfig(classifier_model_path=None)
@@ -830,10 +823,11 @@ class TestFullPipelineIntegration:
     def test_full_pipeline_produces_complete_results(self):
         """Full chain: instances → maturity + morphology outputs."""
         from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
-        from morphology.application.morphology_pipeline import (
-            MorphologyPipeline, MorphologyPipelineConfig
-        )
         from measurement.application.measurement_pipeline import MeasurementPipeline
+        from morphology.application.morphology_pipeline import (
+            MorphologyPipeline,
+            MorphologyPipelineConfig,
+        )
 
         instances = self._make_realistic_instances(5)
 
@@ -860,8 +854,8 @@ class TestFullPipelineIntegration:
 
     def test_pipeline_handles_mixed_valid_invalid_instances(self):
         """Pipeline must gracefully handle some instances with missing data."""
-        from shared.core.entities import Instance
         from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
+        from shared.core.entities import Instance
 
         cfg = MaturityPipelineConfig(use_analyzer=False, min_crop_size_px=4)
         pipeline = MaturityPipeline(cfg)
@@ -961,7 +955,7 @@ class TestScientificConstraints:
 
     def test_measurement_uncertainty_is_non_negative(self):
         """Measurement uncertainty must always be >= 0."""
-        from measurement.domain.propagation import propagate_linear, propagate_area
+        from measurement.domain.propagation import propagate_area, propagate_linear
 
         for px_val in [10.0, 50.0, 200.0]:
             m = propagate_linear(px_val, 0.1625, calibration_uncertainty_um=0.005)
@@ -1011,7 +1005,6 @@ class TestErrorHandling:
         """All-black crops must not raise; should return UNKNOWN stage."""
         from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
         from shared.core.entities import Instance
-        from shared.core.enums import MaturityStage
 
         cfg = MaturityPipelineConfig(use_analyzer=False)
         pipeline = MaturityPipeline(cfg)
@@ -1037,7 +1030,8 @@ class TestErrorHandling:
     def test_morphology_no_mask(self):
         """Instance with no mask must be counted as failed, not crash."""
         from morphology.application.morphology_pipeline import (
-            MorphologyPipeline, MorphologyPipelineConfig
+            MorphologyPipeline,
+            MorphologyPipelineConfig,
         )
         from shared.core.entities import Instance
 

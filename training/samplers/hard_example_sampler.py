@@ -17,13 +17,12 @@ References:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Iterator, Optional, Sequence
+from collections.abc import Iterator
+from dataclasses import dataclass
 
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Sampler
-
 
 # ---------------------------------------------------------------------------
 # Offline hard example index
@@ -209,7 +208,7 @@ class HardExampleSampler(Sampler):
         dataset_size: int,
         hard_fraction: float = 0.5,
         warmup_epochs: int = 5,
-        num_samples: Optional[int] = None,
+        num_samples: int | None = None,
     ) -> None:
         self.registry = registry
         self.dataset_size = dataset_size
@@ -264,7 +263,7 @@ class OHEMFocalLoss(torch.nn.Module):
     def __init__(
         self,
         gamma: float = 2.0,
-        alpha: Optional[float] = 0.25,
+        alpha: float | None = 0.25,
         keep_fraction: float = 0.5,
         min_kept: int = 32,
     ) -> None:

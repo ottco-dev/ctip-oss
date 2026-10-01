@@ -21,13 +21,12 @@ from typing import Any
 
 import numpy as np
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlmodel import Session, select, func
+from sqlmodel import Session, func, select
 
 from backend.config import get_settings
 from backend.database import get_session
-from backend.models.dataset import Dataset, Sample, Annotation
+from backend.models.dataset import Annotation, Dataset, Sample
 from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -288,7 +287,7 @@ async def upload_images(
             uploaded += 1
 
         except Exception as e:
-            errors.append(f"{filename}: {str(e)}")
+            errors.append(f"{filename}: {e!s}")
             if dest_path.exists():
                 dest_path.unlink()
 
@@ -367,6 +366,6 @@ async def dataset_stats(
         "total_annotations": len(annotations),
         "annotation_sources": {
             src: sum(1 for a in annotations if a.source == src)
-            for src in set(a.source for a in annotations)
+            for src in {a.source for a in annotations}
         },
     }

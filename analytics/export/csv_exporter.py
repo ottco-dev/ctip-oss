@@ -14,9 +14,8 @@ from __future__ import annotations
 import csv
 import io
 import logging
-from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +222,7 @@ def export_training_metrics_csv(
         all_keys.update(record.keys())
 
     # Always put epoch first
-    fieldnames = ["epoch"] + sorted(all_keys - {"epoch"})
+    fieldnames = ["epoch", *sorted(all_keys - {"epoch"})]
 
     rows = []
     for record in metrics_history:

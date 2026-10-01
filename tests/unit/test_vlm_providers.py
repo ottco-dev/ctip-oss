@@ -20,8 +20,6 @@ Covers:
 from __future__ import annotations
 
 import json
-import time
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -86,9 +84,7 @@ class TestVLMResponse:
 
 class TestVLMProviderInfo:
     def test_construction(self):
-        from vlm_labeling.providers.base import (
-            VLMProviderInfo, ProviderKind, ProviderTier
-        )
+        from vlm_labeling.providers.base import ProviderKind, ProviderTier, VLMProviderInfo
         info = VLMProviderInfo(
             provider_id="test",
             name="Test Provider",
@@ -103,9 +99,7 @@ class TestVLMProviderInfo:
         assert info.cost_per_1k_tokens is None
 
     def test_optional_fields(self):
-        from vlm_labeling.providers.base import (
-            VLMProviderInfo, ProviderKind, ProviderTier
-        )
+        from vlm_labeling.providers.base import ProviderKind, ProviderTier, VLMProviderInfo
         info = VLMProviderInfo(
             provider_id="x",
             name="X",
@@ -159,7 +153,9 @@ class TestImageUtils:
         """Decoded base64 must parse as JPEG."""
         import base64
         import io
+
         from PIL import Image
+
         from vlm_labeling.providers.base import image_to_base64
         img = _rgb_image()
         b64 = image_to_base64(img)
@@ -574,8 +570,8 @@ class TestRemoteComputeRegistry:
             assert isinstance(b["gpu_tiers"], list)
 
     def test_get_modal_backend(self):
-        from services.remote_compute.registry import get_compute_backend
         from services.remote_compute.modal_backend import ModalBackend
+        from services.remote_compute.registry import get_compute_backend
         b = get_compute_backend("modal")
         assert isinstance(b, ModalBackend)
 
@@ -655,3 +651,22 @@ class TestRemoteComputeRegistry:
         )
         assert not result.success
         assert result.error is not None
+
+
+class TestStripCodeFence:
+    def test_json_fence(self):
+        from vlm_labeling.providers.remote._text import strip_code_fence
+        assert strip_code_fence('```json\n{"a": 1}\n```') == '{"a": 1}'
+
+    def test_plain_fence_and_whitespace(self):
+        from vlm_labeling.providers.remote._text import strip_code_fence
+        assert strip_code_fence('  ```\n[1, 2]\n```  ') == '[1, 2]'
+
+    def test_no_fence_untouched(self):
+        from vlm_labeling.providers.remote._text import strip_code_fence
+        assert strip_code_fence(' {"stage": "cloudy"} ') == '{"stage": "cloudy"}'
+
+    def test_content_starting_with_fence_letters_is_kept(self):
+        # the old lstrip("```json") removed any leading j/s/o/n characters
+        from vlm_labeling.providers.remote._text import strip_code_fence
+        assert strip_code_fence('```json\nnull\n```') == 'null'

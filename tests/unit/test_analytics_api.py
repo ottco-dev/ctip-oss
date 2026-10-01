@@ -12,22 +12,16 @@ Tests:
 
 from __future__ import annotations
 
-import math
-from typing import List
-
-import pytest
-from fastapi.testclient import TestClient
-
-from analytics.api.router import router, _interpret_ece, _build_bin_stats, _calibration_result_to_response
-from analytics.api.schemas import CalibrationRequest, ConfidenceHistogramRequest
-from shared.metrics.calibration_metrics import compute_calibration
-
-
 # ---------------------------------------------------------------------------
 # Test client setup
 # ---------------------------------------------------------------------------
-
 from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from analytics.api.router import (
+    _interpret_ece,
+    router,
+)
 
 _app = FastAPI()
 _app.include_router(router)
@@ -38,17 +32,17 @@ client = TestClient(_app)
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _perfectly_overconfident(n: int = 200) -> tuple[List[float], List[bool]]:
+def _perfectly_overconfident(n: int = 200) -> tuple[list[float], list[bool]]:
     """conf=0.95, always wrong — extreme overconfidence."""
     return [0.95] * n, [False] * n
 
 
-def _perfectly_underconfident(n: int = 200) -> tuple[List[float], List[bool]]:
+def _perfectly_underconfident(n: int = 200) -> tuple[list[float], list[bool]]:
     """conf=0.1, always correct — extreme underconfidence."""
     return [0.1] * n, [True] * n
 
 
-def _well_calibrated(n: int = 1000) -> tuple[List[float], List[bool]]:
+def _well_calibrated(n: int = 1000) -> tuple[list[float], list[bool]]:
     """Produce a roughly calibrated dataset."""
     import numpy as np
     rng = np.random.default_rng(42)

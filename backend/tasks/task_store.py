@@ -75,7 +75,7 @@ TaskStatus = Literal["queued", "running", "done", "error", "port_conflict"]
 
 class PortConflictData:
     """Minimal plain-data class so task_store.py has no FastAPI dep."""
-    __slots__ = ("port", "service", "env_var")
+    __slots__ = ("env_var", "port", "service")
 
     def __init__(self, port: int, service: str, env_var: str) -> None:
         self.port = port
@@ -86,7 +86,7 @@ class PortConflictData:
         return {"port": self.port, "service": self.service, "env_var": self.env_var}
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "PortConflictData":
+    def from_dict(cls, d: dict[str, Any]) -> PortConflictData:
         return cls(port=d["port"], service=d["service"], env_var=d["env_var"])
 
 
@@ -96,9 +96,15 @@ class TaskRecord:
     Changes are flushed to SQLite at status transitions and on finish.
     """
     __slots__ = (
-        "id", "status", "started_at", "finished_at", "ok",
-        "profile", "log", "port_conflict",
         "_last_flush_line",
+        "finished_at",
+        "id",
+        "log",
+        "ok",
+        "port_conflict",
+        "profile",
+        "started_at",
+        "status",
     )
 
     def __init__(

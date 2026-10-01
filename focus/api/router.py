@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
+import cv2
+import numpy as np
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
-import cv2
-import numpy as np
-
-from focus.metrics.composite import compute_focus_score
-from focus.guidance.heatmap import generate_focus_heatmap, annotate_focus_regions
 from focus.guidance.autofocus import compute_regional_guidance
+from focus.guidance.heatmap import annotate_focus_regions, generate_focus_heatmap
+from focus.metrics.composite import compute_focus_score
 
 router = APIRouter(prefix="/focus", tags=["Focus Analysis"])
 

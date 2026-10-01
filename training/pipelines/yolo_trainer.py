@@ -27,12 +27,12 @@ MODEL SELECTION:
 
 from __future__ import annotations
 
-import json
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from shared.logging.logger import get_logger
 from shared.utils.seed import set_global_seed
@@ -369,6 +369,7 @@ class YOLOTrainer:
         # tracking and port conflicts.
         try:
             import os
+
             from ultralytics import settings as ult_settings
             # Disable Ultralytics' own MLflow integration — we manage MLflow tracking
             # ourselves. Without this, Ultralytics re-registers MLflow callbacks

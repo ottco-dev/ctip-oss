@@ -55,8 +55,14 @@ class WebSocketManager:
         websocket: WebSocket,
         client_id: str,
         topic: str = "global",
-    ) -> None:
-        """Accept and register a WebSocket connection."""
+    ) -> bool:
+        """Accept and register a WebSocket connection; False (and closed) when the API token is missing/wrong."""
+        from backend.config import get_settings
+        from backend.middleware.auth import websocket_authorized
+
+        if not websocket_authorized(websocket, get_settings().api_token):
+            await websocket.close(code=1008)        # policy violation
+            return False
         await websocket.accept()
         async with self._lock:
             if client_id in self._connections:
@@ -86,6 +92,7 @@ class WebSocketManager:
             "topic": topic,
             "timestamp": time.time(),
         })
+        return True
 
     async def disconnect(self, client_id: str, websocket: WebSocket | None = None) -> None:
         """
@@ -157,7 +164,7 @@ class WebSocketManager:
             subscribers = [
                 (cid, ws)
                 for cid, (ws, topics) in self._connections.items()
-                if topic in topics or "global" == topic
+                if topic in topics or topic == "global"
             ]
 
         if not subscribers:

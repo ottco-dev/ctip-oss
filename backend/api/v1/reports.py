@@ -16,13 +16,12 @@ import uuid
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path as FPath, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import Path as FPath
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlmodel import Session, select
 
 from backend.config import get_settings
-from backend.database import get_session
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -127,7 +126,7 @@ def _generate_pdf_report(request: ReportRequest, report_id: str) -> Path:
     try:
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import mm
         from reportlab.platypus import (
             Paragraph,

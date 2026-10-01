@@ -23,7 +23,6 @@ import imageio.v3 as iio
 import numpy as np
 from numpy.typing import NDArray
 
-
 # Supported image formats
 SUPPORTED_EXTENSIONS = {
     ".tif", ".tiff",   # Preferred for scientific microscopy

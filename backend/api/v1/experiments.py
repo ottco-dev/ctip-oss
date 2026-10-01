@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -43,13 +42,13 @@ class ExperimentCreate(BaseModel):
 
 
 class ExperimentUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    tags: Optional[list[str]] = None
-    status: Optional[str] = None
-    is_archived: Optional[bool] = None
-    best_map50: Optional[float] = None
-    best_run_id: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+    status: str | None = None
+    is_archived: bool | None = None
+    best_map50: float | None = None
+    best_run_id: str | None = None
 
 
 # ---------------------------------------------------------------------------

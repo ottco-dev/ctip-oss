@@ -121,7 +121,8 @@ def _run_conversion_job(
     """
     # Import here to avoid circular imports at module load time
     from sqlalchemy import create_engine
-    from sqlmodel import Session as _Session, select as _select
+    from sqlmodel import Session as _Session
+    from sqlmodel import select as _select
 
     engine = create_engine(db_url, connect_args={"check_same_thread": False})
 

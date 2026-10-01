@@ -20,7 +20,7 @@ Pipeline:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -108,8 +108,9 @@ class MaturityAnalyzer:
     def _load_model(self) -> None:
         """Load trained maturity classifier."""
         try:
-            import torch
             from pathlib import Path
+
+            import torch
 
             path = Path(self._config.trained_model_path)  # type: ignore[arg-type]
             if not path.exists():
@@ -279,7 +280,7 @@ class MaturityAnalyzer:
     @staticmethod
     def _probs_from_rule(stage: MaturityStage, confidence: float) -> dict[MaturityStage, float]:
         """Create class probability dict from rule-based prediction."""
-        probs: dict[MaturityStage, float] = {s: 0.0 for s in MaturityStage}
+        probs: dict[MaturityStage, float] = dict.fromkeys(MaturityStage, 0.0)
         remaining = 1.0 - confidence
         probs[stage] = confidence
         # Distribute remaining probability across other classes

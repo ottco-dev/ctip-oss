@@ -26,11 +26,11 @@ from __future__ import annotations
 
 import logging
 from collections import Counter
-from typing import Iterator, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import torch
-from torch.utils.data import WeightedRandomSampler, Dataset
+from torch.utils.data import WeightedRandomSampler
 
 logger = logging.getLogger(__name__)
 

@@ -12,15 +12,12 @@ Usage:
 
 from __future__ import annotations
 
-import time
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
-from rich import print as rprint
 
 console = Console()
 
@@ -97,11 +94,10 @@ def run(
     console.print()
 
     try:
-        from detection.infrastructure.yolo_backend import YOLODetector
-        from detection.domain.detector import DetectionConfig
         from detection.application.detect_pipeline import DetectionPipeline, PipelineConfig
+        from detection.domain.detector import DetectionConfig
+        from detection.infrastructure.yolo_backend import YOLODetector
         from shared.utils.image_utils import load_image
-        import json
 
         det_config = DetectionConfig(
             confidence_threshold=confidence,
@@ -113,7 +109,7 @@ def run(
         )
         detector = YOLODetector(model_id=model, config=det_config)
         detector.load()
-        console.print(f"[dim]Model loaded[/dim]")
+        console.print("[dim]Model loaded[/dim]")
 
         pipeline_cfg = PipelineConfig(
             export_crops=save_crops,
@@ -135,7 +131,7 @@ def run(
             TaskProgressColumn(),
             console=console,
         ) as progress:
-            task = progress.add_task(f"Detecting…", total=len(images))
+            task = progress.add_task("Detecting…", total=len(images))
 
             for img_path in images:
                 image = load_image(str(img_path))
@@ -182,7 +178,7 @@ def run(
 @app.callback(invoke_without_command=True)
 def _default(
     ctx: typer.Context,
-    input_path: Optional[Path] = typer.Argument(None, metavar="INPUT"),
+    input_path: Path | None = typer.Argument(None, metavar="INPUT"),
 ) -> None:
     """Trichome detect command group."""
     if ctx.invoked_subcommand is None and input_path is not None:

@@ -23,7 +23,7 @@ import cv2
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from backend.config import get_settings
 from backend.database import get_session

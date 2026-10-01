@@ -40,10 +40,9 @@ from __future__ import annotations
 
 import json
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Dict, Optional
 
 
 @dataclass
@@ -74,19 +73,19 @@ class MicroscopeProfile:
     camera: str = ""
     """Camera model/sensor identifier."""
 
-    image_width: Optional[int] = None
+    image_width: int | None = None
     """Expected image width in pixels (for validation)."""
 
-    image_height: Optional[int] = None
+    image_height: int | None = None
     """Expected image height in pixels (for validation)."""
 
     calibration_method: str = "manual"
     """One of: 'stage_micrometer', 'reference_object', 'manual'."""
 
-    calibration_date: Optional[str] = None
+    calibration_date: str | None = None
     """ISO 8601 date string of last calibration."""
 
-    uncertainty_um: Optional[float] = None
+    uncertainty_um: float | None = None
     """
     Estimated calibration uncertainty in µm/px.
     Derived from stage micrometer measurement error or instrument specs.
@@ -131,12 +130,12 @@ class MicroscopeProfile:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "MicroscopeProfile":
+    def from_dict(cls, d: dict) -> MicroscopeProfile:
         return cls(**{k: v for k, v in d.items() if k in cls.__dataclass_fields__})
 
 
 # Built-in default profiles for common microscope setups
-DEFAULT_PROFILES: Dict[str, MicroscopeProfile] = {
+DEFAULT_PROFILES: dict[str, MicroscopeProfile] = {
     "10x_generic": MicroscopeProfile(
         profile_id="10x_generic",
         name="Generic 10× objective",
@@ -183,10 +182,10 @@ class ProfileManager:
     Profiles are persisted to a JSON file and loaded on demand.
     """
 
-    def __init__(self, storage_path: Optional[Path] = None) -> None:
+    def __init__(self, storage_path: Path | None = None) -> None:
         self._path = storage_path
-        self._profiles: Dict[str, MicroscopeProfile] = dict(DEFAULT_PROFILES)
-        self._default_id: Optional[str] = "40x_generic"
+        self._profiles: dict[str, MicroscopeProfile] = dict(DEFAULT_PROFILES)
+        self._default_id: str | None = "40x_generic"
 
         if storage_path and Path(storage_path).exists():
             self._load(storage_path)
@@ -201,7 +200,7 @@ class ProfileManager:
         self._save()
         return profile.profile_id
 
-    def get_profile(self, profile_id: str) -> Optional[MicroscopeProfile]:
+    def get_profile(self, profile_id: str) -> MicroscopeProfile | None:
         """Retrieve a profile by ID. Returns None if not found."""
         return self._profiles.get(profile_id)
 
@@ -221,7 +220,7 @@ class ProfileManager:
         return sorted(self._profiles.values(), key=lambda p: p.name)
 
     @property
-    def default_profile(self) -> Optional[MicroscopeProfile]:
+    def default_profile(self) -> MicroscopeProfile | None:
         """Return the default profile."""
         if self._default_id:
             return self._profiles.get(self._default_id)
@@ -268,8 +267,8 @@ class ProfileManager:
         *,
         objective: str = "",
         camera: str = "",
-        image_width: Optional[int] = None,
-        image_height: Optional[int] = None,
+        image_width: int | None = None,
+        image_height: int | None = None,
         notes: str = "",
         set_default: bool = False,
     ) -> MicroscopeProfile:

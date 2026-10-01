@@ -33,11 +33,15 @@ Reference:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from morphology.domain.geometric import GeometricDescriptors
+    from morphology.domain.stalk_detector import HeadMeasurement, StalkMeasurement
 
 from shared.core.entities import MorphologyType
 from shared.core.enums import TrichomeType
@@ -126,7 +130,7 @@ def extract_geometric_features(
     circularity = float(np.clip(circularity, 0, 1))
 
     # Bounding box
-    x, y, w, h = cv2.boundingRect(largest)
+    _x, _y, w, h = cv2.boundingRect(largest)
     aspect_ratio = float(w / h) if h > 0 else 1.0
     total_height_px = float(h)
 
@@ -201,7 +205,7 @@ def classify_morphology_geometric(
     - Very low circularity
     - No distinct head
     """
-    probs: dict[TrichomeType, float] = {t: 0.0 for t in TrichomeType}
+    probs: dict[TrichomeType, float] = dict.fromkeys(TrichomeType, 0.0)
 
     head_area = features.head_area_px
     elongation = features.elongation
@@ -351,9 +355,9 @@ class MorphologyClassifier:
 
     def predict_geometric(
         self,
-        geo: "morphology.domain.geometric.GeometricDescriptors | None" = None,
-        stalk: "morphology.domain.stalk_detector.StalkMeasurement | None" = None,
-        head: "morphology.domain.stalk_detector.HeadMeasurement | None" = None,
+        geo: GeometricDescriptors | None = None,
+        stalk: StalkMeasurement | None = None,
+        head: HeadMeasurement | None = None,
         features: GeometricFeatures | None = None,
     ) -> MorphologyType:
         """

@@ -14,10 +14,8 @@ Routes:
 
 from __future__ import annotations
 
-import io
 import time
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -30,7 +28,7 @@ router = APIRouter(prefix="/infer", tags=["inference"])
 # Runtime state (lazily loaded)
 # ---------------------------------------------------------------------------
 
-_runner: Optional[object] = None
+_runner: object | None = None
 _runner_type: str = "none"
 _model_path: str = ""
 
@@ -58,7 +56,7 @@ def _get_runner(model_path: str = "", backend: str = "auto"):
         _runner_type = "tensorrt"
 
     elif backend == "onnx":
-        from inference.onnx_runtime.runner import ONNXRuntimeRunner, ONNXRunnerConfig
+        from inference.onnx_runtime.runner import ONNXRunnerConfig, ONNXRuntimeRunner
         _runner = ONNXRuntimeRunner(ONNXRunnerConfig(model_path=model_path))
         _runner_type = "onnx"
 

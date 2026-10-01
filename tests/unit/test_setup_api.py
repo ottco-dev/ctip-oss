@@ -25,25 +25,22 @@ Coverage targets:
 
 from __future__ import annotations
 
-import asyncio
+import itertools
 import json
-import os
-import tempfile
 import uuid
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from httpx import Response as HttpxResponse
-
 
 # ── App bootstrap ──────────────────────────────────────────────────────────────
 
 def _make_app():
     """Create a minimal FastAPI app that includes only the setup router."""
     from fastapi import FastAPI
+
     from backend.api.v1.setup import router
     app = FastAPI()
     app.include_router(router, prefix="/api/v1")
@@ -98,7 +95,7 @@ class TestEnvFileIO:
         assert _read_env_file(p)["KEY"] == "quoted value"
 
     def test_write_new_keys(self, tmp_path):
-        from backend.api.v1.setup import _write_env_file, _read_env_file
+        from backend.api.v1.setup import _read_env_file, _write_env_file
         p = tmp_path / ".env"
         _write_env_file(p, {"ENVIRONMENT": "production", "PUBLIC_PORT": "3001"})
         result = _read_env_file(p)
@@ -106,14 +103,14 @@ class TestEnvFileIO:
         assert result["PUBLIC_PORT"] == "3001"
 
     def test_write_updates_existing_key(self, tmp_path):
-        from backend.api.v1.setup import _write_env_file, _read_env_file
+        from backend.api.v1.setup import _read_env_file, _write_env_file
         p = _write_tmp_env('ENVIRONMENT="development"\n', tmp_path)
         _write_env_file(p, {"ENVIRONMENT": "production"})
         result = _read_env_file(p)
         assert result["ENVIRONMENT"] == "production"
 
     def test_write_preserves_other_keys(self, tmp_path):
-        from backend.api.v1.setup import _write_env_file, _read_env_file
+        from backend.api.v1.setup import _read_env_file, _write_env_file
         p = _write_tmp_env('KEEP=me\nUPDATE=old\n', tmp_path)
         _write_env_file(p, {"UPDATE": "new"})
         result = _read_env_file(p)
@@ -580,7 +577,7 @@ class TestDoDownload:
         assert observed_progress[-1] <= 100
         assert observed_progress[0] >= 0
         # Progress must be non-decreasing
-        for a, b in zip(observed_progress, observed_progress[1:]):
+        for a, b in itertools.pairwise(observed_progress):
             assert b >= a
 
     @pytest.mark.asyncio

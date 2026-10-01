@@ -22,7 +22,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from services.remote_compute.base import RemoteComputeBackend, ComputeBackendInfo
+from services.remote_compute.base import RemoteComputeBackend
 
 _ENV_MAP: dict[str, list[str]] = {
     "modal":     ["MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET"],

@@ -16,11 +16,9 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import cv2
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -96,7 +94,7 @@ class ONNXRuntimeRunner:
     def __init__(self, config: ONNXRunnerConfig) -> None:
         self.config = config
         self._session = None
-        self._input_shape: Optional[tuple] = None
+        self._input_shape: tuple | None = None
 
     def load(self) -> None:
         """Load ONNX model and create inference session."""
@@ -211,8 +209,8 @@ class ONNXRuntimeRunner:
         """
         h, w = image.shape[:2]
         scale = min(target / h, target / w)
-        new_w = int(round(w * scale))
-        new_h = int(round(h * scale))
+        new_w = round(w * scale)
+        new_h = round(h * scale)
 
         resized = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
@@ -220,10 +218,10 @@ class ONNXRuntimeRunner:
         pad_x = (target - new_w) / 2
         pad_y = (target - new_h) / 2
 
-        top = int(round(pad_y - 0.1))
-        bottom = int(round(pad_y + 0.1))
-        left = int(round(pad_x - 0.1))
-        right = int(round(pad_x + 0.1))
+        top = round(pad_y - 0.1)
+        bottom = round(pad_y + 0.1)
+        left = round(pad_x - 0.1)
+        right = round(pad_x + 0.1)
         bottom = target - new_h - top
         right = target - new_w - left
 
@@ -264,7 +262,7 @@ class ONNXRuntimeRunner:
         if raw.ndim == 2 and raw.shape[0] < raw.shape[1]:
             raw = raw.T  # (4+nc, N) → (N, 4+nc)
 
-        num_classes = raw.shape[1] - 4
+        raw.shape[1] - 4
         boxes_xywh = raw[:, :4]
         class_scores = raw[:, 4:]
 

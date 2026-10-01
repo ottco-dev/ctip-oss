@@ -18,23 +18,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-def polygon_area(points: NDArray[np.float64]) -> float:
-    """
-    Compute polygon area using Shoelace formula.
-
-    Args:
-        points: (N, 2) array of (x, y) coordinates.
-
-    Returns:
-        Absolute area in square pixels.
-    """
-    if len(points) < 3:
-        return 0.0
-    x = points[:, 0]
-    y = points[:, 1]
-    return float(0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1))))
-
-
 def polygon_centroid(points: NDArray[np.float64]) -> tuple[float, float]:
     """
     Compute centroid of a polygon.
@@ -222,10 +205,10 @@ def compute_iou(box_a: list, box_b: list) -> float:
 def polygon_area(polygon: list) -> float:
     """
     Compute polygon area using the Shoelace formula.
-    
+
     Args:
         polygon: List of (x, y) tuples or [x, y] lists.
-    
+
     Returns:
         Area in square pixels (absolute value).
     """

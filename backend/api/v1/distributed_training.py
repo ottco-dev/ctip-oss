@@ -43,7 +43,6 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from backend.database import get_session
-from backend.models.job import BackgroundJob
 from backend.tasks.task_router import task_router
 from shared.logging.logger import get_logger
 
@@ -231,6 +230,7 @@ async def start_distributed_training(
     5. Return task_id immediately.
     """
     from pathlib import Path
+
     from training.distributed.ddp_trainer import DistributedConfig
     from training.distributed.launcher import DistributedLauncher
 
@@ -290,11 +290,7 @@ async def start_distributed_training(
         "params": request.model_dump(),
     }
 
-    extra_args = [
-        f"--data_yaml={request.data_yaml}",
-        f"--epochs={request.epochs}",
-        f"--gradient_accumulation_steps={request.gradient_accumulation_steps}",
-    ] + request.extra_args
+    extra_args = [f"--data_yaml={request.data_yaml}", f"--epochs={request.epochs}", f"--gradient_accumulation_steps={request.gradient_accumulation_steps}", *request.extra_args]
 
     async def _run_distributed() -> dict[str, Any]:
         launcher = DistributedLauncher()

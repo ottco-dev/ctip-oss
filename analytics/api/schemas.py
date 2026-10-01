@@ -9,10 +9,7 @@ Covers:
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from pydantic import BaseModel, Field
-
 
 # ---------------------------------------------------------------------------
 # Calibration — request
@@ -27,19 +24,19 @@ class CalibrationRequest(BaseModel):
       - mlflow_run_id to pull logged prediction artifacts from MLflow.
     """
 
-    confidences: Optional[List[float]] = Field(
+    confidences: list[float] | None = Field(
         default=None,
         description="Model confidence scores in [0, 1]. Must match length of is_correct.",
         min_length=1,
         max_length=100_000,
     )
-    is_correct: Optional[List[bool]] = Field(
+    is_correct: list[bool] | None = Field(
         default=None,
         description="Boolean correctness flags for each prediction.",
         min_length=1,
         max_length=100_000,
     )
-    mlflow_run_id: Optional[str] = Field(
+    mlflow_run_id: str | None = Field(
         default=None,
         description="MLflow run ID to load confidence artifacts from.",
         pattern=r"^[a-f0-9]{32}$",
@@ -117,13 +114,13 @@ class CalibrationResponse(BaseModel):
     )
 
     # ── Per-bin data (reliability diagram) ──────────────────────────────────
-    bins: List[BinStats] = Field(
+    bins: list[BinStats] = Field(
         description="Per-bin statistics. Length = num_bins. "
                     "Empty bins have accuracy=0, mean_confidence=0."
     )
 
     # ── Histogram (for confidence distribution overlay) ─────────────────────
-    confidence_histogram: List[int] = Field(
+    confidence_histogram: list[int] = Field(
         description="Confidence histogram with same bin edges as calibration bins. "
                     "Identical to [b.count for b in bins]."
     )
@@ -134,7 +131,7 @@ class CalibrationResponse(BaseModel):
     )
 
     # ── Source metadata ──────────────────────────────────────────────────────
-    mlflow_run_id: Optional[str] = None
+    mlflow_run_id: str | None = None
     source: str = Field(
         default="direct",
         description="'direct' (payload) or 'mlflow' (loaded from run artifacts).",
@@ -150,7 +147,7 @@ class CalibrationResponse(BaseModel):
 class ConfidenceHistogramRequest(BaseModel):
     """Request for a standalone confidence histogram (no correctness labels needed)."""
 
-    confidences: List[float] = Field(
+    confidences: list[float] = Field(
         min_length=1,
         max_length=100_000,
         description="Raw confidence scores in [0, 1].",
@@ -167,7 +164,7 @@ class ConfidenceBin(BaseModel):
 
 
 class ConfidenceHistogramResponse(BaseModel):
-    bins: List[ConfidenceBin]
+    bins: list[ConfidenceBin]
     total: int
     mean_confidence: float
     median_confidence: float

@@ -20,9 +20,11 @@ from __future__ import annotations
 import logging
 import shutil
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from shared.async_utils import submit_from_thread
 
 logger = logging.getLogger(__name__)
 
@@ -201,9 +203,11 @@ class CheckpointCallback:
         """Register checkpoint in SQLite model registry."""
         try:
             import json
+
+            from sqlmodel import Session
+
             from backend.database import get_engine
             from backend.models.model_registry import RegisteredModel
-            from sqlmodel import Session
 
             engine = get_engine()
             with Session(engine) as session:
@@ -226,7 +230,7 @@ class CheckpointCallback:
     def _notify_websocket(self, epoch: int, map50: float, path: str) -> None:
         """Broadcast new best checkpoint to WebSocket clients."""
         try:
-            import asyncio
+
             from backend.websocket.manager import ws_manager
 
             payload = {
@@ -235,9 +239,8 @@ class CheckpointCallback:
                 "map50": map50,
                 "path": path,
             }
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(ws_manager.broadcast_to_topic("training", payload))
+            # the callback runs in the training worker thread - hand the broadcast to the app loop
+            submit_from_thread(ws_manager.broadcast_to_topic("training", payload))
         except Exception as e:
             logger.debug("WebSocket notify failed: %s", e)
 

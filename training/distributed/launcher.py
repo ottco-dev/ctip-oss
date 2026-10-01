@@ -33,12 +33,16 @@ torchrun single-process mode with no DDP overhead.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from training.distributed.ddp_trainer import DistributedConfig
+
 import math
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 from shared.logging.logger import get_logger
 
@@ -56,7 +60,7 @@ class DistributedLauncher:
     def launch(
         self,
         script_path: str,
-        config: "DistributedConfig",  # noqa: F821
+        config: DistributedConfig,
         extra_args: list[str] | None = None,
     ) -> int:
         """
@@ -82,7 +86,6 @@ class DistributedLauncher:
         Raises:
             FileNotFoundError: If script_path does not exist.
         """
-        from training.distributed.ddp_trainer import DistributedConfig
 
         if extra_args is None:
             extra_args = []
@@ -94,15 +97,7 @@ class DistributedLauncher:
         world_size = config.resolve_world_size()
 
         # Build the torchrun command
-        cmd = [
-            sys.executable,
-            "-m",
-            "torch.distributed.run",
-            f"--nproc_per_node={world_size}",
-            f"--master_addr={config.master_addr}",
-            f"--master_port={config.master_port}",
-            str(script),
-        ] + extra_args
+        cmd = [sys.executable, "-m", "torch.distributed.run", f"--nproc_per_node={world_size}", f"--master_addr={config.master_addr}", f"--master_port={config.master_port}", str(script), *extra_args]
 
         logger.info(
             "Launching distributed training",
@@ -207,7 +202,7 @@ class DistributedLauncher:
             return 1
 
         total_vram = n_gpus * vram_per_gpu_gb
-        max_from_vram = int(math.floor(total_vram / model_vram_gb))
+        max_from_vram = math.floor(total_vram / model_vram_gb)
 
         # Ensure at least 1 process
         optimal = max(1, min(n_gpus, max_from_vram))

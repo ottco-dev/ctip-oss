@@ -13,12 +13,8 @@ Provides:
 
 from __future__ import annotations
 
-import struct
-from typing import Optional
-
 import cv2
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Type aliases

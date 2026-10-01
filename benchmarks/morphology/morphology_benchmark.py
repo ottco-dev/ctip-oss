@@ -40,7 +40,7 @@ import json
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -165,7 +165,7 @@ def run_morphology_benchmark(
 ) -> dict:
     """Run full morphology benchmark suite."""
     print(f"\n{'='*62}")
-    print(f"  Morphology Analysis Benchmark")
+    print("  Morphology Analysis Benchmark")
     print(f"  N={n} masks | {mask_size}×{mask_size}px | warmup={warmup}")
     print(f"{'='*62}")
 
@@ -176,21 +176,21 @@ def run_morphology_benchmark(
     metrics: dict[str, dict] = {}
 
     # ── Imports ───────────────────────────────────────────────────────────────
-    from morphology.domain.geometric import (
-        extract_geometric_descriptors,
-        contour_from_mask,
-    )
-    from morphology.domain.stalk_detector import detect_stalk_and_head
-    from morphology.domain.density_map import compute_density_map, TrichomeCentroid
-    from morphology.classification.classifier import (
-        extract_geometric_features,
-        classify_morphology_geometric,
-        MorphologyClassifier,
-    )
     from morphology.application.morphology_pipeline import (
         MorphologyPipeline,
         MorphologyPipelineConfig,
     )
+    from morphology.classification.classifier import (
+        MorphologyClassifier,
+        classify_morphology_geometric,
+        extract_geometric_features,
+    )
+    from morphology.domain.density_map import TrichomeCentroid, compute_density_map
+    from morphology.domain.geometric import (
+        contour_from_mask,
+        extract_geometric_descriptors,
+    )
+    from morphology.domain.stalk_detector import detect_stalk_and_head
     from shared.core.entities import Instance
 
     # Build centroid list for density map benchmarks
@@ -201,7 +201,7 @@ def run_morphology_benchmark(
 
     # Pre-extract geometric features and descriptors for downstream benchmarks
     geo_features_list = [extract_geometric_features(m.astype(bool)) for m in masks]
-    geo_desc_list = [extract_geometric_descriptors(m) for m in masks]
+    [extract_geometric_descriptors(m) for m in masks]
 
     classifier = MorphologyClassifier()
 
@@ -327,13 +327,13 @@ def main() -> None:
         if pipe_stat:
             print(f"  Pipeline instance FPS: {pipe_stat['fps']:.1f}")
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     output_path = args.output or f"benchmarks/morphology/results_{timestamp}.json"
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     result = {
         "benchmark": "morphology_analysis",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "config": {"n": args.n, "mask_size": args.size, "warmup": args.warmup},
         "metrics": metrics,
     }

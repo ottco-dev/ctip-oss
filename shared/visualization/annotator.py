@@ -5,7 +5,9 @@ All rendering uses OpenCV for performance. Returned images are RGB uint8.
 Supports: bounding boxes, masks, polygons, labels, confidence bars, uncertainty halos.
 """
 from __future__ import annotations
+
 from typing import Any
+
 import cv2
 import numpy as np
 from numpy.typing import NDArray

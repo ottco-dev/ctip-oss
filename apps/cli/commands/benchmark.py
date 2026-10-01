@@ -23,13 +23,13 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import UTC
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.progress import track
+from rich.table import Table
 
 console = Console()
 
@@ -39,7 +39,7 @@ app = typer.Typer(
 )
 
 
-def _get_vram_gb() -> Optional[float]:
+def _get_vram_gb() -> float | None:
     """Return current GPU VRAM allocation in GB, or None."""
     try:
         import torch
@@ -100,11 +100,10 @@ def benchmark_detection(
         results = _synthetic_detection_benchmark(model, n_runs=n_runs, device=device)
     else:
         try:
-            from detection.application.detect_pipeline import DetectionPipeline, PipelineConfig
-            from detection.infrastructure.yolo_backend import YOLODetector
+
             from detection.domain.detector import DetectionConfig
+            from detection.infrastructure.yolo_backend import YOLODetector
             from shared.utils.image_utils import load_image
-            import numpy as np
 
             det_cfg = DetectionConfig(confidence_threshold=conf, iou_threshold=iou, device=device)
             detector = YOLODetector(model_id=model, config=det_cfg)
@@ -159,7 +158,7 @@ def benchmark_detection(
 
 @app.command("focus")
 def benchmark_focus(
-    images_dir: Optional[Path] = typer.Option(None, "--images", "-i", help="Directory of test images"),
+    images_dir: Path | None = typer.Option(None, "--images", "-i", help="Directory of test images"),
     n_images: int = typer.Option(100, "--n", help="Number of synthetic images to benchmark with"),
     output: Path = typer.Option(Path("./benchmarks"), "--output", "-o"),
 ) -> None:
@@ -172,10 +171,11 @@ def benchmark_focus(
 
     try:
         import numpy as np
+
+        from focus.metrics.composite import compute_focus_score
+        from focus.metrics.fft_metrics import fft_high_frequency_ratio
         from focus.metrics.laplacian import laplacian_variance, modified_laplacian
         from focus.metrics.tenengrad import tenengrad
-        from focus.metrics.fft_metrics import fft_high_frequency_ratio
-        from focus.metrics.composite import compute_focus_score
 
         # Generate test images
         if images_dir and images_dir.exists():
@@ -231,6 +231,7 @@ def benchmark_maturity(
 
     try:
         import numpy as np
+
         from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
 
         rng = np.random.default_rng(42)
@@ -275,12 +276,13 @@ def benchmark_morphology(
     console.print("\n[bold cyan]Morphology Pipeline Benchmark[/bold cyan]")
 
     try:
-        import numpy as np
         import cv2
+        import numpy as np
+
         from morphology.domain.geometric import extract_geometric_descriptors
 
         # Generate circular + elongated masks
-        rng = np.random.default_rng(42)
+        np.random.default_rng(42)
         masks = []
         for i in range(n_instances):
             mask = np.zeros((mask_size, mask_size), dtype=np.uint8)
@@ -327,7 +329,8 @@ def benchmark_measurement(
 
     try:
         import numpy as np
-        from measurement.domain.propagation import propagate_linear, propagate_area, propagate_ratio
+
+        from measurement.domain.propagation import propagate_linear
 
         rng = np.random.default_rng(42)
         values_px = rng.uniform(10, 200, n_measurements)
@@ -363,7 +366,7 @@ def benchmark_measurement(
 
 @app.command("video")
 def benchmark_video(
-    video_path: Optional[Path] = typer.Option(None, "--video", help="Real video file to benchmark"),
+    video_path: Path | None = typer.Option(None, "--video", help="Real video file to benchmark"),
     n_frames: int = typer.Option(300, "--n-frames", help="Synthetic frames for scorer benchmark"),
     output: Path = typer.Option(Path("./benchmarks"), "--output", "-o"),
 ) -> None:
@@ -372,8 +375,9 @@ def benchmark_video(
 
     try:
         import numpy as np
+
+        from video_pipeline.domain.hasher import perceptual_hash
         from video_pipeline.domain.scorer import score_frame
-        from video_pipeline.domain.hasher import perceptual_hash, hamming_distance
 
         rng = np.random.default_rng(42)
         frames = [rng.integers(0, 256, (480, 640, 3), dtype=np.uint8) for _ in range(n_frames)]
@@ -385,7 +389,7 @@ def benchmark_video(
 
         # Hash benchmark
         t0 = time.perf_counter()
-        hashes = [perceptual_hash(f) for f in frames]
+        [perceptual_hash(f) for f in frames]
         hash_elapsed = time.perf_counter() - t0
 
         avg_score_ms = score_elapsed / n_frames * 1000
@@ -452,11 +456,6 @@ def benchmark_all(
 
 def _run_sub(fn, **kwargs) -> None:
     """Run a sub-benchmark function in-process."""
-    try:
-        from click.testing import CliRunner
-        from typer.testing import CliRunner as TRunner
-    except ImportError:
-        pass
     fn(**kwargs)
 
 
@@ -464,8 +463,9 @@ def _synthetic_detection_benchmark(model: str, n_runs: int = 3, device: str = "c
     """Run a synthetic detection timing benchmark with random images."""
     try:
         import numpy as np
-        from detection.infrastructure.yolo_backend import YOLODetector
+
         from detection.domain.detector import DetectionConfig
+        from detection.infrastructure.yolo_backend import YOLODetector
 
         cfg = DetectionConfig(confidence_threshold=0.25, device=device)
         detector = YOLODetector(model_id=model, config=cfg)
@@ -514,8 +514,8 @@ def _print_benchmark_table(title: str, results: dict) -> None:
 
 
 def _utc_now() -> str:
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).isoformat()
+    from datetime import datetime
+    return datetime.now(UTC).isoformat()
 
 
 if __name__ == "__main__":

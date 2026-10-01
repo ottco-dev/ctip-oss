@@ -16,14 +16,13 @@ loop itself. Training is delegated to training/pipelines/yolo_trainer.py.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Optional
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger("trichome.training_orchestrator")
 
@@ -32,7 +31,7 @@ logger = logging.getLogger("trichome.training_orchestrator")
 # ---------------------------------------------------------------------------
 
 
-class TrainingStatus(str, Enum):
+class TrainingStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -63,8 +62,8 @@ class TrainingJob:
 
     # Experiment tracking
     experiment_name: str = ""
-    mlflow_run_id: Optional[str] = None
-    db_job_id: Optional[str] = None
+    mlflow_run_id: str | None = None
+    db_job_id: str | None = None
 
     # Progress
     current_epoch: int = 0
@@ -76,17 +75,17 @@ class TrainingJob:
 
     # Timing
     queued_at: datetime = field(default_factory=datetime.utcnow)
-    started_at: Optional[datetime] = None
-    finished_at: Optional[datetime] = None
-    estimated_finish: Optional[datetime] = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    estimated_finish: datetime | None = None
 
     # Error info
-    error_message: Optional[str] = None
+    error_message: str | None = None
     cancelled: bool = False
 
     # Output
-    best_checkpoint: Optional[str] = None
-    output_dir: Optional[str] = None
+    best_checkpoint: str | None = None
+    output_dir: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +117,7 @@ class TrainingOrchestrator:
         self._gpu_semaphore = asyncio.Semaphore(1)
         self._jobs: dict[str, TrainingJob] = {}
         self._queue: asyncio.Queue[TrainingJob] = asyncio.Queue()
-        self._worker_task: Optional[asyncio.Task] = None
+        self._worker_task: asyncio.Task | None = None
         self._on_progress: list[Callable[[TrainingJob], None]] = []
 
     # ------------------------------------------------------------------
@@ -179,7 +178,7 @@ class TrainingOrchestrator:
         logger.info("Training job %s cancelled", job_id[:8])
         return True
 
-    def get_job(self, job_id: str) -> Optional[TrainingJob]:
+    def get_job(self, job_id: str) -> TrainingJob | None:
         """Return job state by ID."""
         return self._jobs.get(job_id)
 
@@ -215,7 +214,7 @@ class TrainingOrchestrator:
             except asyncio.CancelledError:
                 logger.info("Training worker cancelled")
                 break
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.error("Training worker error: %s", exc, exc_info=True)
 
     async def _run_job(self, job: TrainingJob) -> None:
@@ -233,7 +232,7 @@ class TrainingOrchestrator:
 
         try:
             # Run training in an executor so it doesn't block the event loop
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             await loop.run_in_executor(None, self._train_sync, job)
 
             if not job.cancelled:
@@ -246,7 +245,7 @@ class TrainingOrchestrator:
             else:
                 job.status = TrainingStatus.CANCELLED
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             job.status = TrainingStatus.FAILED
             job.error_message = str(exc)
             logger.error("Training job %s failed: %s", job.job_id[:8], exc, exc_info=True)
@@ -273,7 +272,7 @@ class TrainingOrchestrator:
             workers=job.workers,
             accumulate=job.accumulate,
             patience=job.patience,
-            project=f"runs/detect",
+            project="runs/detect",
             name=job.experiment_name,
             **job.extra_config,
         )
@@ -311,7 +310,7 @@ class TrainingOrchestrator:
                     if best_path:
                         job.best_checkpoint = str(best_path)
                         mlflow.log_artifact(str(best_path), artifact_path="checkpoints")
-            except Exception:  # noqa: BLE001
+            except Exception:
                 trainer.train()
                 best_path = trainer.get_best_checkpoint()
                 if best_path:
@@ -327,7 +326,7 @@ class TrainingOrchestrator:
         for fn in self._on_progress:
             try:
                 fn(job)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
 
@@ -335,7 +334,7 @@ class TrainingOrchestrator:
 # Singleton
 # ---------------------------------------------------------------------------
 
-_orchestrator: Optional[TrainingOrchestrator] = None
+_orchestrator: TrainingOrchestrator | None = None
 
 
 def get_orchestrator() -> TrainingOrchestrator:

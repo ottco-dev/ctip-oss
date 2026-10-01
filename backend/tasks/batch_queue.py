@@ -253,7 +253,7 @@ class DetectionBatchQueue:
         """
         from backend.api.v1.inference import _run_detection, _run_detection_batch
 
-        t_start = time.monotonic()
+        time.monotonic()
 
         # Group entries by inference config key
         groups: dict[tuple, list[tuple[int, _QueueEntry]]] = {}

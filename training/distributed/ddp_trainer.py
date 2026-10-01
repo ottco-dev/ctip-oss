@@ -44,12 +44,12 @@ Usage:
 
 from __future__ import annotations
 
-import math
 import os
+from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 from shared.logging.logger import get_logger
 
@@ -321,7 +321,6 @@ class DDPTrainer:
         Returns:
             DDP-wrapped model (or the original model when world_size==1).
         """
-        import torch
         import torch.nn as nn
 
         if not self._is_setup:

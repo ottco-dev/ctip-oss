@@ -24,20 +24,18 @@ from __future__ import annotations
 import logging
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
+from maturity.domain.analyzer import MaturityAnalyzer
+from maturity.domain.color_features import extract_color_features, rule_based_maturity_estimate
+from maturity.domain.degradation import assess_degradation
+from maturity.domain.texture_features import extract_texture_features
+from maturity.domain.translucency import estimate_translucency
 from shared.core.entities import Instance, MaturityLabel
 from shared.core.enums import MaturityStage
 from shared.core.value_objects import Confidence
-
-from maturity.domain.color_features import extract_color_features, rule_based_maturity_estimate
-from maturity.domain.texture_features import extract_texture_features
-from maturity.domain.translucency import estimate_translucency
-from maturity.domain.degradation import assess_degradation
-from maturity.domain.analyzer import MaturityAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +70,8 @@ class MaturityPipelineConfig:
 class MaturityPipelineResult:
     """Complete result of the maturity pipeline."""
 
-    instances: List[Instance]
-    stage_distribution: Dict[str, float] = field(default_factory=dict)
+    instances: list[Instance]
+    stage_distribution: dict[str, float] = field(default_factory=dict)
     mean_confidence: float = 0.0
     total: int = 0
     analyzed: int = 0
@@ -99,7 +97,7 @@ class MaturityPipeline:
     the maturity_label field with calibrated classification results.
     """
 
-    def __init__(self, config: Optional[MaturityPipelineConfig] = None) -> None:
+    def __init__(self, config: MaturityPipelineConfig | None = None) -> None:
         self.config = config or MaturityPipelineConfig()
         self._analyzer = MaturityAnalyzer() if self.config.use_analyzer else None
         logger.info(
@@ -109,7 +107,7 @@ class MaturityPipeline:
             f"degradation={self.config.use_degradation}"
         )
 
-    def analyze(self, instances: List[Instance]) -> MaturityPipelineResult:
+    def analyze(self, instances: list[Instance]) -> MaturityPipelineResult:
         """
         Analyze maturity of a list of trichome instances.
 
@@ -188,7 +186,7 @@ class MaturityPipeline:
             )
         return result
 
-    def _get_crop(self, inst: Instance) -> Optional[NDArray[np.uint8]]:
+    def _get_crop(self, inst: Instance) -> NDArray[np.uint8] | None:
         """Extract a usable crop from an Instance."""
         # Direct crop first
         if inst.crop is not None and inst.crop.size > 0:
@@ -235,7 +233,7 @@ class MaturityPipeline:
         texture = extract_texture_features(crop_rgb) if self.config.use_texture else None
 
         # 3. Translucency (optional)
-        translucency_score: Optional[float] = None
+        translucency_score: float | None = None
         if self.config.use_translucency:
             try:
                 trans = estimate_translucency(crop_rgb)
@@ -291,7 +289,7 @@ class MaturityPipeline:
         self,
         color,
         texture,
-        translucency: Optional[float],
+        translucency: float | None,
         is_degraded: bool,
     ) -> tuple:
         """

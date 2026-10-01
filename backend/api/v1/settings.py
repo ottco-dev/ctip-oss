@@ -70,7 +70,8 @@ def _detect_hardware() -> dict[str, Any]:
                 "backend": "mps",
             })
         else:
-            import platform, os
+            import os
+            import platform
             result["devices"].append({
                 "index": 0,
                 "name": f"CPU ({os.cpu_count()} cores, {platform.processor() or 'unknown'})",
@@ -223,8 +224,8 @@ async def patch_settings(req: PatchSettingsRequest) -> PlatformSettings:
     Update one or more platform settings.
     Changes are persisted to .env and take effect immediately.
     """
-    from backend.utils.env_file import write_env_keys
     from backend.config import get_settings
+    from backend.utils.env_file import write_env_keys
 
     VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
     VALID_BACKENDS = {"auto", "cuda", "rocm", "mps", "cpu"}
@@ -335,8 +336,9 @@ async def set_compute_backend(req: SetComputeRequest) -> ComputeInfo:
     Running jobs are NOT interrupted.
     """
     import os
-    from backend.utils.env_file import write_env_keys
+
     from backend.config import get_settings
+    from backend.utils.env_file import write_env_keys
 
     VALID = {"auto", "cuda", "rocm", "mps", "cpu"}
     if req.backend not in VALID:

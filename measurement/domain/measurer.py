@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional
 
 from measurement.domain.profile_manager import MicroscopeProfile
 
@@ -43,36 +42,36 @@ class TrichomeMeasurements:
     """
 
     # --- Head ---
-    head_diameter_um: Optional[float]
+    head_diameter_um: float | None
     """Equivalent circle diameter of the secretory gland head."""
 
-    head_area_um2: Optional[float]
+    head_area_um2: float | None
     """Area of the secretory gland head in µm²."""
 
-    head_circularity: Optional[float]
+    head_circularity: float | None
     """Dimensionless circularity [0,1]. Not affected by calibration."""
 
     # --- Stalk ---
-    stalk_length_um: Optional[float]
+    stalk_length_um: float | None
     """Length of the peduncular stalk from base to head junction."""
 
-    stalk_width_um: Optional[float]
+    stalk_width_um: float | None
     """Mean width of the stalk region."""
 
     # --- Full trichome ---
-    total_height_um: Optional[float]
+    total_height_um: float | None
     """Full trichome height (base to apex), from major axis length."""
 
-    total_area_um2: Optional[float]
+    total_area_um2: float | None
     """Total mask area in µm²."""
 
     # --- Derived ---
-    head_stalk_ratio: Optional[float]
+    head_stalk_ratio: float | None
     """head_diameter / stalk_length. Dimensionless. Diagnostic for type."""
 
     # --- Uncertainties (±1σ) ---
-    head_diameter_uncertainty_um: Optional[float] = None
-    stalk_length_uncertainty_um: Optional[float] = None
+    head_diameter_uncertainty_um: float | None = None
+    stalk_length_uncertainty_um: float | None = None
 
     # --- Calibration metadata ---
     profile_id: str = ""
@@ -135,13 +134,13 @@ class Measurer:
     def measure(
         self,
         *,
-        head_diameter_px: Optional[float] = None,
-        head_area_px: Optional[float] = None,
-        head_circularity: Optional[float] = None,
-        stalk_length_px: Optional[float] = None,
-        stalk_width_px: Optional[float] = None,
-        total_height_px: Optional[float] = None,
-        total_area_px: Optional[float] = None,
+        head_diameter_px: float | None = None,
+        head_area_px: float | None = None,
+        head_circularity: float | None = None,
+        stalk_length_px: float | None = None,
+        stalk_width_px: float | None = None,
+        total_height_px: float | None = None,
+        total_area_px: float | None = None,
     ) -> TrichomeMeasurements:
         """
         Convert pixel measurements to physical µm measurements.
@@ -164,13 +163,13 @@ class Measurer:
         u = self.profile.um_per_pixel
         cal_unc = self.profile.uncertainty_um or 0.0
 
-        def _linear(px: Optional[float]) -> Optional[float]:
+        def _linear(px: float | None) -> float | None:
             return px * u if px is not None else None
 
-        def _area(px2: Optional[float]) -> Optional[float]:
+        def _area(px2: float | None) -> float | None:
             return px2 * (u ** 2) if px2 is not None else None
 
-        def _uncertainty(px: Optional[float]) -> Optional[float]:
+        def _uncertainty(px: float | None) -> float | None:
             """±1σ uncertainty for a linear measurement in µm."""
             if px is None:
                 return None
@@ -182,7 +181,7 @@ class Measurer:
         head_d_um = _linear(head_diameter_px)
         stalk_l_um = _linear(stalk_length_px)
 
-        head_stalk_ratio: Optional[float] = None
+        head_stalk_ratio: float | None = None
         if head_d_um is not None and stalk_l_um is not None and stalk_l_um > 0:
             head_stalk_ratio = head_d_um / stalk_l_um
 

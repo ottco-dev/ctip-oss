@@ -40,8 +40,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from shared.core.entities import Detection
-from shared.core.enums import ModelBackend, TrichomeType
-from shared.core.value_objects import BoundingBox, Confidence
+from shared.core.enums import ModelBackend
+from shared.core.value_objects import Confidence
 
 
 @dataclass

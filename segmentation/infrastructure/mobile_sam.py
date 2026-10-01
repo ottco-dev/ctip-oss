@@ -89,7 +89,7 @@ class MobileSAMBackend(BaseSegmentor):
         t0 = time.monotonic()
 
         try:
-            from mobile_sam import sam_model_registry, SamPredictor
+            from mobile_sam import SamPredictor, sam_model_registry
         except ImportError as e:
             raise ImportError(
                 "MobileSAM not installed. Install: pip install mobile-sam"
@@ -138,7 +138,7 @@ class MobileSAMBackend(BaseSegmentor):
         self._is_loaded = False
         logger.info("MobileSAM unloaded")
 
-    def __enter__(self) -> "MobileSAMBackend":
+    def __enter__(self) -> MobileSAMBackend:
         self.load()
         return self
 

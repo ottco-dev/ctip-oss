@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -38,12 +37,8 @@ from numpy.typing import NDArray
 
 from shared.logging.logger import get_logger
 from vlm_labeling.prompts.trichome_prompts import (
-    PromptTemplate,
-    MATURITY_CLASSIFICATION_PROMPT,
-    TRICHOME_DETECTION_COUNT_PROMPT,
-    TRICHOME_MORPHOLOGY_PROMPT,
-    IMAGE_QUALITY_PROMPT,
     PROMPT_REGISTRY,
+    PromptTemplate,
 )
 
 logger = get_logger(__name__)
@@ -200,8 +195,8 @@ class MoondreamLabeler:
         )
 
         try:
-            from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
 
             # Build quantization config
             model_kwargs: dict[str, Any] = {
@@ -283,8 +278,9 @@ class MoondreamLabeler:
         if not self._is_loaded:
             return
 
-        import torch
         import gc
+
+        import torch
 
         self._model = None
         self._tokenizer = None
@@ -367,7 +363,6 @@ class MoondreamLabeler:
         extra_context: str | None = None,
     ) -> VLMInferenceResult:
         """Core inference loop with retry logic."""
-        import torch
         from PIL import Image as PILImage
 
         # Convert numpy array to PIL Image

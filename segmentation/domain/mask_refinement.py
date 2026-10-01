@@ -14,12 +14,10 @@ All functions work on boolean or uint8 masks (H, W).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import cv2
 import numpy as np
 from scipy import ndimage
-
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -143,7 +141,7 @@ def enforce_convex_hull(mask: np.ndarray) -> np.ndarray:
 
 def watershed_separate(
     mask: np.ndarray,
-    image: Optional[np.ndarray] = None,
+    image: np.ndarray | None = None,
     min_distance: int = 8,
 ) -> list[np.ndarray]:
     """
@@ -205,8 +203,8 @@ def watershed_separate(
 
 def refine_mask(
     mask: np.ndarray,
-    image: Optional[np.ndarray] = None,
-    config: Optional[RefinementConfig] = None,
+    image: np.ndarray | None = None,
+    config: RefinementConfig | None = None,
 ) -> np.ndarray:
     """
     Full mask refinement pipeline.
@@ -255,8 +253,8 @@ def refine_mask(
 
 def batch_refine(
     masks: list[np.ndarray],
-    image: Optional[np.ndarray] = None,
-    config: Optional[RefinementConfig] = None,
+    image: np.ndarray | None = None,
+    config: RefinementConfig | None = None,
 ) -> list[np.ndarray]:
     """Refine a list of masks from a batch segmentation result."""
     return [refine_mask(m, image, config) for m in masks]

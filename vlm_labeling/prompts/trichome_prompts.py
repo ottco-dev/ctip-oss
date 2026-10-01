@@ -28,10 +28,9 @@ VLM CAPABILITY NOTES (as of 2025):
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
-
-import json
 
 
 @dataclass
@@ -287,10 +286,10 @@ def get_prompt(name: str) -> PromptTemplate:
 def get_maturity_prompt(image_context: str = "") -> str:
     """
     Return the formatted maturity analysis user prompt.
-    
+
     Args:
         image_context: Optional additional context about the image.
-    
+
     Returns:
         Formatted prompt string ready for VLM input.
     """

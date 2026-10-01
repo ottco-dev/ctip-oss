@@ -39,7 +39,7 @@ import json
 import statistics
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -134,7 +134,7 @@ def _run(fn, items: list, warmup: int = 5) -> dict:
 def run_measurement_benchmark(n: int = 500, warmup: int = 5) -> dict:
     """Run full measurement benchmark suite."""
     print(f"\n{'='*62}")
-    print(f"  Measurement Pipeline Benchmark")
+    print("  Measurement Pipeline Benchmark")
     print(f"  N={n} measurements | warmup={warmup}")
     print(f"{'='*62}")
 
@@ -145,19 +145,19 @@ def run_measurement_benchmark(n: int = 500, warmup: int = 5) -> dict:
     metrics: dict[str, dict] = {}
 
     # ── Imports ───────────────────────────────────────────────────────────────
-    from measurement.domain.propagation import (
-        combine_uncertainties,
-        propagate_linear,
-        propagate_area,
-        propagate_ratio,
-        focus_induced_uncertainty,
-    )
+    from measurement.application.measurement_pipeline import MeasurementPipeline
+    from measurement.calibration.stage_micrometer import estimate_scale_from_objective
     from measurement.domain.measurer import Measurer
     from measurement.domain.profile_manager import MicroscopeProfile
-    from measurement.calibration.stage_micrometer import estimate_scale_from_objective
-    from measurement.application.measurement_pipeline import MeasurementPipeline
-    from shared.core.entities import Instance
+    from measurement.domain.propagation import (
+        combine_uncertainties,
+        focus_induced_uncertainty,
+        propagate_area,
+        propagate_linear,
+        propagate_ratio,
+    )
     from morphology.domain.geometric import extract_geometric_descriptors
+    from shared.core.entities import Instance
 
     # Use a realistic 40× profile
     profile_40x = MicroscopeProfile(
@@ -170,7 +170,7 @@ def run_measurement_benchmark(n: int = 500, warmup: int = 5) -> dict:
     measurer = Measurer(profile_40x)
 
     # Pre-extract geometric descriptors for instances
-    geo_descs = [extract_geometric_descriptors(m) for m in masks[:n]]
+    [extract_geometric_descriptors(m) for m in masks[:n]]
 
     # ── Propagation functions ─────────────────────────────────────────────────
 
@@ -307,13 +307,13 @@ def main() -> None:
         if pipe_stat:
             print(f"  Pipeline single FPS: {pipe_stat['fps']:.1f}")
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     output_path = args.output or f"benchmarks/measurement/results_{timestamp}.json"
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
 
     result = {
         "benchmark": "measurement_pipeline",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "config": {"n": args.n, "warmup": args.warmup},
         "metrics": metrics,
     }

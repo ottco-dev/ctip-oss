@@ -9,18 +9,14 @@ Routes:
 
 from __future__ import annotations
 
-import io
 import time
 
 import cv2
 import numpy as np
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import JSONResponse
 
 from segmentation.schemas.schemas import (
-    BatchSegmentRequest,
     MaskData,
-    SegmentRequest,
     SegmentResponse,
 )
 
@@ -139,7 +135,7 @@ async def segment_batch(
             results.append({"filename": file.filename, "error": "decode_failed"})
             continue
 
-        from segmentation.application.segment_pipeline import SegmentPipeline, SegmentPipelineConfig
+        from segmentation.application.segment_pipeline import SegmentPipelineConfig
         config = SegmentPipelineConfig(
             backend=backend,
             score_threshold=score_threshold,

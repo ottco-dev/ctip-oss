@@ -22,11 +22,9 @@ Falls back to CPU automatically if unavailable.
 
 from __future__ import annotations
 
-import hashlib
-import time
-from dataclasses import dataclass, field
+from collections.abc import Generator
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -135,9 +133,9 @@ def extract_frames_fixed_rate(
     *,
     every_n_frames: int = 1,
     start_frame: int = 0,
-    end_frame: Optional[int] = None,
-    max_dimension: Optional[int] = None,
-) -> Generator[Tuple[NDArray[np.uint8], FrameInfo], None, None]:
+    end_frame: int | None = None,
+    max_dimension: int | None = None,
+) -> Generator[tuple[NDArray[np.uint8], FrameInfo], None, None]:
     """
     Extract frames at a fixed rate (every N frames).
 
@@ -205,10 +203,10 @@ def extract_frames_fixed_rate(
 
 def extract_frames_by_timestamps(
     video_path: str | Path,
-    timestamps_s: List[float],
+    timestamps_s: list[float],
     *,
-    max_dimension: Optional[int] = None,
-) -> Generator[Tuple[NDArray[np.uint8], FrameInfo], None, None]:
+    max_dimension: int | None = None,
+) -> Generator[tuple[NDArray[np.uint8], FrameInfo], None, None]:
     """
     Extract frames at specific timestamps.
 

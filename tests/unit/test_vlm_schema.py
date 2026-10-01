@@ -7,7 +7,6 @@ without requiring any VLM model.
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Schema enforcer tests
 # ---------------------------------------------------------------------------
@@ -15,7 +14,7 @@ import pytest
 
 def test_enforce_valid_json():
     """Should accept valid JSON matching the maturity schema."""
-    from vlm_labeling.prompts.schema_enforcer import SchemaEnforcer, MATURITY_SCHEMA
+    from vlm_labeling.prompts.schema_enforcer import MATURITY_SCHEMA, SchemaEnforcer
 
     enforcer = SchemaEnforcer(MATURITY_SCHEMA)
     valid_json = '{"clear": 0.2, "cloudy": 0.6, "amber": 0.1, "mixed": 0.1, "confidence": 0.85}'
@@ -28,7 +27,7 @@ def test_enforce_valid_json():
 
 def test_enforce_fractions_sum_to_one():
     """Fraction fields should be normalized to sum=1.0."""
-    from vlm_labeling.prompts.schema_enforcer import SchemaEnforcer, MATURITY_SCHEMA
+    from vlm_labeling.prompts.schema_enforcer import MATURITY_SCHEMA, SchemaEnforcer
 
     enforcer = SchemaEnforcer(MATURITY_SCHEMA)
     json_text = '{"clear": 0.4, "cloudy": 0.8, "amber": 0.2, "mixed": 0.1, "confidence": 0.7}'
@@ -44,7 +43,7 @@ def test_enforce_fractions_sum_to_one():
 
 def test_enforce_malformed_json():
     """Should extract values from malformed JSON without raising."""
-    from vlm_labeling.prompts.schema_enforcer import SchemaEnforcer, MATURITY_SCHEMA
+    from vlm_labeling.prompts.schema_enforcer import MATURITY_SCHEMA, SchemaEnforcer
 
     enforcer = SchemaEnforcer(MATURITY_SCHEMA)
     malformed = "clear: 0.3, cloudy: 0.5, amber: 0.2, mixed: 0.0"  # No braces
@@ -57,7 +56,7 @@ def test_enforce_malformed_json():
 
 def test_enforce_markdown_fence():
     """Should extract JSON from markdown code fences."""
-    from vlm_labeling.prompts.schema_enforcer import SchemaEnforcer, MATURITY_SCHEMA
+    from vlm_labeling.prompts.schema_enforcer import MATURITY_SCHEMA, SchemaEnforcer
 
     enforcer = SchemaEnforcer(MATURITY_SCHEMA)
     with_fence = """
@@ -74,7 +73,7 @@ That is my answer.
 
 def test_enforce_missing_optional_fields():
     """Missing optional fields should have defaults applied."""
-    from vlm_labeling.prompts.schema_enforcer import SchemaEnforcer, MATURITY_SCHEMA
+    from vlm_labeling.prompts.schema_enforcer import MATURITY_SCHEMA, SchemaEnforcer
 
     enforcer = SchemaEnforcer(MATURITY_SCHEMA)
     minimal = '{"clear": 0.3, "cloudy": 0.5, "amber": 0.1, "mixed": 0.1}'
@@ -86,7 +85,7 @@ def test_enforce_missing_optional_fields():
 
 def test_quality_schema_validation():
     """Quality schema should validate properly."""
-    from vlm_labeling.prompts.schema_enforcer import SchemaEnforcer, QUALITY_SCHEMA
+    from vlm_labeling.prompts.schema_enforcer import QUALITY_SCHEMA, SchemaEnforcer
 
     enforcer = SchemaEnforcer(QUALITY_SCHEMA)
     valid = '{"in_focus": true, "well_exposed": true, "usable": true, "quality_score": 0.88}'
@@ -101,7 +100,7 @@ def test_quality_schema_validation():
 
 def test_filter_low_confidence():
     """Predictions below confidence threshold should be marked unreliable."""
-    from vlm_labeling.filtering.hallucination import HallucinationFilter, FilterConfig
+    from vlm_labeling.filtering.hallucination import FilterConfig, HallucinationFilter
 
     config = FilterConfig(min_confidence=0.70)
     hfilter = HallucinationFilter(config)
@@ -119,7 +118,7 @@ def test_filter_low_confidence():
 
 def test_filter_high_confidence():
     """High confidence labels should pass the filter."""
-    from vlm_labeling.filtering.hallucination import HallucinationFilter, FilterConfig
+    from vlm_labeling.filtering.hallucination import FilterConfig, HallucinationFilter
 
     config = FilterConfig(min_confidence=0.70)
     hfilter = HallucinationFilter(config)
@@ -137,7 +136,7 @@ def test_filter_high_confidence():
 
 def test_filter_impossible_fractions():
     """Fractions summing to > 1 or with negative values should be flagged."""
-    from vlm_labeling.filtering.hallucination import HallucinationFilter, FilterConfig
+    from vlm_labeling.filtering.hallucination import FilterConfig, HallucinationFilter
 
     config = FilterConfig(min_confidence=0.70)
     hfilter = HallucinationFilter(config)

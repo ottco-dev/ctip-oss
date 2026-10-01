@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -11,44 +9,44 @@ class MaturityFeatureSchema(BaseModel):
     """Color and texture features from a single trichome crop."""
 
     # Color features (HSV)
-    mean_hue: Optional[float] = None
-    mean_saturation: Optional[float] = None
-    mean_value: Optional[float] = None
+    mean_hue: float | None = None
+    mean_saturation: float | None = None
+    mean_value: float | None = None
 
     # LAB
-    mean_l: Optional[float] = None
-    mean_a: Optional[float] = None
-    mean_b: Optional[float] = None
+    mean_l: float | None = None
+    mean_a: float | None = None
+    mean_b: float | None = None
 
     # Texture
-    lbp_uniformity: Optional[float] = None
-    glcm_contrast: Optional[float] = None
-    glcm_energy: Optional[float] = None
-    shannon_entropy: Optional[float] = None
+    lbp_uniformity: float | None = None
+    glcm_contrast: float | None = None
+    glcm_energy: float | None = None
+    shannon_entropy: float | None = None
 
     # Translucency
-    translucency_score: Optional[float] = Field(
+    translucency_score: float | None = Field(
         default=None, ge=0, le=1,
         description="Estimated translucency [0=opaque, 1=transparent]"
     )
 
     # Oxidation / degradation
-    amber_ratio: Optional[float] = Field(
+    amber_ratio: float | None = Field(
         default=None, ge=0, le=1,
         description="Fraction of amber-colored pixels in head region"
     )
-    is_degraded: Optional[bool] = None
+    is_degraded: bool | None = None
 
 
 class MaturityUncertaintySchema(BaseModel):
-    epistemic: Optional[float] = None
-    aleatoric: Optional[float] = None
+    epistemic: float | None = None
+    aleatoric: float | None = None
 
 
 class MaturityClassificationSchema(BaseModel):
     stage: str = Field(description="Maturity stage: clear, cloudy, amber, degraded, mixed")
     confidence: float = Field(ge=0, le=1)
-    class_probabilities: Dict[str, float] = Field(default_factory=dict)
+    class_probabilities: dict[str, float] = Field(default_factory=dict)
     uncertainty: MaturityUncertaintySchema = Field(default_factory=MaturityUncertaintySchema)
     features: MaturityFeatureSchema = Field(default_factory=MaturityFeatureSchema)
     model_id: str = ""
@@ -74,9 +72,9 @@ class BatchMaturityRequest(BaseModel):
 class BatchMaturityResponse(BaseModel):
     analyzed: int
     failed: int
-    stage_distribution: Dict[str, int] = Field(default_factory=dict)
-    results: List[MaturityAnalysisResponse]
-    mean_confidence: Optional[float] = None
+    stage_distribution: dict[str, int] = Field(default_factory=dict)
+    results: list[MaturityAnalysisResponse]
+    mean_confidence: float | None = None
 
 
 class MaturityStageDistributionSchema(BaseModel):

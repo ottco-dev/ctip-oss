@@ -23,14 +23,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.live import Live
 from rich.table import Table
-from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 console = Console()
 
@@ -43,7 +39,7 @@ app = typer.Typer(
 @app.command("start")
 def start_training(
     data_yaml: str = typer.Option("", "--data", "-d", help="Dataset YAML path"),
-    config_path: Optional[Path] = typer.Option(None, "--config", "-c", help="Training config YAML"),
+    config_path: Path | None = typer.Option(None, "--config", "-c", help="Training config YAML"),
     model: str = typer.Option("yolo11s", "--model", "-m", help="Base model: yolo11n | yolo11s | yolo11m | yolo11l"),
     epochs: int = typer.Option(100, "--epochs", "-e", help="Training epochs"),
     batch: int = typer.Option(16, "--batch", "-b", help="Batch size"),
@@ -70,7 +66,7 @@ def start_training(
         trichome train start --config configs/training/yolo11s_detection.yaml
     """
     try:
-        from training.pipelines.yolo_trainer import YOLOTrainer, TrainingConfig
+        from training.pipelines.yolo_trainer import TrainingConfig, YOLOTrainer
     except ImportError as e:
         console.print(f"[red]Import error:[/red] {e}")
         raise typer.Exit(code=1)
@@ -126,15 +122,15 @@ def start_training(
         console.print("\n[yellow]Dry run — configuration valid, not starting training[/yellow]")
         return
 
-    console.print(f"\n[bold]Starting training…[/bold]")
-    console.print(f"[dim]Monitor in MLflow: http://localhost:5000[/dim]")
-    console.print(f"[dim]Press Ctrl+C to request graceful stop[/dim]\n")
+    console.print("\n[bold]Starting training…[/bold]")
+    console.print("[dim]Monitor in MLflow: http://localhost:5000[/dim]")
+    console.print("[dim]Press Ctrl+C to request graceful stop[/dim]\n")
 
     try:
         trainer = YOLOTrainer(cfg)
         result = trainer.train()
 
-        console.print(f"\n[bold green]Training Complete![/bold green]")
+        console.print("\n[bold green]Training Complete![/bold green]")
         _print_training_result(result)
 
     except KeyboardInterrupt:
@@ -165,14 +161,15 @@ def evaluate_model(
         console.print(f"[red]Error:[/red] Model not found: {model_path}")
         raise typer.Exit(code=1)
 
-    console.print(f"\n[bold cyan]Model Evaluation[/bold cyan]")
+    console.print("\n[bold cyan]Model Evaluation[/bold cyan]")
     console.print(f"  Model:   {model_path}")
     console.print(f"  Dataset: {dataset}")
     console.print(f"  Split:   {split}")
 
     try:
-        from ultralytics import YOLO
         import json
+
+        from ultralytics import YOLO
 
         model = YOLO(str(model_path))
         with console.status("Running evaluation…"):
@@ -226,7 +223,7 @@ def export_model(
     half: bool = typer.Option(False, "--half", help="FP16 quantization (ONNX/TensorRT only)"),
     simplify: bool = typer.Option(True, "--simplify/--no-simplify", help="ONNX simplification"),
     dynamic: bool = typer.Option(False, "--dynamic", help="Dynamic axes for ONNX"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output path (default: model dir)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output path (default: model dir)"),
 ) -> None:
     """
     Export trained YOLO model to ONNX, TorchScript, or TensorRT.
@@ -240,7 +237,7 @@ def export_model(
         console.print(f"[red]Error:[/red] Model not found: {model_path}")
         raise typer.Exit(code=1)
 
-    console.print(f"\n[bold cyan]Model Export[/bold cyan]")
+    console.print("\n[bold cyan]Model Export[/bold cyan]")
     console.print(f"  Model:   {model_path}")
     console.print(f"  Format:  {format}")
     console.print(f"  imgsz:   {imgsz}")

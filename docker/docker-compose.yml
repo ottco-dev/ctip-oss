@@ -63,7 +63,7 @@ services:
     image: trichome-backend:dev
     container_name: trichome-backend
     ports:
-      - "${PORT_BACKEND:-3002}:8000"   # Direct access: http://localhost:${PORT_BACKEND:-3002}/api/v1
+      - "${DIRECT_BIND:-127.0.0.1}:${PORT_BACKEND:-3002}:8000"   # Direct access: http://localhost:${PORT_BACKEND:-3002}/api/v1
     volumes:
       - ../:/app                           # Hot reload
       - ../data:/data                      # Dataset storage (local fallback; symlink to /mnt/data for large datasets)
@@ -114,7 +114,7 @@ services:
     container_name: trichome-frontend
     working_dir: /app
     ports:
-      - "${PORT_FRONTEND:-3003}:3000"   # Direct access: http://localhost:${PORT_FRONTEND:-3003}
+      - "${DIRECT_BIND:-127.0.0.1}:${PORT_FRONTEND:-3003}:3000"   # Direct access: http://localhost:${PORT_FRONTEND:-3003}
     volumes:
       - ../frontend:/app
     environment:
@@ -135,7 +135,7 @@ services:
     image: ghcr.io/mlflow/mlflow:v2.14.1
     container_name: trichome-mlflow
     ports:
-      - "${PORT_MLFLOW:-3004}:5000"   # Direct: http://localhost:${PORT_MLFLOW:-3004} | Via proxy: /mlflow/
+      - "${DIRECT_BIND:-127.0.0.1}:${PORT_MLFLOW:-3004}:5000"   # Direct: http://localhost:${PORT_MLFLOW:-3004} | Via proxy: /mlflow/
     volumes:
       - trichome-mlflow:/mlflow
     command: >
@@ -159,7 +159,7 @@ services:
     image: cvat/server:v2.18.0
     container_name: trichome-cvat
     ports:
-      - "${PORT_CVAT:-3006}:8080"   # Direct: http://localhost:${PORT_CVAT:-3006} | Via proxy: /cvat/
+      - "${DIRECT_BIND:-127.0.0.1}:${PORT_CVAT:-3006}:8080"   # Direct: http://localhost:${PORT_CVAT:-3006} | Via proxy: /cvat/
     volumes:
       - trichome-cvat-data:/home/django
     environment:
@@ -206,7 +206,7 @@ services:
     image: heartexlabs/label-studio:1.13.1
     container_name: trichome-label-studio
     ports:
-      - "${PORT_LABEL_STUDIO:-3005}:8080"   # Direct: http://localhost:${PORT_LABEL_STUDIO:-3005} | Via proxy: /annotation/
+      - "${DIRECT_BIND:-127.0.0.1}:${PORT_LABEL_STUDIO:-3005}:8080"   # Direct: http://localhost:${PORT_LABEL_STUDIO:-3005} | Via proxy: /annotation/
     volumes:
       - trichome-label-studio:/label-studio/data
     environment:

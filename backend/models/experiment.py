@@ -9,9 +9,8 @@ SCHEMA:
 
 import json
 import time
-from typing import Any, List, Optional
 
-from sqlmodel import Field, SQLModel, Relationship
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class Experiment(SQLModel, table=True):
@@ -19,7 +18,7 @@ class Experiment(SQLModel, table=True):
 
     __tablename__ = "experiments"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     description: str = ""
     tags: str = Field(default="[]")
@@ -35,7 +34,7 @@ class Experiment(SQLModel, table=True):
     updated_at: float = Field(default_factory=time.time)
 
     # Relationships
-    runs: List["Run"] = Relationship(back_populates="experiment")
+    runs: list["Run"] = Relationship(back_populates="experiment")
 
     def get_config(self) -> dict:
         return json.loads(self.config_json)
@@ -59,7 +58,7 @@ class Run(SQLModel, table=True):
 
     __tablename__ = "runs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     run_uuid: str = Field(index=True)
     """UUID for external reference (not auto-increment)."""
 
@@ -77,8 +76,8 @@ class Run(SQLModel, table=True):
     """pending, running, completed, failed, stopped"""
 
     # Timing
-    started_at: Optional[float] = None
-    finished_at: Optional[float] = None
+    started_at: float | None = None
+    finished_at: float | None = None
     created_at: float = Field(default_factory=time.time)
 
     # Best metrics (cached for fast queries)
@@ -94,14 +93,14 @@ class Run(SQLModel, table=True):
     run_dir: str = ""
 
     # External tracking
-    mlflow_run_id: Optional[str] = None
-    wandb_run_id: Optional[str] = None
+    mlflow_run_id: str | None = None
+    wandb_run_id: str | None = None
 
     # Relationships
-    experiment: Optional[Experiment] = Relationship(back_populates="runs")
-    metrics: List["Metric"] = Relationship(back_populates="run")
+    experiment: Experiment | None = Relationship(back_populates="runs")
+    metrics: list["Metric"] = Relationship(back_populates="run")
 
-    def get_duration_s(self) -> Optional[float]:
+    def get_duration_s(self) -> float | None:
         if self.started_at and self.finished_at:
             return self.finished_at - self.started_at
         return None
@@ -132,11 +131,11 @@ class Metric(SQLModel, table=True):
 
     __tablename__ = "metrics"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     run_id: int = Field(foreign_key="runs.id", index=True)
 
     epoch: int
-    step: Optional[int] = None
+    step: int | None = None
     key: str = Field(index=True)
     """Metric name: train_loss, val_map50, precision, recall, etc."""
     value: float
@@ -144,4 +143,4 @@ class Metric(SQLModel, table=True):
     created_at: float = Field(default_factory=time.time)
 
     # Relationships
-    run: Optional[Run] = Relationship(back_populates="metrics")
+    run: Run | None = Relationship(back_populates="metrics")

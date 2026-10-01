@@ -289,7 +289,7 @@ function ReferenceTable() {
         </tbody>
       </table>
       <p className="text-[10px]" style={{ color: 'var(--border-muted)' }}>
-        Source: research/evaluation_methodology/benchmark_design.md
+        Source: docs/research/evaluation_methodology/benchmark_design.md
       </p>
     </div>
   );

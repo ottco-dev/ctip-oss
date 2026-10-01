@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -43,10 +42,10 @@ class StalkMeasurement:
     stalk_width_px: float
     """Mean width of the stalk region in pixels."""
 
-    stalk_base_y: Optional[float]
+    stalk_base_y: float | None
     """Y-coordinate of the stalk base (lowest point, closest to epidermis)."""
 
-    head_junction_y: Optional[float]
+    head_junction_y: float | None
     """Y-coordinate where stalk meets the gland head."""
 
     has_visible_stalk: bool
@@ -86,7 +85,7 @@ def detect_stalk_and_head(
     *,
     min_stalk_length_px: float = 8.0,
     width_sample_points: int = 20,
-) -> Tuple[StalkMeasurement, Optional[HeadMeasurement]]:
+) -> tuple[StalkMeasurement, HeadMeasurement | None]:
     """
     Detect and measure stalk and head regions within a trichome mask.
 

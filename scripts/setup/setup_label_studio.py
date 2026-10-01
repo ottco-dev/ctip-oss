@@ -16,12 +16,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 import requests
 
@@ -313,7 +311,7 @@ def main() -> None:
     parser.add_argument("--dataset", help="Only import this dataset (by name fragment, e.g. 'combined')")
     args = parser.parse_args()
 
-    print(f"\nCTIP Label Studio Setup")
+    print("\nCTIP Label Studio Setup")
     print(f"  Host:     {LS_HOST}")
     print(f"  Data:     {DATA_ROOT}")
     print(f"  Dry-run:  {args.dry_run}")

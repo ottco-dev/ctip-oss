@@ -32,83 +32,50 @@ classifiers = [
 ]
 
 dependencies = [
-    # Core ML
+    # Deep learning / computer vision
     "torch>=2.3.0",
     "torchvision>=0.18.0",
-    "torchaudio>=2.3.0",
-    "ultralytics>=8.2.0",
+    "ultralytics>=8.2.0",              # YOLO11 (AGPL-3.0)
     "onnx>=1.16.0",
-    "onnxruntime-gpu>=1.18.0",
-
-    # Computer Vision
     "opencv-python-headless>=4.10.0",
-    "scikit-image>=0.23.0",
     "Pillow>=10.3.0",
     "imageio>=2.34.0",
-    "imageio-ffmpeg>=0.5.0",
-
-    # Scientific Computing
-    "numpy>=1.26.0",
-    "scipy>=1.13.0",
-    "pandas>=2.2.0",
-    "scikit-learn>=1.5.0",
-    "statsmodels>=0.14.0",
-
-    # Data Augmentation
     "albumentations>=1.4.0",
 
-    # Configs & Validation
-    "hydra-core>=1.3.0",
+    # Scientific computing
+    "numpy>=1.26.0",
+    "scipy>=1.13.0",
+    "shapely>=2.0.0",
+
+    # Configuration & validation
     "pydantic>=2.7.0",
     "pydantic-settings>=2.2.0",
-    "omegaconf>=2.3.0",
+    "python-dotenv>=1.0.0",
+    "PyYAML>=6.0",
 
-    # Experiment Tracking
+    # Experiment tracking
     "mlflow>=2.13.0",
-    "wandb>=0.17.0",
 
-    # Dataset Management
-    "fiftyone>=0.24.0",
-    "dvc>=3.51.0",
-
-    # API & Serving
+    # API & storage
     "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "python-multipart>=0.0.9",         # image uploads
     "sqlmodel>=0.0.21",
     "alembic>=1.13.0",
-    "uvicorn[standard]>=0.30.0",
     "httpx>=0.27.0",
-    "gradio>=4.36.0",
+    "requests>=2.31.0",
 
-    # Visualization
-    "matplotlib>=3.9.0",
-    "seaborn>=0.13.0",
-    "plotly>=5.22.0",
-
-    # Reporting
-    "reportlab>=4.2.0",
-    "Jinja2>=3.1.0",
-    "weasyprint>=62.0",
-
-    # Utilities
-    "rich>=13.7.0",
-    "typer>=0.12.0",
-    "tqdm>=4.66.0",
-    "loguru>=0.7.0",
-    "python-dotenv>=1.0.0",
-    "click>=8.1.0",
-    "tabulate>=0.9.0",
-    "psutil>=5.9.0",
-    "GPUtil>=1.4.0",
-
-    # File I/O
+    # Datasets on disk
     "h5py>=3.11.0",
     "zarr>=2.18.0",
-    "pyarrow>=16.1.0",
 
-    # Data Processing
-    "shapely>=2.0.0",
-    "rtree>=1.2.0",
-    "networkx>=3.3",
+    # Reports & CLI
+    "matplotlib>=3.9.0",
+    "reportlab>=4.2.0",
+    "rich>=13.7.0",
+    "typer>=0.12.0",
+    "loguru>=0.7.0",
+    "psutil>=5.9.0",
 ]
 
 [project.urls]
@@ -117,6 +84,14 @@ Documentation = "https://github.com/ottco-dev/ctip-oss/tree/main/docs/manual"
 Issues = "https://github.com/ottco-dev/ctip-oss/issues"
 
 [project.optional-dependencies]
+# ONNX Runtime: GPU build on Linux/Windows, CPU build on macOS
+onnx = [
+    "onnxruntime-gpu>=1.18.0; sys_platform != 'darwin'",
+    "onnxruntime>=1.18.0; sys_platform == 'darwin'",
+]
+wandb = [
+    "wandb>=0.17.0",
+]
 vlm = [
     "transformers>=4.41.0",
     "accelerate>=0.30.0",
@@ -165,7 +140,7 @@ dev = [
     "nbconvert>=7.16.0",
 ]
 all = [
-    "trichome-analysis[vlm,sam,grounding_dino,annotation,remote_vlm,dev]",
+    "trichome-analysis[onnx,wandb,vlm,sam,grounding_dino,annotation,remote_vlm,dev]",
 ]
 
 [project.scripts]
@@ -220,10 +195,34 @@ select = [
     "RUF", # ruff-specific rules
 ]
 ignore = [
-    "ANN101",  # missing type annotation for self
-    "ANN102",  # missing type annotation for cls
     "E501",    # line too long (handled by black)
-    "B008",    # do not perform function calls in default arguments
+    "B008",    # function calls in defaults: FastAPI Depends()/Query() idiom
+    "ANN",     # annotations are added gradually; not enforced yet (technical_debt.md TDB-033)
+    "N806",    # scientific variable names (X, H, S, L) inside functions
+    "N802",    # names mirror external APIs / formulas
+    "RUF001",  # µ, ×, – and other non-ASCII characters are intentional in scientific text
+    "RUF002",
+    "RUF003",
+    "B905",    # zip(strict=...) changes runtime behaviour; reviewed case by case (TDB-033)
+    "UP042",   # str+Enum classes are stored in the database; StrEnum migration needs a data check
+    # cleanup backlog, not enforced yet (technical_debt.md TDB-033):
+    "B904",
+    "E702",
+    "SIM105",
+    "SIM117",
+    "SIM108",
+    "SIM102",
+    "E402",
+    "E741",
+    "N812",
+    "RUF012",
+    "N817",
+    "N814",
+    "RUF043",
+    "B027",
+    "E701",
+    "SIM115",
+    "B007",
 ]
 
 [tool.ruff.lint.per-file-ignores]

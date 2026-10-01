@@ -21,9 +21,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
-from backend.api.v1.model_tests import ModelTest, router
+from backend.api.v1.model_tests import router
 from backend.database import get_session
-
 
 # ---------------------------------------------------------------------------
 # In-memory SQLite test database + app fixture

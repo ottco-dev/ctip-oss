@@ -13,7 +13,10 @@ Performance impact of deterministic mode: ~5-15% slower.
 Acceptable for scientific reproducibility.
 """
 from __future__ import annotations
-import os, random
+
+import os
+import random
+
 import numpy as np
 
 GLOBAL_SEED = 42

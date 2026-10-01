@@ -13,20 +13,17 @@ observations only and do not imply cannabinoid content measurement.
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from maturity.application.maturity_pipeline import MaturityPipeline, MaturityPipelineConfig
 from maturity.schemas.schemas import (
-    MaturityClassificationSchema,
     MaturityAnalysisResponse,
+    MaturityClassificationSchema,
     MaturityFeatureSchema,
-    MaturityUncertaintySchema,
     MaturityStageDistributionSchema,
-    BatchMaturityResponse,
+    MaturityUncertaintySchema,
 )
 from shared.core.entities import MaturityLabel
 
@@ -152,7 +149,7 @@ async def analyze_crop(
     summary="Analyze maturity distribution across multiple crops",
 )
 async def analyze_population(
-    files: List[UploadFile] = File(
+    files: list[UploadFile] = File(
         ..., description="Multiple trichome crop images"
     ),
     _slot: None = Depends(_gpu_slot),
@@ -172,6 +169,7 @@ async def analyze_population(
         raise HTTPException(422, "Maximum 500 crops per request")
 
     from collections import Counter
+
     import numpy as np
 
     stage_counts: Counter = Counter()

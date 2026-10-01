@@ -2,7 +2,6 @@
 
 import json
 import time
-from typing import Optional
 
 from sqlmodel import Field, SQLModel
 
@@ -12,7 +11,7 @@ class AnalysisSession(SQLModel, table=True):
 
     __tablename__ = "analysis_sessions"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     session_uuid: str = Field(index=True)
 
     # Input
@@ -33,7 +32,7 @@ class AnalysisSession(SQLModel, table=True):
 
     # Output
     output_dir: str = ""
-    report_path: Optional[str] = None
+    report_path: str | None = None
 
     # Status
     status: str = "completed"

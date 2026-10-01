@@ -23,7 +23,7 @@ import time
 from collections import deque
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -274,7 +274,7 @@ async def tail_logs(limit: int = Query(default=50, le=200)) -> dict[str, Any]:
         log_path = os.path.normpath(log_path)
         if os.path.exists(log_path):
             try:
-                with open(log_path, "r", errors="replace") as f:
+                with open(log_path, errors="replace") as f:
                     lines = f.readlines()
                 disk_entries = [
                     {"level": "INFO", "msg": l.rstrip(), "ts": None}

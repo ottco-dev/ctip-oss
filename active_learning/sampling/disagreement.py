@@ -16,11 +16,9 @@ Reference: Settles (2009). Active Learning Literature Survey. §3.4
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Sequence
+from dataclasses import dataclass
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -178,13 +176,13 @@ class DisagreementSampler:
             List of DisagreementScore sorted by composite_score desc.
         """
         scores: list[DisagreementScore] = []
-        for sample_id, preds in predictions_by_sample.items():
+        for _sample_id, preds in predictions_by_sample.items():
             if len(preds) < self.min_members:
                 continue
             try:
                 score = compute_disagreement(preds)
                 scores.append(score)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 continue
 
         return sorted(scores, key=lambda s: s.composite_score, reverse=True)

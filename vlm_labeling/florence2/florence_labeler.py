@@ -29,8 +29,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -43,7 +42,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
-class Florence2Variant(str, Enum):
+class Florence2Variant(StrEnum):
     LARGE = "microsoft/Florence-2-large"
     BASE = "microsoft/Florence-2-base"
     LARGE_FT = "microsoft/Florence-2-large-ft"
@@ -293,7 +292,7 @@ class Florence2Labeler:
         self._is_loaded = False
         logger.info("Florence-2 unloaded, VRAM released")
 
-    def __enter__(self) -> "Florence2Labeler":
+    def __enter__(self) -> Florence2Labeler:
         self.load()
         return self
 

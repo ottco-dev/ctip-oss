@@ -33,14 +33,12 @@ from __future__ import annotations
 
 import time
 import uuid
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
 
 from detection.domain.detector import (
-    BaseDetector,
     DetectionConfig,
     DetectionResult,
     TrichomeDetector,
@@ -241,8 +239,8 @@ class DetectionEnsemble:
             )
 
         # Denormalize and create Detection objects
-        from shared.core.enums import TrichomeType
         from detection.infrastructure.yolo_backend import YOLO_CLASS_MAP
+        from shared.core.enums import TrichomeType
 
         merged: list[Detection] = []
         for box, score, label in zip(fused_boxes, fused_scores, fused_labels):

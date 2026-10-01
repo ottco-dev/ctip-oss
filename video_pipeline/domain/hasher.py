@@ -26,8 +26,6 @@ Reference:
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Tuple
-
 import cv2
 import numpy as np
 from numpy.typing import NDArray
@@ -101,11 +99,11 @@ def is_near_duplicate(
 
 
 def deduplicate_frames(
-    hashes: List[int],
+    hashes: list[int],
     *,
     threshold: int = 8,
     min_gap: int = 1,
-) -> List[int]:
+) -> list[int]:
     """
     Return indices of non-duplicate frames.
 
@@ -123,7 +121,7 @@ def deduplicate_frames(
     if not hashes:
         return []
 
-    selected: List[int] = [0]
+    selected: list[int] = [0]
     last_hash = hashes[0]
     last_idx = 0
 
@@ -139,10 +137,10 @@ def deduplicate_frames(
 
 
 def find_scene_changes(
-    hashes: List[int],
+    hashes: list[int],
     *,
     threshold: int = 25,
-) -> List[int]:
+) -> list[int]:
     """
     Detect scene changes from a sequence of perceptual hashes.
 
@@ -159,7 +157,7 @@ def find_scene_changes(
     if len(hashes) < 2:
         return []
 
-    scene_changes: List[int] = []
+    scene_changes: list[int] = []
     for i in range(1, len(hashes)):
         if hamming_distance(hashes[i - 1], hashes[i]) > threshold:
             scene_changes.append(i)

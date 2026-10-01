@@ -15,15 +15,13 @@ from __future__ import annotations
 import pytest
 
 from vlm_labeling.filtering.hallucination import (
+    VALID_MATURITY_STAGES,
+    VALID_MORPHOLOGY_TYPES,
+    VALID_QUALITY_LEVELS,
     HallucinationFilter,
     HallucinationFilterConfig,
     HallucinationFlag,
-    FilterResult,
-    VALID_MATURITY_STAGES,
-    VALID_QUALITY_LEVELS,
-    VALID_MORPHOLOGY_TYPES,
 )
-
 
 # ─────────────────────────────────────────────────────────────────
 # Fixtures

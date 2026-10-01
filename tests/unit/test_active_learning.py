@@ -18,12 +18,9 @@ Covers all sub-modules without requiring GPU or YOLO model weights:
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 import pytest
-
 
 # ===========================================================================
 # TestEntropyFunctions — entropy.py
@@ -338,7 +335,7 @@ class TestDisagreementSampler:
 
         sampler = DisagreementSampler()
         predictions = {
-            f"s{i}": [self._make_pred(f"s{i}", [0.25 + 0.25 * (i % 2), 0.75 - 0.25 * (i % 2)][::-1] + [0.0, 0.0]) for _ in range(2)]
+            f"s{i}": [self._make_pred(f"s{i}", [*[0.25 + 0.25 * (i % 2), 0.75 - 0.25 * (i % 2)][::-1], 0.0, 0.0]) for _ in range(2)]
             for i in range(10)
         }
         scores = sampler.compute_all(predictions)
@@ -432,7 +429,7 @@ class TestHardNegativeMiner:
         primary = np.array([[0.85, 0.1, 0.03, 0.02]])  # predicts class 0
         ensemble = np.array([[0.05, 0.9, 0.03, 0.02]])  # predicts class 1
 
-        scores_no_ens = miner.find_hard_negatives(ids, primary)
+        miner.find_hard_negatives(ids, primary)
         scores_with_ens = miner.find_hard_negatives(ids, primary, ensemble_probs=ensemble)
 
         # With ensemble disagreement, hardness should be different
@@ -588,7 +585,6 @@ class TestAnnotationPriorityQueue:
 
     def test_stats_structure(self, queue):
         """stats() returns QueueStats with expected fields."""
-        from active_learning.queuing.priority_queue import QueueStats
 
         for i in range(3):
             queue.push(sample_id=f"s{i}", dataset_id="d", image_path="",
@@ -670,7 +666,8 @@ class TestRetrainingTrigger:
 
     def test_cooldown_blocks_trigger(self):
         """Cooldown prevents re-triggering within min_interval."""
-        from datetime import datetime, timedelta
+        from datetime import datetime
+
         from active_learning.retraining.trigger import RetrainingTrigger, TriggerConfig
 
         cfg = TriggerConfig(

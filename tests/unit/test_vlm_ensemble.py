@@ -29,16 +29,18 @@ Coverage:
 
 from __future__ import annotations
 
-import asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from backend.api.v1.vlm_ensemble import ProviderResult
+
 import base64
 import json
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -64,7 +66,7 @@ def _make_provider_result(
     error: str | None = None,
     dominant_type: str | None = None,
     overall_quality: str | None = None,
-) -> "ProviderResult":
+) -> ProviderResult:
     from backend.api.v1.vlm_ensemble import ProviderResult
 
     return ProviderResult(
@@ -87,6 +89,7 @@ def _make_provider_result(
 def client() -> TestClient:
     """Minimal FastAPI app with just the vlm_ensemble router."""
     from fastapi import FastAPI
+
     from backend.api.v1.vlm_ensemble import router
 
     app = FastAPI()

@@ -20,8 +20,7 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
@@ -36,8 +35,6 @@ from segmentation.domain.segmentor import (
 )
 from shared.utils.geometry import (
     mask_to_polygon,
-    polygon_area,
-    polygon_centroid,
 )
 
 logger = logging.getLogger(__name__)

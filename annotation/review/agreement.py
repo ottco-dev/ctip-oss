@@ -33,8 +33,9 @@ Reference:
 
 from __future__ import annotations
 
+import itertools
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -173,7 +174,7 @@ def fleiss_kappa(
         Fleiss, J.L. (1971). Measuring nominal scale agreement among many raters.
         Psychological Bulletin 76(5):378-382.
     """
-    n_items, n_cats = ratings.shape
+    n_items, _n_cats = ratings.shape
     n_raters = ratings[0].sum()  # Assume consistent number of raters
 
     # p_j: proportion of assignments to category j
@@ -266,7 +267,7 @@ def compute_agreement(
     if n_annotators >= 3:
         # Build (n_items, n_categories) rating matrix
         rating_matrix = np.zeros((n_items, n_classes), dtype=np.int32)
-        for k, seq in enumerate(annotation_sets):
+        for _k, seq in enumerate(annotation_sets):
             for i, lbl in enumerate(seq):
                 j = class_idx.get(str(lbl), -1)
                 if j >= 0:
@@ -280,11 +281,9 @@ def compute_agreement(
         total = 0
         for i in range(n_items):
             item_labels = [annotation_sets[k][i] for k in range(n_annotators)]
-            for pair_a, pair_b in zip(item_labels[:-1], item_labels[1:]):
+            for pair_a, pair_b in itertools.pairwise(item_labels):
                 total += 1
-                if pair_a == cls and pair_b == cls:
-                    matches += 1
-                elif pair_a != cls and pair_b != cls:
+                if (pair_a == cls and pair_b == cls) or (pair_a != cls and pair_b != cls):
                     matches += 1
         per_class[cls] = matches / total if total > 0 else float("nan")
 

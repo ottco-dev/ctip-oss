@@ -17,11 +17,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
 
 console = Console()
@@ -91,7 +90,10 @@ def run(
     console.print()
 
     try:
-        from segmentation.application.segment_pipeline import SegmentationPipeline, SegmentationConfig
+        from segmentation.application.segment_pipeline import (
+            SegmentationConfig,
+            SegmentationPipeline,
+        )
 
         config = SegmentationConfig(
             segmentor_backend=sam_model,

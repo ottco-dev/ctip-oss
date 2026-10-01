@@ -61,16 +61,17 @@ API Endpoints
 
 from __future__ import annotations
 
-import asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from training.distributed.ddp_trainer import DDPTrainer
+
 import os
 import time
-from contextlib import asynccontextmanager
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -305,7 +306,7 @@ class TestDDPTrainerSetupTeardown:
 class TestDDPTrainerRankUtils:
     """Tests for rank-related helper methods."""
 
-    def _make_trainer(self, rank: int = 0) -> "DDPTrainer":  # noqa: F821
+    def _make_trainer(self, rank: int = 0) -> DDPTrainer:
         from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         cfg = DistributedConfig(world_size=1)
         trainer = DDPTrainer(cfg)
@@ -428,8 +429,9 @@ class TestDDPTrainerCheckpointing:
 
     @patch("torch.load")
     def test_load_checkpoint_map_location_rank_0(self, mock_load, tmp_path):
-        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         import torch
+
+        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
 
         cfg = DistributedConfig(world_size=2)
         trainer = DDPTrainer(cfg)
@@ -452,8 +454,9 @@ class TestDDPTrainerCheckpointing:
 
     @patch("torch.load")
     def test_load_checkpoint_map_location_rank_1(self, mock_load, tmp_path):
-        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         import torch
+
+        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
 
         cfg = DistributedConfig(world_size=2)
         trainer = DDPTrainer(cfg)
@@ -531,8 +534,9 @@ class TestDDPTrainerModelWrap:
     """Tests for wrap_model behavior."""
 
     def test_wrap_model_raises_before_setup(self):
-        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         import torch.nn as nn
+
+        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         cfg = DistributedConfig()
         trainer = DDPTrainer(cfg)
         model = nn.Linear(4, 2)
@@ -542,9 +546,10 @@ class TestDDPTrainerModelWrap:
     @patch("torch.cuda.is_available", return_value=True)
     @patch("torch.cuda.set_device")
     def test_wrap_model_single_gpu_returns_unchanged(self, mock_set_device, mock_cuda):
-        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         import torch
         import torch.nn as nn
+
+        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
 
         cfg = DistributedConfig(world_size=1)
         trainer = DDPTrainer(cfg)
@@ -566,9 +571,10 @@ class TestDDPTrainerModelWrap:
 class TestDDPTrainerTrainEpoch:
     """Tests for the train_epoch method."""
 
-    def _make_trainer(self, mixed_precision: str = "no") -> "DDPTrainer":  # noqa: F821
-        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
+    def _make_trainer(self, mixed_precision: str = "no") -> DDPTrainer:
         import torch
+
+        from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
         cfg = DistributedConfig(
             world_size=1,
             mixed_precision=mixed_precision,
@@ -619,6 +625,7 @@ class TestDDPTrainerTrainEpoch:
         """Gradient accumulation steps are respected — optimizer.step called once per N."""
         import torch
         import torch.nn as nn
+
         from training.distributed.ddp_trainer import DDPTrainer, DistributedConfig
 
         cfg = DistributedConfig(
@@ -732,8 +739,8 @@ class TestDistributedLauncher:
         assert DistributedLauncher.detect_backend() == "gloo"
 
     def test_launch_missing_script_raises(self, tmp_path):
-        from training.distributed.launcher import DistributedLauncher
         from training.distributed.ddp_trainer import DistributedConfig
+        from training.distributed.launcher import DistributedLauncher
         launcher = DistributedLauncher()
         cfg = DistributedConfig(world_size=1)
         with pytest.raises(FileNotFoundError, match="script"):
@@ -741,8 +748,8 @@ class TestDistributedLauncher:
 
     @patch("subprocess.run")
     def test_launch_calls_torchrun_with_correct_args(self, mock_run, tmp_path):
-        from training.distributed.launcher import DistributedLauncher
         from training.distributed.ddp_trainer import DistributedConfig
+        from training.distributed.launcher import DistributedLauncher
 
         # Create a dummy script
         script = tmp_path / "train_ddp.py"
@@ -772,8 +779,8 @@ class TestDistributedLauncher:
 
     @patch("subprocess.run")
     def test_launch_returns_nonzero_exit_code(self, mock_run, tmp_path):
-        from training.distributed.launcher import DistributedLauncher
         from training.distributed.ddp_trainer import DistributedConfig
+        from training.distributed.launcher import DistributedLauncher
 
         script = tmp_path / "train_ddp.py"
         script.write_text("# dummy\n")
@@ -800,8 +807,8 @@ def app_client():
     """
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from backend.api.v1 import distributed_training as dt_module
-    from backend.tasks.task_router import TaskRouter
 
     # Fresh module-level state
     dt_module._distributed_job_meta.clear()
@@ -847,7 +854,6 @@ class TestDistributedTrainingAPI:
     def test_start_endpoint_returns_task_id(
         self, mock_submit, mock_resolve, app_client, tmp_path
     ):
-        from backend.api.v1 import distributed_training as dt_module
 
         # Make submit_gpu_task return a known uuid
         test_uuid = "test-task-abc-123"

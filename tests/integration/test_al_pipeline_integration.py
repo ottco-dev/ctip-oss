@@ -10,27 +10,17 @@ No GPU, no filesystem access beyond tempdir.
 
 from __future__ import annotations
 
-import math
-import uuid
-from unittest.mock import patch, MagicMock
-
 import pytest
 
 from active_learning.application.al_pipeline import (
     ActiveLearningPipeline,
-    ALPipelineConfig,
     ALCycleResult,
+    ALPipelineConfig,
 )
 from active_learning.queuing.priority_queue import (
     AnnotationPriorityQueue,
     get_global_queue,
 )
-from active_learning.retraining.trigger import (
-    RetrainingTrigger,
-    TriggerConfig,
-    TriggerDecision,
-)
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -241,7 +231,6 @@ class TestALCycleUncertaintyScoring:
         samples, preds = _uniform_preds(n=10, n_classes=4)
         pipeline.run_cycle(unlabeled_pool=samples, model_predictions=preds)
         # Pipeline uses get_global_queue() internally
-        from active_learning.queuing.priority_queue import get_global_queue
         q = get_global_queue()
         assert len(q) > 0
 
@@ -423,7 +412,6 @@ class TestALQueueIntegration:
         samples, preds = _uniform_preds(n=10, n_classes=4)
         pipeline.run_cycle(unlabeled_pool=samples, model_predictions=preds)
 
-        from active_learning.queuing.priority_queue import get_global_queue
         q = get_global_queue()
         top = q.peek_top_k(k=5)
         queued_ids = {e.sample_id for e in top}
@@ -442,7 +430,6 @@ class TestALQueueIntegration:
         samples, preds = _uniform_preds(n=10, n_classes=4)
         result = pipeline.run_cycle(unlabeled_pool=samples, model_predictions=preds)
 
-        from active_learning.queuing.priority_queue import get_global_queue
         q = get_global_queue()
         stats = q.stats()
         assert stats.pending == result.queued_count
@@ -470,7 +457,6 @@ class TestALQueueIntegration:
         result1 = pipeline.run_cycle(unlabeled_pool=samples1, model_predictions=preds1)
         result2 = pipeline.run_cycle(unlabeled_pool=samples2, model_predictions=preds2)
 
-        from active_learning.queuing.priority_queue import get_global_queue
         q = get_global_queue()
         assert len(q) == result1.queued_count + result2.queued_count
 
@@ -495,7 +481,6 @@ class TestALQueueIntegration:
 
         pipeline.run_cycle(unlabeled_pool=samples, model_predictions=preds)
 
-        from active_learning.queuing.priority_queue import get_global_queue
         q = get_global_queue()
         top = q.peek_top_k(k=1)
         assert len(top) == 1

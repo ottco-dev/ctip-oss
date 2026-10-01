@@ -19,13 +19,14 @@ import os
 import re
 import subprocess
 import time
-import uuid
 from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+from shared.async_utils import spawn
 
 router = APIRouter(prefix="/containers", tags=["containers"])
 
@@ -54,10 +55,10 @@ class BgTask(BaseModel):
 
 
 from backend.tasks.task_store import (
-    TaskRecord,
-    PortConflictData,
-    get_task_store,
     MAX_LOG_LINES,
+    PortConflictData,
+    TaskRecord,
+    get_task_store,
 )
 
 # Initialised at first request (lazy) — avoids import-time side-effects.
@@ -67,7 +68,6 @@ _TASK_DB: Path | None = None  # resolved once REPO_ROOT is known
 
 def _store():
     """Return the initialized TaskStore singleton."""
-    from backend.tasks.task_store import get_task_store
     return get_task_store(_TASK_DB)
 
 
@@ -110,7 +110,8 @@ _PORT_CONFLICT_RE = re.compile(
     r"(\d{3,5})/tcp.*address already in use"
 )
 
-from backend.utils.env_file import get_env_path, read_env_file, write_env_key as _write_env_key
+from backend.utils.env_file import get_env_path
+from backend.utils.env_file import write_env_key as _write_env_key
 
 ENV_FILE = get_env_path()
 
@@ -531,7 +532,7 @@ async def compose_up_background(profile: str = "annotation") -> BgTaskResponse:
     """
     store = _store()
     task = store.create(profile)
-    asyncio.create_task(_run_compose_bg(task.id, profile))
+    spawn(_run_compose_bg(task.id, profile), name=f"compose-up-{task.id}")
     return BgTaskResponse(task_id=task.id)
 
 
@@ -597,7 +598,7 @@ def _detect_port_conflict(log_lines: list[str]) -> PortConflictData | None:
         return None
     conflict_port = int(port_str)
     # Reverse-map port → registry entry
-    for svc, (env_var, default_port, label, _) in _PORT_REGISTRY.items():
+    for _svc, (env_var, default_port, label, _) in _PORT_REGISTRY.items():
         current = int(os.getenv(env_var, str(default_port)))
         if current == conflict_port:
             return PortConflictData(port=conflict_port, service=label, env_var=env_var)
@@ -701,7 +702,7 @@ async def compose_reinstall_background(profile: str = "annotation") -> BgTaskRes
     """
     store = _store()
     task = store.create(profile)
-    asyncio.create_task(_run_reinstall_bg(task.id, profile))
+    spawn(_run_reinstall_bg(task.id, profile), name=f"reinstall-{task.id}")
     return BgTaskResponse(task_id=task.id)
 
 
@@ -773,11 +774,7 @@ async def update_compose_port(req: PortUpdateRequest) -> ContainerActionResponse
         if env_var != req.env_var:
             continue
         for derived_key in derived:
-            if derived_key == "MLFLOW_TRACKING_URI":
-                new_val = f"http://localhost:{req.port}"
-                _write_env_key(derived_key, new_val)
-                os.environ[derived_key] = new_val
-            elif derived_key == "LABEL_STUDIO_URL":
+            if derived_key == "MLFLOW_TRACKING_URI" or derived_key == "LABEL_STUDIO_URL":
                 new_val = f"http://localhost:{req.port}"
                 _write_env_key(derived_key, new_val)
                 os.environ[derived_key] = new_val

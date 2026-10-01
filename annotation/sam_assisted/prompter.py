@@ -12,10 +12,8 @@ Pipeline:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Prompt types
@@ -51,7 +49,7 @@ class SAMPromptSet:
         """Convert to SAM box format: [x1, y1, x2, y2]."""
         return np.array([self.box.x1, self.box.y1, self.box.x2, self.box.y2])
 
-    def to_sam_points(self) -> tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    def to_sam_points(self) -> tuple[np.ndarray | None, np.ndarray | None]:
         """Convert to SAM point_coords and point_labels arrays."""
         all_points = self.interior_points + self.background_points
         if not all_points:
@@ -181,7 +179,7 @@ class SAMPrompter:
         interior points and boundary to create better SAM prompts.
         """
         prompts: list[SAMPromptSet] = []
-        h, w = image_shape
+        _h, _w = image_shape
 
         for mask in masks:
             mask_u8 = (mask > 0).astype(np.uint8)
@@ -224,7 +222,7 @@ def convert_to_annotation_format(
 
     Returns COCO-format annotation dicts.
     """
-    from segmentation.domain.polygon_utils import mask_to_coco_segmentation, polygon_area
+    from segmentation.domain.polygon_utils import mask_to_coco_segmentation
 
     annotations = []
     for ann_id, (mask, class_id) in enumerate(zip(masks, classes)):

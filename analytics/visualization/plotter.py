@@ -15,8 +15,8 @@ or save(). No display-side effects (no plt.show() calls).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Sequence
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -95,7 +95,7 @@ def plot_maturity_distribution(
 def plot_precision_recall_curve(
     precisions: Sequence[float],
     recalls: Sequence[float],
-    auc: Optional[float] = None,
+    auc: float | None = None,
     class_name: str = "all",
     title: str = "Precision-Recall Curve",
 ) -> plt.Figure:
@@ -129,8 +129,8 @@ def plot_precision_recall_curve(
 def plot_reliability_diagram(
     confidences: Sequence[float],
     accuracies: Sequence[float],
-    bin_counts: Optional[Sequence[int]] = None,
-    ece: Optional[float] = None,
+    bin_counts: Sequence[int] | None = None,
+    ece: float | None = None,
     title: str = "Calibration Reliability Diagram",
 ) -> plt.Figure:
     """
@@ -183,7 +183,7 @@ def plot_reliability_diagram_from_bins(
     total_samples: int,
     title: str = "Calibration Reliability Diagram",
     figsize: tuple[float, float] = (10, 4.5),
-) -> "plt.Figure":
+) -> plt.Figure:
     """
     Plot a reliability diagram from pre-computed BinStats dicts.
 
@@ -224,7 +224,7 @@ def plot_reliability_diagram_from_bins(
     for b in non_empty:
         conf = b["mean_confidence"]
         acc = b["accuracy"]
-        gap = abs(conf - acc)
+        abs(conf - acc)
         width = 1.0 / len(bins)  # uniform bin width
 
         # Bar from 0 → accuracy
@@ -304,7 +304,7 @@ def plot_reliability_diagram_from_bins(
     )
 
     # Legend patches
-    from matplotlib.patches import Patch  # noqa: PLC0415
+    from matplotlib.patches import Patch
     legend_handles = [
         plt.Line2D([0], [0], color="k", linestyle="--", alpha=0.4, label="Perfect calibration"),
         Patch(facecolor="#EF6C00", alpha=0.75, label="Overconfident bins"),
@@ -350,7 +350,7 @@ def plot_reliability_diagram_from_bins(
 def plot_training_curves(
     train_losses: Sequence[float],
     val_losses: Sequence[float],
-    map50s: Optional[Sequence[float]] = None,
+    map50s: Sequence[float] | None = None,
     title: str = "Training Progress",
 ) -> plt.Figure:
     """Plot training + validation loss and optionally mAP50."""

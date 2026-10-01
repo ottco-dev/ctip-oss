@@ -21,7 +21,6 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -109,7 +108,7 @@ def run(
     if scientific_mode:
         console.print(Panel(SCIENTIFIC_CAVEAT, title="[yellow]⚠ Scientific Caveat[/yellow]", border_style="yellow"))
 
-    console.print(f"\n[bold cyan]Trichome Maturity Analysis[/bold cyan]")
+    console.print("\n[bold cyan]Trichome Maturity Analysis[/bold cyan]")
     console.print(f"  Images:    {len(images)}")
     console.print(f"  Format:    {format}")
     console.print()
@@ -125,7 +124,6 @@ def run(
         for img_path in track(images, description="Analyzing maturity…", console=console):
             try:
                 import cv2
-                import numpy as np
 
                 crop_bgr = cv2.imread(str(img_path))
                 if crop_bgr is None:
@@ -213,7 +211,7 @@ def run(
             json_path = output_dir / "maturity_results.json"
             with open(json_path, "w") as f:
                 json.dump(out_data, f, indent=2)
-            console.print(f"\n[bold green]Maturity analysis complete[/bold green]")
+            console.print("\n[bold green]Maturity analysis complete[/bold green]")
             console.print(f"  Analyzed: {len(results)} images")
             console.print(f"  Results:  {json_path}")
 

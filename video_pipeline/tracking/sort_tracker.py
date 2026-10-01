@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy.linalg import inv
@@ -94,11 +93,11 @@ class TrichomeTrack:
     state: int                          # TrackState constant
     bbox: BoundingBox
     confidence: float
-    trichome_type: Optional[str]
+    trichome_type: str | None
     hits: int
     age: int
-    history: List[BoundingBox] = field(default_factory=list)
-    frame_indices: List[int] = field(default_factory=list)
+    history: list[BoundingBox] = field(default_factory=list)
+    frame_indices: list[int] = field(default_factory=list)
 
     @property
     def is_confirmed(self) -> bool:
@@ -298,7 +297,7 @@ class KalmanBoxTracker:
     # --- Conversion utilities ------------------------------------------------
 
     @staticmethod
-    def _bbox_to_z(bbox: BoundingBox) -> Tuple[float, float, float, float]:
+    def _bbox_to_z(bbox: BoundingBox) -> tuple[float, float, float, float]:
         """Convert BoundingBox to [cx, cy, area, aspect_ratio]."""
         cx = (bbox.x_min + bbox.x_max) / 2.0
         cy = (bbox.y_min + bbox.y_max) / 2.0
@@ -397,7 +396,7 @@ class SORTTracker:
         self.min_hits = min_hits
         self.iou_threshold = iou_threshold
 
-        self._trackers: List[KalmanBoxTracker] = []
+        self._trackers: list[KalmanBoxTracker] = []
         self._track_meta: dict[int, TrichomeTrack] = {}  # track_id → TrichomeTrack
         self._frame_count: int = 0
 
@@ -405,9 +404,9 @@ class SORTTracker:
 
     def update(
         self,
-        detections: List[Detection],
+        detections: list[Detection],
         frame_idx: int,
-    ) -> List[TrichomeTrack]:
+    ) -> list[TrichomeTrack]:
         """
         Update all active tracks with detections from one frame.
 
@@ -422,7 +421,7 @@ class SORTTracker:
         self._frame_count += 1
 
         # ── Step 1: Predict all existing trackers one step forward ──────────
-        predicted_boxes: List[Optional[BoundingBox]] = []
+        predicted_boxes: list[BoundingBox | None] = []
         for trk in self._trackers:
             pred = trk.predict()
             predicted_boxes.append(pred if trk.is_valid else None)
@@ -432,10 +431,10 @@ class SORTTracker:
         valid_indices = [i for i, b in enumerate(predicted_boxes) if b is not None]
         valid_pred_boxes = [predicted_boxes[i] for i in valid_indices]
 
-        matched_dets: List[int]
-        matched_trks: List[int]
-        unmatched_dets: List[int]
-        unmatched_trks: List[int]
+        matched_dets: list[int]
+        matched_trks: list[int]
+        unmatched_dets: list[int]
+        unmatched_trks: list[int]
 
         if det_boxes and valid_pred_boxes:
             iou_mat = self.iou_matrix(det_boxes, valid_pred_boxes)  # type: ignore[arg-type]
@@ -446,8 +445,8 @@ class SORTTracker:
             )
 
             # Filter matches below IoU threshold
-            final_matched_dets: List[int] = []
-            final_matched_trks: List[int] = []
+            final_matched_dets: list[int] = []
+            final_matched_trks: list[int] = []
             for di, ti_local in matched_local:
                 if iou_mat[di, ti_local] >= self.iou_threshold:
                     final_matched_dets.append(di)
@@ -555,7 +554,7 @@ class SORTTracker:
 
         return self._get_active_tracks()
 
-    def get_confirmed_tracks(self) -> List[TrichomeTrack]:
+    def get_confirmed_tracks(self) -> list[TrichomeTrack]:
         """Return only CONFIRMED tracks (appeared >= min_hits consecutive frames)."""
         return [
             m for m in self._track_meta.values()
@@ -579,8 +578,8 @@ class SORTTracker:
 
     @staticmethod
     def iou_matrix(
-        bboxes_a: List[BoundingBox],
-        bboxes_b: List[BoundingBox],
+        bboxes_a: list[BoundingBox],
+        bboxes_b: list[BoundingBox],
     ) -> np.ndarray:
         """
         Compute N×M IoU matrix between two lists of bounding boxes.
@@ -623,7 +622,7 @@ class SORTTracker:
     @staticmethod
     def hungarian_assignment(
         cost_matrix: np.ndarray,
-    ) -> Tuple[List[Tuple[int, int]], List[int], List[int]]:
+    ) -> tuple[list[tuple[int, int]], list[int], list[int]]:
         """
         Run Hungarian (linear sum) assignment on a cost matrix.
 
@@ -649,7 +648,7 @@ class SORTTracker:
         n_dets, n_trks = cost_matrix.shape
         row_ind, col_ind = linear_sum_assignment(cost_matrix)
 
-        matched: List[Tuple[int, int]] = list(zip(row_ind.tolist(), col_ind.tolist()))
+        matched: list[tuple[int, int]] = list(zip(row_ind.tolist(), col_ind.tolist()))
 
         matched_det_set = set(row_ind.tolist())
         matched_trk_set = set(col_ind.tolist())
@@ -661,7 +660,7 @@ class SORTTracker:
 
     # --- Private helpers -----------------------------------------------------
 
-    def _get_active_tracks(self) -> List[TrichomeTrack]:
+    def _get_active_tracks(self) -> list[TrichomeTrack]:
         """Return all non-DELETED tracks in the current internal state."""
         active_ids = {trk.track_id for trk in self._trackers}
         return [

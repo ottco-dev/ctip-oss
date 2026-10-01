@@ -20,12 +20,11 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import random
-import time
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 import numpy as np
 
@@ -186,7 +185,7 @@ class MorphologyCNNTrainer:
         """
         import torch
         from torch.utils.data import DataLoader, random_split
-        from torchvision import datasets, transforms
+        from torchvision import datasets
 
         train_tf = self._build_train_transforms()
         val_tf = self._build_val_transforms()
@@ -365,7 +364,7 @@ class MorphologyCNNTrainer:
 
     def train(
         self,
-        progress_callback: Optional[Callable[[dict[str, Any]], None]] = None,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         """
         Full training loop with early stopping.
@@ -557,7 +556,6 @@ class MorphologyCNNTrainer:
             and per-class precision/recall/F1.
         """
         import torch
-        from torchvision import transforms
 
         device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
@@ -717,7 +715,7 @@ class _SubsetWithTransform:
         return len(self.subset)
 
     def __getitem__(self, idx: int) -> tuple[Any, int]:
-        img, label = self.subset[idx]
+        _img, label = self.subset[idx]
         # img is already a Tensor from ImageFolder's transform;
         # re-apply original PIL loading by going through dataset directly.
         # We access the underlying dataset and its loader.

@@ -15,13 +15,10 @@ without a CUDA device. These tests work purely on CPU-side numpy operations.
 
 from __future__ import annotations
 
-import math
-
 import cv2
 import numpy as np
 import pytest
 from numpy.typing import NDArray
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -144,7 +141,7 @@ class TestMaskRefinement:
         assert abs(orig_area - smooth_area) / max(orig_area, 1) < 0.30
 
     def test_refine_mask_pipeline_complete(self):
-        from segmentation.domain.mask_refinement import refine_mask, RefinementConfig
+        from segmentation.domain.mask_refinement import RefinementConfig, refine_mask
         cfg = RefinementConfig(
             close_kernel_size=3,
             open_kernel_size=2,
@@ -171,7 +168,7 @@ class TestMaskRefinement:
         assert remove_small_components(empty, min_area_px=10).sum() == 0
 
     def test_single_pixel_mask_handled(self):
-        from segmentation.domain.mask_refinement import refine_mask, RefinementConfig
+        from segmentation.domain.mask_refinement import RefinementConfig, refine_mask
         mask = np.zeros((32, 32), dtype=np.uint8)
         mask[16, 16] = 255
         cfg = RefinementConfig()
@@ -319,8 +316,11 @@ class TestSegmentPipelineStructure:
 
     def test_segment_pipeline_result_fields(self):
         """Verify SegmentPipelineResult has the required fields."""
-        from segmentation.application.segment_pipeline import SegmentPipelineResult, SegmentedInstance
-        import numpy as np
+
+        from segmentation.application.segment_pipeline import (
+            SegmentedInstance,
+            SegmentPipelineResult,
+        )
 
         mask = _circle_mask(64, radius=20).astype(bool)
         inst = SegmentedInstance(
@@ -441,7 +441,7 @@ class TestMaskRefinementIntegration:
     """End-to-end mask refinement on realistic trichome-like masks."""
 
     def test_round_trip_circle_refinement(self):
-        from segmentation.domain.mask_refinement import refine_mask, RefinementConfig
+        from segmentation.domain.mask_refinement import RefinementConfig, refine_mask
         original = _circle_mask(128, radius=35)
         # Corrupt mask: add holes and noise
         corrupted = original.copy()
@@ -464,7 +464,7 @@ class TestMaskRefinementIntegration:
 
     def test_batch_consistency(self):
         """Processing same mask twice in batch should be deterministic."""
-        from segmentation.domain.mask_refinement import batch_refine, RefinementConfig
+        from segmentation.domain.mask_refinement import batch_refine
         mask = _circle_mask(64, radius=20)
         results = batch_refine([mask, mask.copy()])
         assert len(results) == 2
@@ -473,7 +473,7 @@ class TestMaskRefinementIntegration:
 
     def test_polygon_from_refined_mask(self):
         """Refined mask → polygon should produce valid geometry."""
-        from segmentation.domain.mask_refinement import refine_mask, RefinementConfig
+        from segmentation.domain.mask_refinement import RefinementConfig, refine_mask
         from segmentation.domain.polygon_utils import mask_to_polygon, polygon_circularity
 
         mask = _circle_mask(128, radius=30)

@@ -14,21 +14,20 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from video_pipeline.domain.scorer import score_frame, FrameQualityScore
 from video_pipeline.domain.hasher import (
-    perceptual_hash,
-    hamming_distance,
-    is_near_duplicate,
     deduplicate_frames,
     find_scene_changes,
+    hamming_distance,
+    is_near_duplicate,
+    perceptual_hash,
 )
 from video_pipeline.domain.ranker import (
     RankedFrame,
-    rank_top_n,
-    rank_diverse_n,
     rank_adaptive,
+    rank_diverse_n,
+    rank_top_n,
 )
-
+from video_pipeline.domain.scorer import FrameQualityScore, score_frame
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -61,7 +60,7 @@ def underexposed_frame() -> np.ndarray:
     return np.full((480, 640, 3), 3, dtype=np.uint8)
 
 
-def _make_ranked_frames(n: int, scores: list = None) -> list:
+def _make_ranked_frames(n: int, scores: list | None = None) -> list:
     """Create N ranked frames with given quality scores."""
     if scores is None:
         scores = [0.5 + i * 0.05 for i in range(n)]
@@ -128,7 +127,7 @@ class TestFrameQualityScorer:
         gray = np.ones((100, 100), dtype=np.uint8) * 128
         # Should raise or handle gracefully
         try:
-            score = score_frame(gray, use_focus_composite=False)
+            score_frame(gray, use_focus_composite=False)
             # If it doesn't raise, result should still be valid
         except Exception:
             pass  # Expected for 2D input

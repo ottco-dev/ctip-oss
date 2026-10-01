@@ -10,28 +10,25 @@ Endpoints:
 
 from __future__ import annotations
 
-import io
-import json
 from collections import Counter
-from typing import List, Optional
 
 import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from morphology.classification.classifier import MorphologyClassifier
+from morphology.domain.density_map import TrichomeCentroid, compute_density_map
 from morphology.domain.geometric import extract_geometric_descriptors
 from morphology.domain.stalk_detector import detect_stalk_and_head
-from morphology.domain.density_map import TrichomeCentroid, compute_density_map
-from morphology.classification.classifier import MorphologyClassifier
 from morphology.schemas.schemas import (
-    MorphologyTypeSchema,
+    DensityMapResponse,
     GeometricDescriptorsSchema,
-    StalkSchema,
     HeadSchema,
     MorphologyAnalysisResponse,
-    DensityMapResponse,
+    MorphologyTypeSchema,
+    StalkSchema,
 )
 
 # GPU semaphore dependency: acquire before model inference.
@@ -55,12 +52,12 @@ class CentroidInput(BaseModel):
 
 
 class DensityRequest(BaseModel):
-    centroids: List[CentroidInput]
+    centroids: list[CentroidInput]
     image_height: int = Field(gt=0)
     image_width: int = Field(gt=0)
     grid_rows: int = Field(default=8, ge=2, le=32)
     grid_cols: int = Field(default=8, ge=2, le=32)
-    um_per_pixel: Optional[float] = None
+    um_per_pixel: float | None = None
 
 
 async def _decode_image(file: UploadFile) -> np.ndarray:

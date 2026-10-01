@@ -20,12 +20,10 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Synthetic image generator
@@ -95,9 +93,9 @@ class RunnerBenchmarkResult:
     """Images per second = 1000 / mean_ms."""
 
     # Hardware info (optional)
-    vram_mb: Optional[float] = None
+    vram_mb: float | None = None
     device: str = "cpu"
-    error: Optional[str] = None
+    error: str | None = None
 
     def __str__(self) -> str:
         if self.error:
@@ -430,7 +428,7 @@ def run_benchmarks(n_runs: int = 100, imgsz: int = 1280) -> InferenceBenchmarkRe
     except ImportError:
         pass
 
-    print(f"\nInference Benchmark Suite")
+    print("\nInference Benchmark Suite")
     print(f"  imgsz={imgsz}  n_runs={n_runs}")
     print(f"  CUDA: {report.cuda_available}  ONNX: {report.onnx_available}  TRT: {report.tensorrt_available}")
     print()

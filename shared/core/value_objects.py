@@ -12,8 +12,8 @@ A Micrometer value knows it cannot be negative.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Iterator, Sequence
+from collections.abc import Iterator
+from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
@@ -35,7 +35,7 @@ class Pixel:
         if self.x < 0 or self.y < 0:
             raise ValueError(f"Pixel coordinates must be non-negative, got ({self.x}, {self.y})")
 
-    def distance_to(self, other: "Pixel") -> float:
+    def distance_to(self, other: Pixel) -> float:
         """Euclidean distance in pixels."""
         return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
@@ -73,7 +73,7 @@ class Micrometer:
             raise ValueError(f"Micrometer value must be finite, got {self.value}")
 
     @classmethod
-    def from_pixels(cls, pixels: float, scale: "CalibrationScale") -> "Micrometer":
+    def from_pixels(cls, pixels: float, scale: CalibrationScale) -> Micrometer:
         """Convert pixel measurement to micrometers using calibration scale."""
         return cls(value=pixels * scale.um_per_pixel)
 
@@ -83,10 +83,10 @@ class Micrometer:
     def __repr__(self) -> str:
         return f"{self.value:.2f} µm"
 
-    def __add__(self, other: "Micrometer") -> "Micrometer":
+    def __add__(self, other: Micrometer) -> Micrometer:
         return Micrometer(self.value + other.value)
 
-    def __truediv__(self, divisor: float) -> "Micrometer":
+    def __truediv__(self, divisor: float) -> Micrometer:
         return Micrometer(self.value / divisor)
 
 
@@ -170,7 +170,7 @@ class Confidence:
             raise ValueError(f"Confidence must be in [0,1], got {self.value}")
 
     @classmethod
-    def from_logit(cls, logit: float) -> "Confidence":
+    def from_logit(cls, logit: float) -> Confidence:
         """Convert raw logit to confidence via sigmoid."""
         return cls(value=1.0 / (1.0 + math.exp(-logit)))
 
@@ -257,7 +257,7 @@ class BoundingBox:
             raise ValueError("Bounding box coordinates must be non-negative")
 
     @classmethod
-    def from_xywh(cls, x: float, y: float, w: float, h: float) -> "BoundingBox":
+    def from_xywh(cls, x: float, y: float, w: float, h: float) -> BoundingBox:
         """Create from center (x, y) and width/height format."""
         return cls(
             x_min=x - w / 2,
@@ -267,7 +267,7 @@ class BoundingBox:
         )
 
     @classmethod
-    def from_xyxy(cls, x1: float, y1: float, x2: float, y2: float) -> "BoundingBox":
+    def from_xyxy(cls, x1: float, y1: float, x2: float, y2: float) -> BoundingBox:
         """Create from top-left / bottom-right format."""
         return cls(x_min=x1, y_min=y1, x_max=x2, y_max=y2)
 
@@ -292,7 +292,7 @@ class BoundingBox:
         """Width / Height ratio."""
         return self.width / self.height if self.height > 0 else 0.0
 
-    def iou(self, other: "BoundingBox") -> float:
+    def iou(self, other: BoundingBox) -> float:
         """
         Intersection over Union (IoU) with another bounding box.
 
@@ -315,7 +315,7 @@ class BoundingBox:
     def contains_point(self, x: float, y: float) -> bool:
         return self.x_min <= x <= self.x_max and self.y_min <= y <= self.y_max
 
-    def expand(self, margin: float) -> "BoundingBox":
+    def expand(self, margin: float) -> BoundingBox:
         """Expand box by margin pixels on all sides."""
         return BoundingBox(
             x_min=max(0, self.x_min - margin),
@@ -324,7 +324,7 @@ class BoundingBox:
             y_max=self.y_max + margin,
         )
 
-    def clip_to_image(self, img_w: int, img_h: int) -> "BoundingBox":
+    def clip_to_image(self, img_w: int, img_h: int) -> BoundingBox:
         """Clip box to image boundaries."""
         return BoundingBox(
             x_min=max(0.0, self.x_min),
@@ -420,7 +420,7 @@ class PolygonPoints:
                 )
 
     @classmethod
-    def from_array(cls, arr: NDArray[np.float32]) -> "PolygonPoints":
+    def from_array(cls, arr: NDArray[np.float32]) -> PolygonPoints:
         """Create from Nx2 numpy array."""
         if arr.ndim != 2 or arr.shape[1] != 2:
             raise ValueError(f"Expected Nx2 array, got shape {arr.shape}")
@@ -459,7 +459,7 @@ class PolygonPoints:
             y_max=max(ys),
         )
 
-    def simplify(self, tolerance: float = 2.0) -> "PolygonPoints":
+    def simplify(self, tolerance: float = 2.0) -> PolygonPoints:
         """
         Simplify polygon using Ramer-Douglas-Peucker algorithm.
 
@@ -504,14 +504,14 @@ class Mask:
             object.__setattr__(self, "data", self.data.astype(np.bool_))
 
     @classmethod
-    def from_uint8(cls, arr: NDArray[np.uint8]) -> "Mask":
+    def from_uint8(cls, arr: NDArray[np.uint8]) -> Mask:
         """Create mask from uint8 array (non-zero = foreground)."""
         return cls(data=(arr > 0))
 
     @classmethod
     def from_polygon(
         cls, polygon: PolygonPoints, image_dims: ImageDimensions
-    ) -> "Mask":
+    ) -> Mask:
         """Rasterize polygon to binary mask."""
         import cv2
 
@@ -549,7 +549,7 @@ class Mask:
             y_max=float(rmax + 1),
         )
 
-    def iou(self, other: "Mask") -> float:
+    def iou(self, other: Mask) -> float:
         """
         Mask IoU — pixel-level intersection over union.
 
@@ -564,7 +564,7 @@ class Mask:
         union = np.logical_or(self.data, other.data).sum()
         return float(intersection / union) if union > 0 else 0.0
 
-    def dice_score(self, other: "Mask") -> float:
+    def dice_score(self, other: Mask) -> float:
         """
         Dice similarity coefficient.
 

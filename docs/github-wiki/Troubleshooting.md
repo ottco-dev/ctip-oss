@@ -341,7 +341,7 @@ clip_gradients: 10  # gradient clipping
 NaN loss most often caused by:
 - LR too high
 - Bad annotations (completely wrong labels)
-- Corrupted images in dataset (check with `trichome dataset verify`)
+- Corrupted images in dataset (the Label Studio export log lists every skipped image)
 
 ---
 

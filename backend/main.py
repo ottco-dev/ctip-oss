@@ -10,15 +10,17 @@ Or via CLI:
 
 from __future__ import annotations
 
+import asyncio
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.config import get_settings
+from shared.async_utils import set_app_loop
 from shared.logging.logger import configure_logging, get_logger
 
 settings = get_settings()
@@ -28,6 +30,7 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: startup and shutdown."""
+    set_app_loop(asyncio.get_running_loop())     # training callbacks broadcast from worker threads
     # ── STARTUP ──────────────────────────────────────────────────
     configure_logging(
         log_level=settings.log_level,
@@ -36,8 +39,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Re-install WebSocket log sink AFTER configure_logging() (which calls loguru.remove())
     try:
-        from backend.websocket.router import _loguru_ws_sink, _log_buffer, _time
         from loguru import logger as _loguru
+
+        from backend.websocket.router import _log_buffer, _loguru_ws_sink, _time
         _loguru.add(_loguru_ws_sink, level="DEBUG", format="{message}", enqueue=False)
         _log_buffer.append({
             "ts": _time.time(),
@@ -99,9 +103,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.warning("Task store initialization failed (non-fatal)", error=str(exc))
 
     # Start GPU stats broadcaster (background task)
-    import asyncio
+    from backend.api.v1.system import _get_gpu_stats
     from backend.websocket.manager import ws_manager
-    from backend.api.v1.system import _get_gpu_stats, _get_cpu_ram_stats
 
     async def gpu_broadcast_loop() -> None:
         while True:
@@ -141,8 +144,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # so REST inference endpoints and background training jobs share one slot.
     try:
         from backend.dependencies.gpu import (
-            wire_task_router_semaphore,
             configure_gpu_rate_limit,
+            wire_task_router_semaphore,
         )
         wire_task_router_semaphore()
         configure_gpu_rate_limit(settings.gpu_inference_queue_depth)
@@ -155,6 +158,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     logger.info("Application ready")
     yield
+    set_app_loop(None)
 
     # ── SHUTDOWN ─────────────────────────────────────────────────
     if hasattr(app.state, "expiry_task"):

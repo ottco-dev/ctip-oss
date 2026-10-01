@@ -22,9 +22,10 @@ CTIP is **alpha research software**. Read this before you use it:
   fine-tuning*; it does not detect trichomes out of the box. You train on your own microscope images.
 - **Accuracy figures in the manuals are targets, not results.** Numbers such as mAP50 > 0.88 or IoU > 0.82 are the
   goals the evaluation tooling checks against. No public trichome benchmark result exists yet.
-- **What is measured:** CPU/GPU throughput of the classical modules (focus metrics, colour/texture maturity features,
-  tiling) on an RTX 4060 — see [benchmark history](docs/progress/benchmark_history.md).
-- **Tested:** 1667 unit tests run on every push (CPU, no GPU or external services needed).
+- **What is measured:** runtime on an RTX 4060 — the full detection pipeline (1280 px, FP16: 95 ms, < 350 MB VRAM;
+  4K tiled: 0.8 s) and the classical modules (focus, colour/texture features) — see
+  [benchmark history](docs/progress/benchmark_history.md).
+- **Tested:** 1680 unit tests, lint and the quickstart notebook run on every push (CPU, no GPU or external services).
 
 ## What it does
 
@@ -58,11 +59,16 @@ AMD ROCm, Apple MPS and CPU-only setups are covered in the [manual](docs/manual/
 git clone https://github.com/ottco-dev/ctip-oss.git && cd ctip-oss
 
 python3.12 -m venv .venv && source .venv/bin/activate
-pip install uv && uv pip install -e ".[dev]"     # extras: [vlm] [sam] [annotation] [remote_vlm] [all]
+pip install uv && uv pip install -e ".[dev]"     # extras: [onnx] [vlm] [sam] [annotation] [remote_vlm] [wandb] [all]
+# exact versions from uv.lock instead:  uv sync --extra dev
 
 uvicorn backend.main:app --reload --port 8000     # API + docs at http://localhost:8000/docs
 cd frontend && npm ci && npm run dev               # UI at http://localhost:3000
 ```
+
+Or both at once: `./ctip.sh start` (also `stop`, `status`, `logs`).
+**No GPU, no data?** Open [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb): focus scoring, optical
+maturity features, µm scale and the leakage-safe split on synthetic images.
 
 On first start the UI opens the **setup wizard** (hardware, storage, services, security) and writes `.env`.
 Docker Compose deployment, TensorRT, Label Studio/CVAT and remote access are covered in the
@@ -98,6 +104,7 @@ Shared types live in `shared/`. The FastAPI app is in `backend/`, the UI in `fro
 - **Uncertainty:** calibrated confidences, ensemble disagreement, and active learning on the uncertain cases.
 - **Reproducibility:** global seed 42 for training, sampling and augmentation; deterministic session-based splits.
 - **Leakage prevention:** splits by imaging session; tests cover it.
+- **Background:** [research notes](docs/research/) — e.g. why trichome colour cannot be turned into a THC value.
 - **Known limits:** colour features depend strongly on lighting and white balance — mixed setups degrade maturity
   estimates; sessile and bulbous trichomes are small and easily missed at low magnification; µm values are only as
   good as the calibration.
@@ -105,7 +112,8 @@ Shared types live in `shared/`. The FastAPI app is in `backend/`, the UI in `fro
 ## Testing
 
 ```bash
-pytest -m "not gpu and not integration"   # 1667 unit tests, CPU only (~1 min)
+pytest -m "not gpu and not integration"   # 1680 unit tests, CPU only (~1 min)
+ruff check .                              # lint (enforced in CI)
 pytest -m gpu                             # needs a CUDA GPU (and TensorRT for engine tests)
 cd frontend && npx tsc --noEmit && npm run build
 ```
@@ -113,7 +121,8 @@ cd frontend && npx tsc --noEmit && npm run build
 ## Contributing
 
 Contributions are welcome — especially **annotated microscope images under an open licence**, evaluation results on
-your own hardware, and bug reports. See [CONTRIBUTING.md](CONTRIBUTING.md); security issues go to
+your own hardware, and bug reports. Please describe data and models with the
+[dataset card](docs/templates/dataset_card.md) and [model card](docs/templates/model_card.md) templates. See [CONTRIBUTING.md](CONTRIBUTING.md); security issues go to
 [SECURITY.md](SECURITY.md).
 
 ## Licence

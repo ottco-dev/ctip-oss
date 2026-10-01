@@ -28,16 +28,15 @@ Use frame-by-frame streaming with a rolling buffer.
 
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from focus.metrics.composite import compute_focus_score, FocusScoreResult, rank_frames_by_focus
+from focus.metrics.composite import FocusScoreResult, compute_focus_score
 from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)

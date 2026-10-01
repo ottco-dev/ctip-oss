@@ -41,7 +41,7 @@ Hallucination detection increases the priority of review, not the discard rate.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -51,7 +51,7 @@ from shared.logging.logger import get_logger
 logger = get_logger(__name__)
 
 
-class HallucinationFlag(str, Enum):
+class HallucinationFlag(StrEnum):
     """Why a VLM result was flagged."""
 
     LOW_CONFIDENCE = "low_confidence"
@@ -102,7 +102,7 @@ class FilterResult:
     Higher → review sooner.
     """
 
-    corrected_data: Optional[dict] = None
+    corrected_data: dict | None = None
     """Corrected/normalized label data (e.g., renormalized fractions)."""
 
     @property
@@ -427,7 +427,7 @@ class HallucinationFilter:
         # Check majority agreement
         from collections import Counter
         counts = Counter(predictions)
-        most_common, most_count = counts.most_common(1)[0]
+        _most_common, most_count = counts.most_common(1)[0]
         agreement_rate = most_count / len(predictions)
 
         flags: list[HallucinationFlag] = []
@@ -546,9 +546,7 @@ class HallucinationFilter:
                 if s2 == "cloudy_amber_mix" and s1 in mix_stages:
                     return True
                 # "unknown" is always compatible
-                if "unknown" in (s1, s2):
-                    return True
-                return False
+                return "unknown" in (s1, s2)
 
             if not stages_compatible(vlm_stage, rule_stage_str):
                 # Only flag if rule system is also reasonably confident
@@ -603,31 +601,31 @@ FilterConfig = HallucinationFilterConfig
 # filter_label — generic convenience method for test compatibility
 # ---------------------------------------------------------------------------
 
-def _filter_label_generic(self, label: dict) -> "FilterResult":
+def _filter_label_generic(self, label: dict) -> FilterResult:
     """
     Generic label filter. Accepts a dict with confidence + fraction fields.
-    
+
     The test API: hfilter.filter_label({"confidence": 0.9, "clear": 0.1, ...})
     Returns FilterResult with is_reliable and corrected_data.
     """
     confidence = float(label.get("confidence", 0.5))
     frac_keys = [k for k in ("clear", "cloudy", "amber", "mixed",
-                              "clear_fraction", "cloudy_fraction", "amber_fraction") 
+                              "clear_fraction", "cloudy_fraction", "amber_fraction")
                  if k in label]
     frac_values = {k: float(label[k]) for k in frac_keys}
     total = sum(frac_values.values())
-    
+
     flags: list[HallucinationFlag] = []
     flag_details: dict = {}
     corrected: dict = dict(label)
-    
+
     # Check confidence threshold
     if confidence < self._config.min_confidence:
         flags.append(HallucinationFlag.LOW_CONFIDENCE)
         flag_details[HallucinationFlag.LOW_CONFIDENCE.value] = (
             f"Confidence {confidence:.2f} < threshold {self._config.min_confidence:.2f}"
         )
-    
+
     # Check and normalize fractions
     if frac_keys and abs(total - 1.0) > 0.05:
         if total > 0:
@@ -637,16 +635,16 @@ def _filter_label_generic(self, label: dict) -> "FilterResult":
         flag_details[HallucinationFlag.CONSTRAINT_VIOLATION.value] = (
             f"Fractions summed to {total:.3f} instead of 1.0"
         )
-    
+
     # Check for impossible negatives
     if any(v < 0 for v in frac_values.values()):
         flags.append(HallucinationFlag.IMPOSSIBLE_VALUE)
         flag_details[HallucinationFlag.IMPOSSIBLE_VALUE.value] = "Negative fraction detected"
-    
+
     penalty = min(0.3, len(flags) * 0.1)
     adjusted = max(0.0, confidence - penalty)
     passed = len(flags) == 0
-    
+
     return FilterResult(
         passed=passed,
         flags=flags,

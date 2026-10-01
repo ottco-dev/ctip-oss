@@ -27,12 +27,13 @@ from __future__ import annotations
 import heapq
 import time
 import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Iterator
+from enum import StrEnum
+from typing import Any
 
 
-class ReviewAction(str, Enum):
+class ReviewAction(StrEnum):
     APPROVE = "approve"
     """Accept VLM label as-is."""
 
@@ -83,7 +84,7 @@ class ReviewItem:
     review_comment: str | None = None
     reviewed_at: float | None = None
 
-    def __lt__(self, other: "ReviewItem") -> bool:
+    def __lt__(self, other: ReviewItem) -> bool:
         """For heapq: higher priority first, then older items first."""
         if self.priority != other.priority:
             return self.priority > other.priority  # Higher priority = smaller in heap
@@ -229,7 +230,7 @@ class ReviewQueue:
         """
         # Pop from heap, skipping already-reviewed or assigned items
         while self._heap:
-            heap_key, item_id = heapq.heappop(self._heap)
+            _heap_key, item_id = heapq.heappop(self._heap)
             item = self._items.get(item_id)
             if item is None:
                 continue

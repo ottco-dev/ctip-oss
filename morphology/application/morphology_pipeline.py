@@ -15,22 +15,19 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
-from shared.core.entities import Instance, MorphologyType
-from shared.core.enums import TrichomeType
-from shared.core.value_objects import Confidence
-from morphology.domain.geometric import extract_geometric_descriptors
-from morphology.domain.stalk_detector import detect_stalk_and_head
+from morphology.classification.classifier import MorphologyClassifier
 from morphology.domain.density_map import (
-    TrichomeCentroid,
     DensityMapResult,
+    TrichomeCentroid,
     compute_density_map,
 )
-from morphology.classification.classifier import MorphologyClassifier
+from morphology.domain.geometric import extract_geometric_descriptors
+from morphology.domain.stalk_detector import detect_stalk_and_head
+from shared.core.entities import Instance, MorphologyType
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +49,7 @@ class MorphologyPipelineConfig:
     kde_bandwidth_px: float = 30.0
     """Gaussian KDE bandwidth for density estimation."""
 
-    classifier_model_path: Optional[str] = None
+    classifier_model_path: str | None = None
     """Path to ONNX classifier model. None = rule-based only."""
 
 
@@ -60,10 +57,10 @@ class MorphologyPipelineConfig:
 class MorphologyPipelineResult:
     """Complete result of the morphology pipeline."""
 
-    instances: List[Instance]
+    instances: list[Instance]
     """Instances with MorphologyType populated."""
 
-    density_map: Optional[DensityMapResult] = None
+    density_map: DensityMapResult | None = None
     """Population density map (None if fewer than 2 instances)."""
 
     type_distribution: dict = field(default_factory=dict)
@@ -82,7 +79,7 @@ class MorphologyPipeline:
     Thread-safe. GPU-free (rule-based classifier). CNN optional.
     """
 
-    def __init__(self, config: Optional[MorphologyPipelineConfig] = None) -> None:
+    def __init__(self, config: MorphologyPipelineConfig | None = None) -> None:
         self.config = config or MorphologyPipelineConfig()
         self._classifier = MorphologyClassifier(
             model_path=self.config.classifier_model_path
@@ -97,9 +94,9 @@ class MorphologyPipeline:
 
     def analyze(
         self,
-        instances: List[Instance],
-        image_shape: Optional[tuple] = None,
-        um_per_pixel: Optional[float] = None,
+        instances: list[Instance],
+        image_shape: tuple | None = None,
+        um_per_pixel: float | None = None,
     ) -> MorphologyPipelineResult:
         """
         Run morphology analysis on a list of Instance objects.
@@ -113,7 +110,7 @@ class MorphologyPipeline:
             MorphologyPipelineResult with all morphology data.
         """
         result = MorphologyPipelineResult(instances=list(instances))
-        centroids: List[TrichomeCentroid] = []
+        centroids: list[TrichomeCentroid] = []
 
         for inst in instances:
             if inst.mask is None:
@@ -218,7 +215,7 @@ class MorphologyPipeline:
             head=head,
         )
 
-    def _get_crop(self, inst: Instance) -> Optional[NDArray[np.uint8]]:
+    def _get_crop(self, inst: Instance) -> NDArray[np.uint8] | None:
         """Extract instance crop if available."""
         if inst.crop is not None:
             return inst.crop

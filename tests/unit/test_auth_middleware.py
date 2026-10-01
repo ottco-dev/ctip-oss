@@ -17,12 +17,10 @@ Tests:
 
 from __future__ import annotations
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from backend.middleware.auth import APITokenMiddleware, _constant_time_equal, _extract_token
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -178,13 +176,22 @@ class TestConstantTimeCompare:
 
 class TestTokenExtraction:
 
-    def _make_request(self, headers: dict, params: dict | None = None) -> object:
+    def _make_request(self, headers: dict, params: dict | None = None, cookies: dict | None = None) -> object:
         """Build a minimal mock request for _extract_token."""
         from unittest.mock import MagicMock
         req = MagicMock()
         req.headers = headers
         req.query_params = params or {}
+        req.cookies = cookies or {}
         return req
+
+    def test_cookie_extracted(self):
+        req = self._make_request({}, cookies={"ctip_token": "from-cookie"})
+        assert _extract_token(req) == "from-cookie"
+
+    def test_header_wins_over_cookie(self):
+        req = self._make_request({"X-API-Key": "header"}, cookies={"ctip_token": "cookie"})
+        assert _extract_token(req) == "header"
 
     def test_bearer_header_extracted(self):
         req = self._make_request({"Authorization": "Bearer my-token"})

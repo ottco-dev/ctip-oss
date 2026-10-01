@@ -33,7 +33,6 @@ confirmation, not primary evidence.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NamedTuple
 
 import cv2
 import numpy as np
@@ -152,7 +151,7 @@ def _compute_circular_lbp(
     Compute circular LBP values for all pixels via bilinear interpolation.
     """
     h, w = gray.shape
-    lbp = np.zeros((h, w), dtype=np.uint8)
+    np.zeros((h, w), dtype=np.uint8)
     angles = 2 * np.pi * np.arange(n_points) / n_points
 
     # Sample points on circle
@@ -173,8 +172,7 @@ def _compute_circular_lbp(
         y1 = np.clip(y1, 0, h - 1)
 
         # Compare with center
-        neighbor = f[y1[:, None], x1[None, :]]
-        center = f
+        f[y1[:, None], x1[None, :]]
 
         # This is simplified — proper circular LBP needs per-pixel sampling
         pass
@@ -304,8 +302,8 @@ def _build_glcm(
     levels: int,
 ) -> NDArray[np.float64]:
     """Build a GLCM matrix for given distance and angle."""
-    dx = int(round(distance * np.cos(angle)))
-    dy = int(round(distance * np.sin(angle)))
+    dx = round(distance * np.cos(angle))
+    dy = round(distance * np.sin(angle))
 
     glcm = np.zeros((levels, levels), dtype=np.float64)
     h, w = gray.shape
@@ -456,7 +454,7 @@ def extract_texture_features(
         gray = image.copy()
 
     # LBP
-    lbp_img, lbp_hist, lbp_uniformity, lbp_entropy = compute_lbp(
+    _lbp_img, lbp_hist, lbp_uniformity, lbp_entropy = compute_lbp(
         gray, lbp_radius, lbp_points
     )
 

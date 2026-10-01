@@ -57,9 +57,7 @@ Coverage:
 
 from __future__ import annotations
 
-import json
 import os
-import time
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -69,7 +67,6 @@ import pytest
 import torch
 from fastapi.testclient import TestClient
 from PIL import Image as PILImage
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -160,6 +157,7 @@ class TestZarrDatasetCreate:
     def test_images_array_shape(self, tmp_path: Path) -> None:
         import zarr
         import zarr.storage
+
         from shared.datasets.streaming import ZarrDataset
 
         paths = _make_test_images(tmp_path / "imgs", n=6)
@@ -175,6 +173,7 @@ class TestZarrDatasetCreate:
     def test_labels_array_shape(self, tmp_path: Path) -> None:
         import zarr
         import zarr.storage
+
         from shared.datasets.streaming import ZarrDataset
 
         paths = _make_test_images(tmp_path / "imgs", n=4)
@@ -191,6 +190,7 @@ class TestZarrDatasetCreate:
     def test_meta_array_shape(self, tmp_path: Path) -> None:
         import zarr
         import zarr.storage
+
         from shared.datasets.streaming import ZarrDataset
 
         paths = _make_test_images(tmp_path / "imgs", n=4)
@@ -221,7 +221,7 @@ class TestZarrDatasetCreate:
 
         # Create one valid image first to establish dimensions
         valid_paths = _make_test_images(tmp_path / "imgs", n=1)
-        bad_paths = valid_paths + ["/nonexistent/path/image.png"]
+        bad_paths = [*valid_paths, "/nonexistent/path/image.png"]
         anns = _make_annotations(2)
         store_path = str(tmp_path / "s.zarr")
         # Should not raise — bad image is replaced with blank
@@ -241,8 +241,9 @@ class TestZarrDatasetStats:
         assert stats["total_images"] == 5
 
     def test_stats_chunk_count(self, tmp_path: Path) -> None:
-        from shared.datasets.streaming import ZarrDataset
         import math
+
+        from shared.datasets.streaming import ZarrDataset
 
         paths = _make_test_images(tmp_path / "imgs", n=7)
         anns = _make_annotations(7)
@@ -386,8 +387,9 @@ class TestZarrWorkerInitFn:
 
     def test_worker_init_splits_evenly(self, tmp_path: Path) -> None:
         """Two workers on 6 chunks → each gets 3 chunks."""
-        from shared.datasets.streaming import ZarrDataset
         import torch.utils.data
+
+        from shared.datasets.streaming import ZarrDataset
 
         n = 12
         paths = _make_test_images(tmp_path / "imgs", n=n)
@@ -470,6 +472,7 @@ class TestHDF5DatasetCreate:
 
     def test_hdf5_structure(self, tmp_path: Path) -> None:
         import h5py
+
         from shared.datasets.streaming import HDF5Dataset
 
         paths = _make_test_images(tmp_path / "imgs", n=5)
@@ -485,6 +488,7 @@ class TestHDF5DatasetCreate:
 
     def test_images_shape(self, tmp_path: Path) -> None:
         import h5py
+
         from shared.datasets.streaming import HDF5Dataset
 
         paths = _make_test_images(tmp_path / "imgs", n=4)
@@ -498,6 +502,7 @@ class TestHDF5DatasetCreate:
 
     def test_labels_shape(self, tmp_path: Path) -> None:
         import h5py
+
         from shared.datasets.streaming import HDF5Dataset
 
         paths = _make_test_images(tmp_path / "imgs", n=4)
@@ -512,6 +517,7 @@ class TestHDF5DatasetCreate:
     def test_swmr_readable(self, tmp_path: Path) -> None:
         """SWMR-written file must be openable in SWMR read mode."""
         import h5py
+
         from shared.datasets.streaming import HDF5Dataset
 
         paths = _make_test_images(tmp_path / "imgs", n=3)
@@ -540,7 +546,7 @@ class TestHDF5DatasetCreate:
         paths = _make_test_images(tmp_path / "imgs", n=4)
         anns = _make_annotations(4)
         h5_path = str(tmp_path / "dataset.h5")
-        ds = HDF5Dataset.create_from_images(
+        HDF5Dataset.create_from_images(
             paths, anns, h5_path, image_size=32, compression="lzf"
         )
         assert Path(h5_path).exists()
@@ -728,6 +734,7 @@ class TestDatasetConverterYoloToZarr:
 
     def test_correct_split_fractions(self, tmp_path: Path) -> None:
         import math
+
         from shared.datasets.streaming import DatasetConverter
 
         n = 40
@@ -767,7 +774,12 @@ class TestDatasetConverterYoloToHDF5:
 
 class TestDatasetConverterRoundTrip:
     def test_zarr_to_hdf5_preserves_count(self, tmp_path: Path) -> None:
-        from shared.datasets.streaming import ZarrDataset, DatasetConverter, HDF5DatasetConfig, HDF5Dataset
+        from shared.datasets.streaming import (
+            DatasetConverter,
+            HDF5Dataset,
+            HDF5DatasetConfig,
+            ZarrDataset,
+        )
 
         paths = _make_test_images(tmp_path / "imgs", n=8)
         anns = _make_annotations(8)
@@ -781,7 +793,12 @@ class TestDatasetConverterRoundTrip:
         assert len(ds) == 8
 
     def test_hdf5_to_zarr_preserves_count(self, tmp_path: Path) -> None:
-        from shared.datasets.streaming import HDF5Dataset, DatasetConverter, ZarrDataset, ZarrDatasetConfig
+        from shared.datasets.streaming import (
+            DatasetConverter,
+            HDF5Dataset,
+            ZarrDataset,
+            ZarrDatasetConfig,
+        )
 
         paths = _make_test_images(tmp_path / "imgs", n=6)
         anns = _make_annotations(6)
@@ -796,7 +813,9 @@ class TestDatasetConverterRoundTrip:
 
     def test_full_round_trip_zarr_hdf5_zarr(self, tmp_path: Path) -> None:
         from shared.datasets.streaming import (
-            ZarrDataset, ZarrDatasetConfig, HDF5Dataset, HDF5DatasetConfig, DatasetConverter
+            DatasetConverter,
+            ZarrDataset,
+            ZarrDatasetConfig,
         )
 
         n = 6
@@ -824,7 +843,6 @@ class TestDatasetConverterRoundTrip:
 @pytest.fixture
 def app_client(tmp_path):
     """FastAPI test client using an in-memory SQLite database."""
-    import os
     os.environ["DATABASE_URL"] = f"sqlite:///{tmp_path}/test.db"
     os.environ["DATA_ROOT"] = str(tmp_path)
     os.environ["MODELS_DIR"] = str(tmp_path / "models")
@@ -834,12 +852,12 @@ def app_client(tmp_path):
     from backend.config import get_settings
     get_settings.cache_clear()
 
-    from backend.main import create_app
-    from backend.database import create_all_tables
-    from backend import database as db_module
     # Reinitialise engine for the test DB
     from sqlalchemy import create_engine
     from sqlmodel import SQLModel
+
+    from backend import database as db_module
+    from backend.main import create_app
     db_module.engine = create_engine(
         f"sqlite:///{tmp_path}/test.db",
         connect_args={"check_same_thread": False},

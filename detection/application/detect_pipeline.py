@@ -25,10 +25,9 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from detection.domain.detector import BaseDetector, DetectionConfig, DetectionResult
-from detection.domain.tiled_inference import TiledInferenceEngine, TileConfig
+from detection.domain.detector import BaseDetector, DetectionConfig
+from detection.domain.tiled_inference import TileConfig, TiledInferenceEngine
 from shared.core.entities import Detection, TrichomeRegion
-from shared.core.enums import TrichomeType
 from shared.logging.logger import get_logger
 from shared.utils.image_utils import apply_clahe, compute_image_stats
 
@@ -186,7 +185,7 @@ class DetectionPipeline:
         t_inf_start = time.perf_counter()
 
         if use_tiling:
-            detections, tiles, tile_diagnostics = self._tiled_engine.detect_tiled(
+            detections, tiles, _tile_diagnostics = self._tiled_engine.detect_tiled(
                 preprocessed, self._config.detection
             )
             num_tiles = len(tiles)
@@ -329,7 +328,7 @@ class DetectionPipeline:
         from shared.utils.image_utils import crop_region
 
         crops: dict[str, NDArray[np.uint8]] = {}
-        h, w = image.shape[:2]
+        _h, _w = image.shape[:2]
 
         for det in detections:
             bbox = det.bounding_box
@@ -355,4 +354,4 @@ class DetectionPipeline:
         """
         contrast = min(stats.get("contrast", 0.0), 1.0)
         dynamic_range = stats.get("dynamic_range", 0.0)
-        return float((contrast * 0.6 + dynamic_range * 0.4))
+        return float(contrast * 0.6 + dynamic_range * 0.4)

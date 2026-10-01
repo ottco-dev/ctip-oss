@@ -38,9 +38,7 @@ Reference:
 
 from __future__ import annotations
 
-import itertools
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -50,7 +48,7 @@ from shared.core.entities import Detection
 from shared.core.value_objects import BoundingBox, Confidence
 
 if TYPE_CHECKING:
-    from detection.domain.detector import DetectionConfig, DetectionResult, TrichomeDetector
+    from detection.domain.detector import DetectionConfig, TrichomeDetector
 
 
 @dataclass
@@ -155,7 +153,7 @@ class TiledInferenceEngine:
 
     def __init__(
         self,
-        detector: "TrichomeDetector",
+        detector: TrichomeDetector,
         tile_config: TileConfig | None = None,
     ) -> None:
         self._detector = detector
@@ -259,7 +257,7 @@ class TiledInferenceEngine:
     def detect_tiled(
         self,
         image: NDArray[np.uint8],
-        config: "DetectionConfig | None" = None,
+        config: DetectionConfig | None = None,
     ) -> tuple[list[Detection], list[TileInfo], list[dict[str, Any]]]:
         """
         Run tiled detection on a full high-resolution image.
@@ -367,7 +365,7 @@ class TiledInferenceEngine:
 
         merged: list[Detection] = []
 
-        for class_name, class_dets in class_detections.items():
+        for _class_name, class_dets in class_detections.items():
             # Simple IoU-based clustering as WBF approximation
             # Full WBF implementation would normalize coordinates
             clustered = self._cluster_by_iou(

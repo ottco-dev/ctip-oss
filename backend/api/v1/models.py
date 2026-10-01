@@ -221,8 +221,8 @@ async def download_model(
     For HuggingFace models: downloads via HF Hub.
     For Ultralytics models: downloads via ultralytics.YOLO().
     """
-    from backend.tasks.task_router import task_router
     from backend.models.job import BackgroundJob
+    from backend.tasks.task_router import task_router
 
     model = session.get(RegisteredModel, model_id)
     if not model:
@@ -289,6 +289,7 @@ def backfill_from_training_runs(
     """
     import json as _json
     import pathlib
+
     from backend.models.experiment import Run
 
     completed_runs = session.exec(

@@ -4,9 +4,8 @@ tests/unit/test_maturity.py — Unit tests for maturity analysis.
 No GPU or model required. Tests feature extraction on synthetic images.
 """
 
-import pytest
 import numpy as np
-
+import pytest
 
 # ---------------------------------------------------------------------------
 # Color feature tests
@@ -104,7 +103,7 @@ def test_cannot_claim_thc_percentage():
         attrs = {}
 
     forbidden_keys = {"thc_percentage", "thc_content", "potency", "cbd_percentage"}
-    present_forbidden = forbidden_keys & set(str(k).lower() for k in attrs.keys())
+    present_forbidden = forbidden_keys & {str(k).lower() for k in attrs}
     assert not present_forbidden, f"Found forbidden keys in features: {present_forbidden}"
 
 

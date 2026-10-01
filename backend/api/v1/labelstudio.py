@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -199,8 +198,9 @@ def import_from_label_studio(project_id: int):
 
         # Push to annotation review queue
         try:
-            from backend.api.v1.annotation import _QUEUE, _STATS
             import uuid as _uuid
+
+            from backend.api.v1.annotation import _QUEUE, _STATS
 
             imported = 0
             now_iso = time.strftime("%Y-%m-%dT%H:%M:%S")

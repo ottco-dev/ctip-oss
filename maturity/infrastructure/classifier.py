@@ -103,7 +103,7 @@ class MaturityClassifier:
         model_path: str | Path,
         temperature: float = DEFAULT_TEMPERATURE,
         use_gpu: bool = True,
-    ) -> "MaturityClassifier":
+    ) -> MaturityClassifier:
         """
         Load classifier from ONNX model file.
 

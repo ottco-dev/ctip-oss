@@ -315,7 +315,7 @@ def evaluate_detection(
 
         # Sort by confidence descending
         detections.sort(key=lambda x: -x[0])
-        confidences = np.array([d[0] for d in detections])
+        np.array([d[0] for d in detections])
         is_tp = np.array([d[1] for d in detections], dtype=float)
 
         cum_tp = np.cumsum(is_tp)

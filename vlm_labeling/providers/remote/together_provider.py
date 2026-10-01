@@ -19,16 +19,17 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from shared.logging.logger import get_logger
 from vlm_labeling.providers.base import (
+    ProviderCapabilities,
+    ProviderKind,
+    ProviderTier,
     VLMProvider,
     VLMProviderInfo,
     VLMResponse,
-    ProviderKind,
-    ProviderTier,
-    ProviderCapabilities,
     image_to_base64,
 )
-from shared.logging.logger import get_logger
+from vlm_labeling.providers.remote._text import strip_code_fence
 
 logger = get_logger(__name__)
 
@@ -148,11 +149,7 @@ class TogetherProvider(VLMProvider):
             )
 
         latency = time.perf_counter() - t0
-        clean = raw.strip()
-        # Strip markdown code blocks if present
-        if clean.startswith("```"):
-            lines = clean.split("\n")
-            clean = "\n".join(lines[1:]).rstrip("```").strip()
+        clean = strip_code_fence(raw)
 
         try:
             parsed = json.loads(clean)

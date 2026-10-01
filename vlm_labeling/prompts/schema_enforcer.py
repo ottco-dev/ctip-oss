@@ -20,7 +20,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Schema definition types
 # ---------------------------------------------------------------------------
 
-class FieldType(str, Enum):
+class FieldType(StrEnum):
     STRING = "string"
     FLOAT = "float"
     INT = "int"

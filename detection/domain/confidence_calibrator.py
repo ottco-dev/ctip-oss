@@ -72,7 +72,7 @@ class TemperatureCalibrator:
         self,
         logits: NDArray[np.float32],
         labels: NDArray[np.int32],
-    ) -> "TemperatureCalibrator":
+    ) -> TemperatureCalibrator:
         """
         Optimize temperature T to minimize NLL on calibration set.
 
@@ -120,7 +120,7 @@ class TemperatureCalibrator:
             json.dump({"temperature": self.temperature, "fitted": self._is_fitted}, f)
 
     @classmethod
-    def load(cls, path: str) -> "TemperatureCalibrator":
+    def load(cls, path: str) -> TemperatureCalibrator:
         """Load calibrator from saved file."""
         import json
         with open(path) as f:

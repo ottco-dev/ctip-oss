@@ -27,7 +27,6 @@ Reference:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -128,11 +127,11 @@ def estimate_motion(
         )
 
     # Lucas-Kanade optical flow
-    lk_params = dict(
-        winSize=(21, 21),
-        maxLevel=3,
-        criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01),
-    )
+    lk_params = {
+        "winSize": (21, 21),
+        "maxLevel": 3,
+        "criteria": (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01),
+    }
     next_pts, status, _ = cv2.calcOpticalFlowPyrLK(
         gray_prev, gray_curr, corners, None, **lk_params
     )
@@ -197,7 +196,7 @@ def estimate_motion(
 
 
 def classify_motion_sequence(
-    motions: List[MotionEstimate],
+    motions: list[MotionEstimate],
 ) -> dict:
     """
     Classify a sequence of motion estimates.

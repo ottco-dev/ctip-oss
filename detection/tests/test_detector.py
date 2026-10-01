@@ -1,13 +1,13 @@
 """detection.tests.test_detector — Unit tests for detection domain. No GPU required."""
 from __future__ import annotations
-import pytest
+
 import numpy as np
-from shared.core.value_objects import BoundingBox, Confidence
-from shared.core.entities import Detection
-from shared.core.enums import TrichomeType
-from detection.domain.tiled_inference import TiledInferenceEngine, TileConfig
+import pytest
+
 from detection.domain.confidence_calibrator import TemperatureCalibrator, compute_ece
-from shared.metrics.detection_metrics import compute_iou_matrix, evaluate_detection
+from detection.domain.tiled_inference import TileConfig, TiledInferenceEngine
+from shared.core.value_objects import BoundingBox
+from shared.metrics.detection_metrics import evaluate_detection
 
 
 class TestBoundingBox:

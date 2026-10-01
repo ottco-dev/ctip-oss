@@ -94,7 +94,6 @@ def run_pipeline(request: AnnotateRequest):
     All results go to the review queue (human-in-loop enforced).
     Returns run summary; individual results available via review queue.
     """
-    from annotation.application.annotation_pipeline import AnnotationPipelineConfig
 
     pipeline = _get_pipeline()
     pipeline.config.use_vlm_labels = request.use_vlm_labels

@@ -42,7 +42,6 @@ from shared.core.entities import Detection
 from shared.core.enums import ModelBackend, TrichomeType
 from shared.core.value_objects import BoundingBox, Confidence
 
-
 # Map YOLO class indices to TrichomeType
 # This mapping MUST match the class order in your training data.yaml
 YOLO_CLASS_MAP: dict[int, TrichomeType] = {
@@ -134,7 +133,7 @@ class YOLODetector(BaseDetector):
 
         except ImportError as e:
             raise ImportError(
-                f"Ultralytics not installed. Run: uv pip install ultralytics>=8.2.0"
+                "Ultralytics not installed. Run: uv pip install ultralytics>=8.2.0"
             ) from e
         except Exception as e:
             raise RuntimeError(

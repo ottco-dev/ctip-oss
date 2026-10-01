@@ -12,24 +12,21 @@ Tests:
 
 from __future__ import annotations
 
-import math
 import numpy as np
 import pytest
 
+from measurement.domain.measurer import Measurer
 from measurement.domain.profile_manager import (
     MicroscopeProfile,
     ProfileManager,
-    DEFAULT_PROFILES,
 )
-from measurement.domain.measurer import Measurer, TrichomeMeasurements
 from measurement.domain.propagation import (
-    propagate_linear,
-    propagate_area,
-    propagate_ratio,
     combine_uncertainties,
     focus_induced_uncertainty,
+    propagate_area,
+    propagate_linear,
+    propagate_ratio,
 )
-
 
 # ── MicroscopeProfile ─────────────────────────────────────────────────────────
 
@@ -337,8 +334,9 @@ class TestScaleBarDetector:
         assert result.scale_bar_px == 0.0
 
     def test_no_detection_on_vertical_only_lines(self):
-        from measurement.calibration.stage_micrometer import detect_scale_bar_px
         import cv2
+
+        from measurement.calibration.stage_micrometer import detect_scale_bar_px
         img = np.ones((200, 400), dtype=np.uint8) * 240
         # Only draw vertical lines (should be filtered out)
         for x in range(50, 351, 50):
@@ -347,7 +345,10 @@ class TestScaleBarDetector:
         assert not result.detected
 
     def test_result_has_required_fields(self):
-        from measurement.calibration.stage_micrometer import detect_scale_bar_px, ScaleBarDetectionResult
+        from measurement.calibration.stage_micrometer import (
+            ScaleBarDetectionResult,
+            detect_scale_bar_px,
+        )
         img = self._make_scale_bar_image()
         result = detect_scale_bar_px(img)
         assert isinstance(result, ScaleBarDetectionResult)

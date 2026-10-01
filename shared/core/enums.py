@@ -20,10 +20,10 @@ Reference:
   obtaining medical-grade product. Epilepsy & Behavior, 70, 302-312.
 """
 
-from enum import Enum, IntEnum, auto
+from enum import IntEnum, StrEnum
 
 
-class MaturityStage(str, Enum):
+class MaturityStage(StrEnum):
     """
     Trichome maturity stages based on color and translucency.
 
@@ -80,7 +80,7 @@ class MaturityStage(str, Enum):
     """
 
 
-class TrichomeType(str, Enum):
+class TrichomeType(StrEnum):
     """
     Botanical trichome morphology classification.
 
@@ -130,7 +130,7 @@ class TrichomeType(str, Enum):
     """Cannot be classified from current view/resolution."""
 
 
-class ImageQuality(str, Enum):
+class ImageQuality(StrEnum):
     """Image quality assessment for analysis suitability."""
 
     EXCELLENT = "excellent"
@@ -149,7 +149,7 @@ class ImageQuality(str, Enum):
     """Cannot be used. Reject from dataset."""
 
 
-class AnnotationSource(str, Enum):
+class AnnotationSource(StrEnum):
     """Source/origin of an annotation."""
 
     HUMAN_EXPERT = "human_expert"
@@ -168,7 +168,7 @@ class AnnotationSource(str, Enum):
     """Synthetically generated annotation. Use only for pre-training."""
 
 
-class ModelBackend(str, Enum):
+class ModelBackend(StrEnum):
     """Inference backend selection."""
 
     PYTORCH = "pytorch"
@@ -176,7 +176,7 @@ class ModelBackend(str, Enum):
     TENSORRT = "tensorrt"
 
 
-class NMSStrategy(str, Enum):
+class NMSStrategy(StrEnum):
     """Non-Maximum Suppression strategy."""
 
     STANDARD = "standard"
@@ -200,7 +200,7 @@ class AugmentationStrength(IntEnum):
     EXTREME = 4
 
 
-class DatasetSplit(str, Enum):
+class DatasetSplit(StrEnum):
     """Standard dataset splits."""
 
     TRAIN = "train"
@@ -209,7 +209,7 @@ class DatasetSplit(str, Enum):
     HOLDOUT = "holdout"  # Never used during development
 
 
-class ExportFormat(str, Enum):
+class ExportFormat(StrEnum):
     """Supported export formats."""
 
     YOLO = "yolo"

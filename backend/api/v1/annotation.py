@@ -17,7 +17,6 @@ Routes:
 from __future__ import annotations
 
 import json
-import time
 import uuid
 from datetime import datetime
 from typing import Any
@@ -252,9 +251,10 @@ async def _run_auto_label(job_uuid: str, request: AutoLabelRequest) -> None:
 
     def _db_update(status: str, progress: float = 0.0, error: str | None = None, result: dict | None = None) -> None:
         try:
+            from sqlmodel import select as _sel
+
             from backend.database import get_session as _gs
             from backend.models.job import BackgroundJob as _BJ
-            from sqlmodel import select as _sel
             with next(_gs()) as _db:
                 j = _db.exec(_sel(_BJ).where(_BJ.job_uuid == job_uuid)).first()
                 if j:
@@ -277,7 +277,7 @@ async def _run_auto_label(job_uuid: str, request: AutoLabelRequest) -> None:
             AutoLabelPipelineConfig,
         )
 
-        settings = get_settings()
+        get_settings()
         data_root = Path("./data/datasets")
 
         # Resolve dataset directory by name or numeric DB id
@@ -382,7 +382,6 @@ async def _run_auto_label(job_uuid: str, request: AutoLabelRequest) -> None:
         _log.info("Auto-label complete", job_uuid=job_uuid, pushed=pushed)
 
     except Exception as exc:
-        import traceback
         err = f"{type(exc).__name__}: {exc}"
         _db_update("failed", error=err)
         _log.error("Auto-label failed", job_uuid=job_uuid, error=err)

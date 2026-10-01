@@ -25,7 +25,6 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -124,7 +123,7 @@ def _generate_completion_script(shell: str, cli_name: str = "trichome") -> str:
         # Fallback: run via python -m apps.cli.main
         result = subprocess.run(
             [sys.executable, "-c",
-             f"from apps.cli.main import app; app()"],
+             "from apps.cli.main import app; app()"],
             env=env,
             capture_output=True,
             text=True,

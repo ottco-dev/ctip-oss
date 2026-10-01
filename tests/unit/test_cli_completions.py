@@ -14,24 +14,22 @@ Tests cover:
 from __future__ import annotations
 
 import os
-import sys
-from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 # Module under test
 from apps.cli.commands.completions import (
-    app,
-    _detect_shell,
-    _generate_completion_script,
-    _resolve_target,
-    _rc_file,
-    _patch_rc_file,
+    _INSTALL_TARGETS,
     _SUPPORTED_SHELLS,
     _TYPER_COMPLETE_VAR,
-    _INSTALL_TARGETS,
+    _detect_shell,
+    _generate_completion_script,
+    _patch_rc_file,
+    _rc_file,
+    _resolve_target,
+    app,
 )
 
 runner = CliRunner()
@@ -79,7 +77,7 @@ class TestDetectShell:
         with patch.dict(os.environ, env, clear=True):
             # tcsh is not supported — may fall back to proc or return "unknown"
             result = _detect_shell()
-            assert result in list(_SUPPORTED_SHELLS) + ["unknown"]
+            assert result in [*list(_SUPPORTED_SHELLS), "unknown"]
 
     def test_missing_shell_env_returns_unknown_or_detects(self):
         env = {k: v for k, v in os.environ.items() if k not in ("SHELL", "_")}
@@ -136,9 +134,8 @@ class TestGenerateCompletionScript:
         with patch(
             "apps.cli.commands.completions.subprocess.run",
             return_value=empty,
-        ):
-            with pytest.raises(RuntimeError, match="Failed to generate"):
-                _generate_completion_script("bash")
+        ), pytest.raises(RuntimeError, match="Failed to generate"):
+            _generate_completion_script("bash")
 
 
 # ---------------------------------------------------------------------------

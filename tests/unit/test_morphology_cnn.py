@@ -14,7 +14,6 @@ Coverage:
 from __future__ import annotations
 
 import json
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -183,6 +182,7 @@ class TestMorphologyCNNTrainer:
     def test_build_model_mobilenet_output_shape(self, tmp_data_dir):
         """MobileNetV3-Small head must also output 4 logits."""
         import torch
+
         from morphology.training.cnn_trainer import MorphologyCNNConfig, MorphologyCNNTrainer
         with tempfile.TemporaryDirectory() as out_dir:
             cfg = MorphologyCNNConfig(
@@ -201,7 +201,6 @@ class TestMorphologyCNNTrainer:
 
     def test_train_transforms_include_normalise(self, trainer_with_tmp):
         """Train transform pipeline must include Normalize."""
-        from torchvision.transforms import Normalize
         tf = trainer_with_tmp._build_train_transforms()
         # Flatten compose
         transform_types = [type(t).__name__ for t in tf.transforms]
@@ -257,7 +256,7 @@ class TestMorphologyCNNTrainer:
 
     def test_train_one_epoch_updates_history(self, trainer_with_tmp):
         """Single epoch training must populate history."""
-        summary = trainer_with_tmp.train()
+        trainer_with_tmp.train()
         h = trainer_with_tmp.training_history
         assert len(h["train_loss"]) >= 1
         assert len(h["val_loss"]) >= 1
@@ -292,7 +291,6 @@ class TestOnnxExport:
 
     def test_export_onnx_calls_torch_onnx(self, tmp_data_dir):
         """export_onnx must call torch.onnx.export and write the output file."""
-        import torch
         from morphology.training.cnn_trainer import MorphologyCNNConfig, MorphologyCNNTrainer
 
         with tempfile.TemporaryDirectory() as out_dir:
@@ -354,6 +352,7 @@ def api_client():
     """FastAPI test client for the morphology training router."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from backend.api.v1.morphology_training import router
 
     app = FastAPI()
@@ -433,6 +432,7 @@ def system_client(tmp_path):
     """FastAPI test client for the system router with a temp .env file."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
+
     from backend.api.v1.system import router
 
     # Point env_file to a temp file so tests don't touch the real .env
@@ -483,8 +483,8 @@ class TestTokenAPI:
         assert masked == "***"
 
     def test_generate_token_returns_64_char_hex(self, system_client, tmp_path):
-        client, env_file = system_client
-        with patch("backend.utils.env_file.write_env_key") as mock_write, \
+        client, _env_file = system_client
+        with patch("backend.utils.env_file.write_env_key"), \
              patch("backend.config.get_settings") as mock_gs:
             mock_gs.cache_clear = MagicMock()
             resp = client.post("/system/token/generate")
@@ -504,7 +504,7 @@ class TestTokenAPI:
 
     def test_clear_token_returns_disabled(self, system_client):
         client, _ = system_client
-        with patch("backend.utils.env_file.write_env_key") as mock_write, \
+        with patch("backend.utils.env_file.write_env_key"), \
              patch("backend.config.get_settings") as mock_gs:
             mock_gs.cache_clear = MagicMock()
             resp = client.post("/system/token/clear")

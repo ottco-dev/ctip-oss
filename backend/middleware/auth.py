@@ -35,9 +35,8 @@ from __future__ import annotations
 
 import hmac
 import logging
-from typing import Sequence
 
-from fastapi import Request, Response
+from fastapi import Request, Response, WebSocket
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
@@ -48,10 +47,11 @@ logger = logging.getLogger(__name__)
 _AUTH_EXCLUDED_PREFIXES: tuple[str, ...] = (
     "/health",
     "/api/v1/system/health",
+    "/api/v1/auth/",            # status + session login (checks the token itself)
     "/docs",
     "/redoc",
     "/openapi.json",
-    "/ws/",
+    "/ws/",                     # WebSockets: checked in ConnectionManager.connect (websocket_authorized)
     "/favicon.ico",
 )
 
@@ -61,14 +61,18 @@ def _constant_time_equal(a: str, b: str) -> bool:
     return hmac.compare_digest(a.encode(), b.encode())
 
 
-def _extract_token(request: Request) -> str | None:
+AUTH_COOKIE = "ctip_token"
+
+
+def _extract_token(request: Request | WebSocket) -> str | None:
     """
-    Extract the API token from the request.
+    Extract the API token from an HTTP request or a WebSocket handshake.
 
     Checks in priority order:
     1. Authorization: Bearer <token>
     2. X-API-Key: <token>
     3. ?api_key=<token> query parameter
+    4. the ``ctip_token`` cookie set by the web UI (also sent with <img> requests and WebSocket upgrades)
     """
     # 1. Authorization header (Bearer scheme)
     auth_header = request.headers.get("Authorization", "")
@@ -86,7 +90,21 @@ def _extract_token(request: Request) -> str | None:
     if api_key_param:
         return api_key_param
 
+    # 4. Cookie from the web UI
+    cookie = request.cookies.get(AUTH_COOKIE, "").strip()
+    if cookie:
+        return cookie
+
     return None
+
+
+def websocket_authorized(websocket: WebSocket, api_token: str) -> bool:
+    """True if auth is off or the handshake carries the right token (HTTP middleware does not see WebSockets)."""
+    expected = api_token.strip()
+    if not expected:
+        return True
+    token = _extract_token(websocket)
+    return token is not None and _constant_time_equal(token, expected)
 
 
 class APITokenMiddleware(BaseHTTPMiddleware):
@@ -102,12 +120,7 @@ class APITokenMiddleware(BaseHTTPMiddleware):
         self._enabled = bool(self._token)
 
         if self._enabled:
-            logger.info(
-                "API token authentication ENABLED "
-                "(token length=%d, first 4 chars: %s…)",
-                len(self._token),
-                self._token[:4] if len(self._token) >= 4 else "****",
-            )
+            logger.info("API token authentication ENABLED (token length=%d)", len(self._token))
         else:
             logger.warning(
                 "API token authentication DISABLED — "

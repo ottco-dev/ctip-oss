@@ -29,26 +29,25 @@ from __future__ import annotations
 import time
 import uuid
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
-from shared.core.enums import AnnotationSource, MaturityStage
+from shared.core.enums import AnnotationSource
 from shared.logging.logger import get_logger
-from vlm_labeling.prompts.trichome_prompts import PROMPT_REGISTRY
 from vlm_labeling.filtering.hallucination import (
+    FilterResult,
     HallucinationFilter,
     HallucinationFilterConfig,
-    FilterResult,
 )
 
 logger = get_logger(__name__)
 
 
-class PseudoLabelStatus(str, Enum):
+class PseudoLabelStatus(StrEnum):
     """Status of an auto-generated label."""
 
     PENDING_REVIEW = "pending_review"

@@ -20,23 +20,23 @@ References:
 """
 
 from video_pipeline.tracking.sort_tracker import (
-    TrackState,
-    TrichomeTrack,
     KalmanBoxTracker,
     SORTTracker,
+    TrackState,
+    TrichomeTrack,
 )
 from video_pipeline.tracking.tracking_session import (
+    TrackingSession,
     TrackingSessionConfig,
     TrackingSummary,
-    TrackingSession,
 )
 
 __all__ = [
-    "TrackState",
-    "TrichomeTrack",
     "KalmanBoxTracker",
     "SORTTracker",
+    "TrackState",
+    "TrackingSession",
     "TrackingSessionConfig",
     "TrackingSummary",
-    "TrackingSession",
+    "TrichomeTrack",
 ]

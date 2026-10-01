@@ -8,9 +8,19 @@ Last updated: 2026-10-01 (release preparation)
 - `trichome.db`, logs, `mlruns/`, `frontend/.env.local` were tracked until 2026-10-01. Removing them from history
   needs `git filter-repo` and a force push — a decision for the maintainer.
 
-### TDB-031: `asyncio.get_event_loop()` in training callbacks
-- `training/callbacks/checkpoint_callback.py`, `metrics_callback.py`, `application/training_orchestrator.py` run in
-  worker threads; they should receive the loop from the caller (`run_coroutine_threadsafe`).
+### ~~TDB-031~~: `asyncio.get_event_loop()` in training callbacks ✅ FIXED 2026-10-01
+- Callbacks run in the training worker thread; they now hand broadcasts to the app loop via
+  `shared.async_utils.submit_from_thread` (loop registered in the backend lifespan). Fire-and-forget tasks use
+  `spawn()` so they cannot be garbage-collected mid-run.
+
+### TDB-033: Lint backlog (ruff rules not yet enforced)
+- CI enforces ruff with pyflakes, isort, pyupgrade, bugbear (most), comprehension and RUF rules. Ignored for now:
+  ANN (annotations), B904 (raise … from, 81×), E702 (semicolons, 67×), SIM*, E402, E741, N81x, RUF012, B027, B905,
+  UP042 — see `[tool.ruff.lint].ignore` in pyproject.toml. Remove entries as they are cleaned up.
+
+### TDB-034: Detection pipeline is CPU-bound
+- 1280 px FP16: 95 ms per image, of which 35 ms CPU preprocessing (CLAHE + bilateral). Tiles run one by one.
+  Candidates: GPU/tile-parallel preprocessing, batching all tiles of an image into one forward pass.
 
 ### TDB-032: GPU and integration tests outside CI
 - `-m gpu` / `-m integration` need a CUDA runner and external services; run manually before releases.

@@ -102,7 +102,7 @@ async def _run_training(config_dict: dict) -> None:
         _training_state["summary"] = summary
         logger.info("Morphology CNN training completed — best val acc: %.4f", summary.get("best_val_acc", 0.0))
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _training_state["state"] = "failed"
         _training_state["error"] = str(exc)
         logger.exception("Morphology CNN training failed: %s", exc)
@@ -193,7 +193,7 @@ async def training_evaluate(request: EvaluateRequest) -> dict[str, Any]:
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Evaluation failed: {exc}") from exc
 
     return {"status": "ok", "metrics": metrics}
@@ -220,7 +220,7 @@ async def training_export(request: ExportRequest) -> dict[str, Any]:
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=500, detail=f"ONNX export failed: {exc}") from exc
 
     return {

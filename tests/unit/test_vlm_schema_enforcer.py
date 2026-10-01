@@ -28,7 +28,6 @@ from vlm_labeling.prompts.schema_enforcer import (
     enforce_quality,
 )
 
-
 # ─────────────────────────────────────────────────────────────────
 # Helpers / fixtures
 # ─────────────────────────────────────────────────────────────────
@@ -108,7 +107,7 @@ class TestEmergencyExtract:
 
     def test_extracts_quoted_kv_pairs(self):
         raw = '"label": "yes", "score": 0.8'
-        enforcer = SchemaEnforcer(_simple_schema())
+        SchemaEnforcer(_simple_schema())
         data = SchemaEnforcer._emergency_extract(raw)
         assert data is not None
         assert "label" in data

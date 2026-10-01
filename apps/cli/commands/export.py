@@ -17,12 +17,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
+from rich.table import Table
 
 console = Console()
 
@@ -78,7 +77,7 @@ def run_export(
     session_data = _load_session(session)
     session_id = session_data.get("session_id", Path(session).stem if Path(session).exists() else session)
 
-    console.print(f"\n[bold cyan]Export Analysis Results[/bold cyan]")
+    console.print("\n[bold cyan]Export Analysis Results[/bold cyan]")
     console.print(f"  Session:  {session_id}")
     console.print(f"  Formats:  {', '.join(fmt_list)}")
     console.print(f"  Output:   {output_dir}")

@@ -14,14 +14,12 @@ Tests:
 
 from __future__ import annotations
 
-import os
-import struct
 import tempfile
+from datetime import UTC
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Test data fixtures
@@ -160,8 +158,9 @@ class TestBuildCalibrationSection:
             pytest.skip("reportlab not installed")
 
     def test_returns_non_empty_list(self):
-        from analytics.export.pdf_exporter import _build_calibration_section
         from reportlab.lib.styles import getSampleStyleSheet
+
+        from analytics.export.pdf_exporter import _build_calibration_section
         styles = getSampleStyleSheet()
         cal = _make_calibration_dict()
         result = _build_calibration_section(cal, styles, include_chart=False)
@@ -169,8 +168,9 @@ class TestBuildCalibrationSection:
         assert len(result) > 0
 
     def test_handles_empty_bins(self):
-        from analytics.export.pdf_exporter import _build_calibration_section
         from reportlab.lib.styles import getSampleStyleSheet
+
+        from analytics.export.pdf_exporter import _build_calibration_section
         styles = getSampleStyleSheet()
         cal = {
             "ece": 0.0, "mce": 0.0, "num_bins": 10,
@@ -182,8 +182,9 @@ class TestBuildCalibrationSection:
 
     def test_handles_missing_optional_fields(self):
         """Section must not crash when run_id, interpretation, bins absent."""
-        from analytics.export.pdf_exporter import _build_calibration_section
         from reportlab.lib.styles import getSampleStyleSheet
+
+        from analytics.export.pdf_exporter import _build_calibration_section
         styles = getSampleStyleSheet()
         cal = {"ece": 0.05, "mce": 0.09}  # minimal dict
         result = _build_calibration_section(cal, styles, include_chart=False)
@@ -191,9 +192,10 @@ class TestBuildCalibrationSection:
 
     def test_contains_ece_paragraph(self):
         """At least one flowable should mention ECE."""
-        from analytics.export.pdf_exporter import _build_calibration_section
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.platypus import Paragraph
+
+        from analytics.export.pdf_exporter import _build_calibration_section
         styles = getSampleStyleSheet()
         cal = _make_calibration_dict()
         flowables = _build_calibration_section(cal, styles, include_chart=False)
@@ -204,9 +206,10 @@ class TestBuildCalibrationSection:
 
     def test_per_bin_table_included_for_non_empty_bins(self):
         """When bins are non-empty, a Table should be present."""
-        from analytics.export.pdf_exporter import _build_calibration_section
         from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.platypus import Table
+
+        from analytics.export.pdf_exporter import _build_calibration_section
         styles = getSampleStyleSheet()
         cal = _make_calibration_dict(n_bins=5)
         flowables = _build_calibration_section(cal, styles, include_chart=False)
@@ -278,11 +281,11 @@ class TestSessionPdfWithCalibration:
 
     def _make_session_report(self):
         """Minimal mock SessionReport."""
-        from datetime import datetime, timezone
+        from datetime import datetime
         sr = MagicMock()
         sr.session_id = "sess-test-001"
         sr.session_name = "Test Session"
-        sr.created_at = datetime(2026, 5, 25, 12, 0, 0, tzinfo=timezone.utc)
+        sr.created_at = datetime(2026, 5, 25, 12, 0, 0, tzinfo=UTC)
         sr.total_images = 50
         sr.successful_images = 48
         sr.total_trichomes = 1200
@@ -301,7 +304,7 @@ class TestSessionPdfWithCalibration:
         sr = self._make_session_report()
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "session.pdf"
-            result = export_session_pdf(sr, out)
+            export_session_pdf(sr, out)
             assert out.exists()
             assert out.stat().st_size > 512
 
@@ -311,7 +314,7 @@ class TestSessionPdfWithCalibration:
         cal = _make_calibration_dict()
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "session_cal.pdf"
-            result = export_session_pdf(sr, out, calibration=cal, include_charts=False)
+            export_session_pdf(sr, out, calibration=cal, include_charts=False)
             assert out.exists()
             size_with_cal = out.stat().st_size
 

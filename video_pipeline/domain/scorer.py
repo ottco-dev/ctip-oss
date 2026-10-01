@@ -27,7 +27,6 @@ OUTPUT:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -155,7 +154,7 @@ def _score_exposure(gray: NDArray[np.uint8]) -> float:
         return 0.0
 
     hist = cv2.calcHist([gray], [0], None, [256], [0, 256]).flatten()
-    hist_norm = hist / n_pixels  # Normalized frequency
+    hist / n_pixels  # Normalized frequency
 
     # Overexposure penalty: fraction of pixels >250
     overexposed = float(hist[250:].sum() / n_pixels)

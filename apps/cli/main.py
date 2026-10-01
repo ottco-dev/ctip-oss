@@ -34,13 +34,9 @@ Usage:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import typer
-from rich.console import Console
-from rich.table import Table
 from rich import print as rprint
+from rich.console import Console
 
 # ── Main app ──────────────────────────────────────────────────────────────────
 
@@ -67,10 +63,12 @@ def _add_subapp(name: str, module_path: str, help_text: str) -> None:
             app.add_typer(sub_app, name=name, help=help_text)
     except Exception as e:
         # Register a stub command instead of failing silently
+        load_error = str(e)          # `e` is unbound after the except block - keep the message
+
         @app.command(name)
-        def _stub(ctx: typer.Context) -> None:  # type: ignore[misc]
-            console.print(f"[red]Command '{name}' failed to load:[/red] {e}")
-            console.print(f"[dim]Run: uv pip install -e '.[dev]'[/dim]")
+        def _stub(ctx: typer.Context, _error: str = load_error) -> None:  # type: ignore[misc]
+            console.print(f"[red]Command '{name}' failed to load:[/red] {_error}")
+            console.print("[dim]Run: uv pip install -e '.[dev]'[/dim]")
             raise typer.Exit(code=1)
         _stub.__doc__ = f"{help_text} [unavailable: {e}]"
 
@@ -173,7 +171,7 @@ def serve(
         console.print("[red]uvicorn not installed.[/red]  Run: uv pip install uvicorn")
         raise typer.Exit(code=1)
 
-    console.print(f"[bold]Starting CTIP API[/bold]")
+    console.print("[bold]Starting CTIP API[/bold]")
     console.print(f"  URL:    [cyan]http://{host}:{port}[/cyan]")
     console.print(f"  Docs:   [cyan]http://{host}:{port}/docs[/cyan]")
     console.print(f"  Reload: {reload}")

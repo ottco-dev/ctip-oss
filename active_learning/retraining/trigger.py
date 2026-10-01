@@ -14,12 +14,9 @@ new annotations, and current metric snapshots.
 
 from __future__ import annotations
 
-import json
-import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Callable, Optional
-
+from datetime import datetime
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -58,7 +55,7 @@ class TriggerConfig:
 class TriggerState:
     """Mutable state tracking trigger conditions."""
 
-    last_retrain_at: Optional[datetime] = None
+    last_retrain_at: datetime | None = None
     new_annotations_since_retrain: int = 0
     best_map50: float = 0.0
     current_map50: float = 0.0
@@ -120,7 +117,7 @@ class RetrainingTrigger:
     def __init__(
         self,
         config: TriggerConfig | None = None,
-        on_trigger: Optional[Callable[[TriggerDecision], None]] = None,
+        on_trigger: Callable[[TriggerDecision], None] | None = None,
     ) -> None:
         self.config = config or TriggerConfig()
         self.state = TriggerState()
@@ -303,7 +300,7 @@ class RetrainingTrigger:
         if self._on_trigger and decision.should_retrain:
             try:
                 self._on_trigger(decision)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
     def get_status(self) -> dict:

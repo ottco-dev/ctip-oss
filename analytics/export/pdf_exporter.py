@@ -14,23 +14,17 @@ Features:
 
 from __future__ import annotations
 
-import io
-import os
 from pathlib import Path
-from typing import Optional
 
 try:
     from reportlab.lib import colors
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
-    from reportlab.lib.pagesizes import A4, letter
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import cm, inch
+    from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm
     from reportlab.platypus import (
-        BaseDocTemplate,
-        Frame,
         Image,
         PageBreak,
-        PageTemplate,
         Paragraph,
         SimpleDocTemplate,
         Spacer,
@@ -357,7 +351,9 @@ def export_session_pdf(
         if include_charts:
             try:
                 import io as _io
+
                 import matplotlib.pyplot as _plt
+
                 from analytics.visualization.plotter import plot_maturity_distribution
 
                 fig = plot_maturity_distribution(
@@ -508,8 +504,10 @@ def _build_calibration_section(
     if include_chart and bins:
         try:
             import io as _io
+
             import matplotlib.pyplot as _plt
-            from analytics.visualization.plotter import (  # noqa: PLC0415
+
+            from analytics.visualization.plotter import (
                 plot_reliability_diagram_from_bins,
             )
 

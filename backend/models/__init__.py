@@ -1,19 +1,19 @@
 """backend.models — SQLModel database models."""
 
-from backend.models.experiment import Experiment, Run, Metric
-from backend.models.dataset import Dataset, Sample, Annotation
+from backend.models.dataset import Annotation, Dataset, Sample
+from backend.models.experiment import Experiment, Metric, Run
 from backend.models.job import BackgroundJob
 from backend.models.model_registry import RegisteredModel
 from backend.models.session import AnalysisSession
 
 __all__ = [
-    "Experiment",
-    "Run",
-    "Metric",
-    "Dataset",
-    "Sample",
+    "AnalysisSession",
     "Annotation",
     "BackgroundJob",
+    "Dataset",
+    "Experiment",
+    "Metric",
     "RegisteredModel",
-    "AnalysisSession",
+    "Run",
+    "Sample",
 ]

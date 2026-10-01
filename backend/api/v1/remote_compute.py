@@ -95,7 +95,7 @@ async def test_backend(backend_id: str = Form(default="modal")) -> dict[str, Any
         raise HTTPException(status_code=400, detail=str(e))
 
     if not backend.is_available:
-        env_vars = ", ".join(v for v in [
+        ", ".join(v for v in [
             "MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET", "REPLICATE_API_KEY"
         ] if backend_id in v.lower() or True)
         return {
@@ -129,8 +129,8 @@ async def remote_infer(
     Offloads image analysis to Modal (serverless) or Replicate (hosted).
     Use when the local RTX 4060 is busy with training or lacks VRAM.
     """
-    from services.remote_compute.registry import get_compute_backend
     from services.remote_compute.base import GpuTier
+    from services.remote_compute.registry import get_compute_backend
 
     image = _load_image(file)
 

@@ -26,13 +26,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from rich.progress import track, Progress, SpinnerColumn, TextColumn, BarColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from rich.panel import Panel
 
 console = Console()
 
@@ -81,7 +79,7 @@ def extract_frames(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    console.print(f"\n[bold cyan]Video Frame Extraction[/bold cyan]")
+    console.print("\n[bold cyan]Video Frame Extraction[/bold cyan]")
     console.print(f"  Input:     {video_path}")
     console.print(f"  Output:    {output_dir}")
     console.print(f"  Top-N:     {top_n}")
@@ -92,12 +90,18 @@ def extract_frames(
     console.print()
 
     try:
-        from video_pipeline.domain.extractor import get_video_info, extract_frames_fixed_rate
-        from video_pipeline.domain.scorer import score_frame, FrameQualityScore
-        from video_pipeline.domain.hasher import perceptual_hash, deduplicate_frames
-        from video_pipeline.domain.ranker import RankedFrame, rank_top_n, rank_diverse_n, rank_adaptive
-        import numpy as np
         import cv2
+        import numpy as np
+
+        from video_pipeline.domain.extractor import extract_frames_fixed_rate, get_video_info
+        from video_pipeline.domain.hasher import deduplicate_frames, perceptual_hash
+        from video_pipeline.domain.ranker import (
+            RankedFrame,
+            rank_adaptive,
+            rank_diverse_n,
+            rank_top_n,
+        )
+        from video_pipeline.domain.scorer import score_frame
 
         # Get video info
         info = get_video_info(str(video_path))
@@ -208,7 +212,7 @@ def extract_frames(
         # Summary
         if metadata:
             avg_q = sum(m["composite"] for m in metadata) / len(metadata)
-            console.print(f"\n[bold green]Extraction complete[/bold green]")
+            console.print("\n[bold green]Extraction complete[/bold green]")
             console.print(f"  Saved:     {saved_count} frames")
             console.print(f"  Avg quality: {avg_q:.3f}")
             console.print(f"  Output:    {output_dir}")
@@ -257,7 +261,7 @@ def video_info(
 
         every_n = max(1, info.total_frames // sample_n)
         scores = []
-        for frame_rgb, finfo in extract_frames_fixed_rate(str(video_path), every_n_frames=every_n):
+        for frame_rgb, _finfo in extract_frames_fixed_rate(str(video_path), every_n_frames=every_n):
             scores.append(score_frame(frame_rgb).composite)
             if len(scores) >= sample_n:
                 break
@@ -286,7 +290,7 @@ def score_image(
 
     try:
         import cv2
-        import numpy as np
+
         from video_pipeline.domain.scorer import score_frame
 
         bgr = cv2.imread(str(image_path))

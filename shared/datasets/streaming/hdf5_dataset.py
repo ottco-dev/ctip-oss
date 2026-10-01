@@ -225,7 +225,7 @@ class HDF5Dataset(torch.utils.data.Dataset):
         image_size: int = 640,
         compression: str = "gzip",
         compression_opts: int = 4,
-    ) -> "HDF5Dataset":
+    ) -> HDF5Dataset:
         """Build an HDF5 file from image files and annotation dicts.
 
         Args:

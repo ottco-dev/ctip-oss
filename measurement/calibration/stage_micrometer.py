@@ -45,7 +45,7 @@ Reference:
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -139,7 +139,7 @@ class MicroscopeProfile:
             json.dump(self.to_dict(), f, indent=2)
 
     @classmethod
-    def load(cls, path: Path) -> "MicroscopeProfile":
+    def load(cls, path: Path) -> MicroscopeProfile:
         with open(path) as f:
             data = json.load(f)
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
@@ -316,7 +316,6 @@ def estimate_scale_from_objective(
 # ---------------------------------------------------------------------------
 
 from dataclasses import dataclass as _dataclass
-from typing import Optional as _Optional
 
 
 @_dataclass
@@ -343,7 +342,7 @@ class ScaleBarDetectionResult:
 
 
 def detect_scale_bar_px(
-    image_gray: "np.ndarray",
+    image_gray: np.ndarray,
     *,
     min_line_length_frac: float = 0.05,
     max_line_gap_frac: float = 0.01,
@@ -399,7 +398,7 @@ def detect_scale_bar_px(
             message="cv2 not available — install opencv-python",
         )
 
-    h, w = image_gray.shape[:2]
+    _h, w = image_gray.shape[:2]
     min_len = max(10, int(min_line_length_frac * w))
     max_gap = max(2, int(max_line_gap_frac * w))
     max_angle_rad = float(np.deg2rad(max_angle_deg))
@@ -436,8 +435,8 @@ def detect_scale_bar_px(
 
     # ── 5. Filter to near-horizontal lines ─────────────────────────────────
     horizontal_segments: list[tuple[int, int, int, int]] = []
-    for seg in lines:
-        x1, y1, x2, y2 = seg[0]
+    # OpenCV 4 returns (N, 1, 4), OpenCV 5 (N, 4)
+    for x1, y1, x2, y2 in np.asarray(lines).reshape(-1, 4).tolist():
         angle = float(np.abs(np.arctan2(y2 - y1, x2 - x1)))
         if angle <= max_angle_rad:
             horizontal_segments.append((x1, y1, x2, y2))

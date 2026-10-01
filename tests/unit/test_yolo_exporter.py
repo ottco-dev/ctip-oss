@@ -15,23 +15,22 @@ All ultralytics.YOLO and tensorrt calls are mocked.
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from typer.testing import CliRunner
 
+from apps.cli.commands.convert import app as convert_app
+
 # Module under test
 from inference.tensorrt_engine.exporter import (
+    ExportError,
     YOLOExportConfig,
     YOLOToTensorRT,
-    ExportError,
 )
-from apps.cli.commands.convert import app as convert_app
 
 runner = CliRunner()
 
@@ -178,7 +177,7 @@ class TestExportOnnxOnly:
     def test_onnx_export_creates_output_dir(self, tmp_model, tmp_path):
         """Output directory should be created automatically."""
         out_dir = tmp_path / "nested" / "output"
-        onnx_out = out_dir / "best.onnx"
+        out_dir / "best.onnx"
 
         cfg = YOLOExportConfig(
             model_path=str(tmp_model),
@@ -252,7 +251,6 @@ class TestFullExport:
         # Simulate TRT absent by making the `import tensorrt` line raise ImportError.
         # We do this by temporarily removing tensorrt from sys.modules and replacing
         # it with a sentinel that raises on import.
-        import importlib
         real_trt = sys.modules.get("tensorrt")
         sys.modules["tensorrt"] = None  # type: ignore[assignment]
         try:
@@ -283,7 +281,6 @@ class TestFullExport:
         mock_yolo_instance = MagicMock()
         mock_yolo_instance.export.return_value = str(onnx_out)
 
-        import importlib
         real_trt = sys.modules.get("tensorrt")
         sys.modules["tensorrt"] = None  # type: ignore[assignment]
         try:
@@ -579,4 +576,5 @@ def _mock_import_without(blocked_module: str):
 
 # Capture real __import__ before any patching occurs
 import builtins as _builtins_mod
+
 builtins_import = _builtins_mod.__import__

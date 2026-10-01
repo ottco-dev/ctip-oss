@@ -16,16 +16,17 @@ import time
 import numpy as np
 from numpy.typing import NDArray
 
+from shared.logging.logger import get_logger
 from vlm_labeling.providers.base import (
+    ProviderCapabilities,
+    ProviderKind,
+    ProviderTier,
     VLMProvider,
     VLMProviderInfo,
     VLMResponse,
-    ProviderKind,
-    ProviderTier,
-    ProviderCapabilities,
     image_to_pil,
 )
-from shared.logging.logger import get_logger
+from vlm_labeling.providers.remote._text import strip_code_fence
 
 logger = get_logger(__name__)
 
@@ -138,7 +139,7 @@ class GoogleProvider(VLMProvider):
             )
 
         latency = time.perf_counter() - t0
-        clean = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        clean = strip_code_fence(raw)
         try:
             parsed = json.loads(clean)
         except json.JSONDecodeError:

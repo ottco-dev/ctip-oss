@@ -23,12 +23,11 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
-from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
+from backend.api.v1.system import _get_cpu_ram_stats, _get_gpu_stats
 from backend.websocket.manager import ws_manager
-from backend.api.v1.system import _get_gpu_stats, _get_cpu_ram_stats
 from shared.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -48,7 +47,8 @@ async def ws_training(
     Format: {type: "training_metrics", epoch: N, metrics: {...}}
     """
     cid = client_id or str(uuid.uuid4())
-    await ws_manager.connect(websocket, cid, topic="training")
+    if not await ws_manager.connect(websocket, cid, topic="training"):
+        return
 
     try:
         while True:
@@ -60,7 +60,7 @@ async def ws_training(
                     "type": "echo",
                     "data": data,
                 })
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat
                 await ws_manager.heartbeat(cid)
 
@@ -77,13 +77,14 @@ async def ws_jobs(
 ) -> None:
     """WebSocket for background job status updates."""
     cid = client_id or str(uuid.uuid4())
-    await ws_manager.connect(websocket, cid, topic="jobs")
+    if not await ws_manager.connect(websocket, cid, topic="jobs"):
+        return
 
     try:
         while True:
             try:
                 await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ws_manager.heartbeat(cid)
     except WebSocketDisconnect:
         pass
@@ -104,7 +105,8 @@ async def ws_system(
     Frontend uses this for the GPU monitor widget.
     """
     cid = client_id or str(uuid.uuid4())
-    await ws_manager.connect(websocket, cid, topic="system")
+    if not await ws_manager.connect(websocket, cid, topic="system"):
+        return
 
     async def push_stats_loop() -> None:
         while True:
@@ -130,7 +132,7 @@ async def ws_system(
         while True:
             try:
                 await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass  # Stats are pushed proactively
     except WebSocketDisconnect:
         pass
@@ -146,13 +148,14 @@ async def ws_global(
 ) -> None:
     """General notification channel for alerts and system messages."""
     cid = client_id or str(uuid.uuid4())
-    await ws_manager.connect(websocket, cid, topic="global")
+    if not await ws_manager.connect(websocket, cid, topic="global"):
+        return
 
     try:
         while True:
             try:
                 await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ws_manager.heartbeat(cid)
     except WebSocketDisconnect:
         pass
@@ -162,8 +165,8 @@ async def ws_global(
 
 # ── Log streaming for process monitoring tray ────────────────────
 
-import logging as _logging
 import collections
+import logging as _logging
 import time as _time
 
 _log_buffer: collections.deque = collections.deque(maxlen=1000)
@@ -253,7 +256,8 @@ async def ws_logs(
     Filter: level=DEBUG|INFO|WARNING|ERROR
     """
     cid = client_id or str(uuid.uuid4())
-    await ws_manager.connect(websocket, cid, topic="logs")
+    if not await ws_manager.connect(websocket, cid, topic="logs"):
+        return
 
     # Send buffered log history immediately
     level_num = getattr(_logging, level.upper(), _logging.INFO)
@@ -294,7 +298,7 @@ async def ws_logs(
         while True:
             try:
                 await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ws_manager.heartbeat(cid)
     except WebSocketDisconnect:
         pass

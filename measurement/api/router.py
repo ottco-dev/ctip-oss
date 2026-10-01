@@ -15,23 +15,21 @@ Endpoints:
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import cv2
 import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
-from measurement.domain.profile_manager import MicroscopeProfile, ProfileManager
+from measurement.calibration.stage_micrometer import detect_scale_bar_px
 from measurement.domain.measurer import Measurer
+from measurement.domain.profile_manager import MicroscopeProfile, ProfileManager
 from measurement.schemas.schemas import (
-    MicroscopeProfileSchema,
     CreateProfileRequest,
+    MeasurementUncertaintySchema,
+    MicroscopeProfileSchema,
     StageMicrometerRequest,
     TrichomeMeasurementsSchema,
-    MeasurementUncertaintySchema,
 )
-from measurement.calibration.stage_micrometer import detect_scale_bar_px, ScaleBarDetectionResult
 
 router = APIRouter(prefix="/measurement", tags=["Measurement & Calibration"])
 
@@ -95,8 +93,8 @@ async def health() -> dict:
     }
 
 
-@router.get("/profiles", response_model=List[MicroscopeProfileSchema])
-async def list_profiles() -> List[MicroscopeProfileSchema]:
+@router.get("/profiles", response_model=list[MicroscopeProfileSchema])
+async def list_profiles() -> list[MicroscopeProfileSchema]:
     """List all available microscope calibration profiles."""
     return [_profile_to_schema(p) for p in _profile_manager.list_profiles()]
 
@@ -152,7 +150,7 @@ class ScaleBarDetectionResponse(BaseModel):
     method: str
     message: str
     # Set to the resulting profile when detected=True and save_profile=True
-    profile: Optional[MicroscopeProfileSchema] = None
+    profile: MicroscopeProfileSchema | None = None
 
 
 @router.post(
@@ -232,7 +230,7 @@ async def calibrate_auto_detect(
         )
 
     # Optionally create and save the profile
-    saved_profile_schema: Optional[MicroscopeProfileSchema] = None
+    saved_profile_schema: MicroscopeProfileSchema | None = None
     if save_profile:
         profile = _profile_manager.create_from_stage_micrometer(
             name=profile_name,
@@ -298,8 +296,8 @@ async def set_default_profile(profile_id: str) -> dict:
 )
 async def measure_from_mask(
     mask_file: UploadFile = File(..., description="Grayscale PNG binary mask"),
-    profile_id: Optional[str] = Form(default=None),
-    focus_score: Optional[float] = Form(default=None),
+    profile_id: str | None = Form(default=None),
+    focus_score: float | None = Form(default=None),
 ) -> TrichomeMeasurementsSchema:
     """
     Measure a trichome's physical dimensions from its binary mask.

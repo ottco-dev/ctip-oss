@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -41,36 +39,36 @@ class HeadSchema(BaseModel):
 class MorphologyTypeSchema(BaseModel):
     primary_type: str
     confidence: float = Field(ge=0, le=1)
-    secondary_type: Optional[str] = None
-    secondary_confidence: Optional[float] = None
-    head_diameter_px: Optional[float] = None
-    stalk_length_px: Optional[float] = None
-    head_circularity: Optional[float] = None
-    elongation: Optional[float] = None
-    class_probabilities: Dict[str, float] = Field(default_factory=dict)
+    secondary_type: str | None = None
+    secondary_confidence: float | None = None
+    head_diameter_px: float | None = None
+    stalk_length_px: float | None = None
+    head_circularity: float | None = None
+    elongation: float | None = None
+    class_probabilities: dict[str, float] = Field(default_factory=dict)
     model_id: str = "geometric"
 
 
 class MorphologyAnalysisResponse(BaseModel):
     instance_id: str
     morphology: MorphologyTypeSchema
-    geometric: Optional[GeometricDescriptorsSchema] = None
-    stalk: Optional[StalkSchema] = None
-    head: Optional[HeadSchema] = None
+    geometric: GeometricDescriptorsSchema | None = None
+    stalk: StalkSchema | None = None
+    head: HeadSchema | None = None
 
 
 class DensityMapResponse(BaseModel):
     total_count: int
     uniformity_index: float
-    density_per_mm2: Optional[float] = None
-    peak_density_cell: List[int]
-    image_shape: List[int]
-    type_distribution: Dict[str, int] = Field(default_factory=dict)
+    density_per_mm2: float | None = None
+    peak_density_cell: list[int]
+    image_shape: list[int]
+    type_distribution: dict[str, int] = Field(default_factory=dict)
 
 
 class BatchMorphologyResponse(BaseModel):
     analyzed: int
     failed: int
-    type_distribution: Dict[str, int]
-    results: List[MorphologyAnalysisResponse]
-    density: Optional[DensityMapResponse] = None
+    type_distribution: dict[str, int]
+    results: list[MorphologyAnalysisResponse]
+    density: DensityMapResponse | None = None

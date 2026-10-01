@@ -32,12 +32,12 @@ import sys
 import tempfile
 import time
 import uuid
+from datetime import UTC
 from pathlib import Path
-from typing import Literal
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/setup", tags=["setup"])
 
@@ -354,7 +354,7 @@ class VerificationResponse(BaseModel):
 async def get_setup_status() -> SetupStatus:
     env = _read_env_file(ENV_FILE)
     completed = env.get("SETUP_COMPLETED", "").lower() in ("true", "1", "yes")
-    configured = [k for k in ALLOWED_KEYS if k in env and env[k]]
+    configured = [k for k in ALLOWED_KEYS if env.get(k)]
     return SetupStatus(completed=completed, env_exists=ENV_FILE.exists(),
                        configured_keys=sorted(configured))
 
@@ -434,7 +434,7 @@ async def reset_setup_status() -> dict[str, str]:
 
 @router.get("/system-check", response_model=SystemCheckResponse)
 async def system_check() -> SystemCheckResponse:
-    from datetime import datetime, timezone
+    from datetime import datetime
     items: list[CheckItem] = []
 
     def add(name: str, ok: bool, value: str = "", detail: str = "", required: bool = True) -> None:
@@ -502,7 +502,7 @@ async def system_check() -> SystemCheckResponse:
     return SystemCheckResponse(
         items=items,
         all_required_ok=all(i.ok for i in items if i.required),
-        checked_at=datetime.now(timezone.utc).isoformat(),
+        checked_at=datetime.now(UTC).isoformat(),
     )
 
 
@@ -511,7 +511,8 @@ async def system_check() -> SystemCheckResponse:
 @router.get("/docker/status", response_model=DockerStatusResponse)
 async def docker_status() -> DockerStatusResponse:
     """Check Docker availability, group membership, running containers."""
-    import grp, os
+    import grp
+    import os
 
     # Docker group check
     try:
@@ -521,7 +522,7 @@ async def docker_status() -> DockerStatusResponse:
         in_group = False
 
     ok_dk, dk_out = await asyncio.to_thread(_run, ["docker", "info", "--format", "{{.ServerVersion}}"])
-    ok_dc, dc_out = await asyncio.to_thread(_run, ["docker", "compose", "version", "--short"])
+    ok_dc, _dc_out = await asyncio.to_thread(_run, ["docker", "compose", "version", "--short"])
 
     containers: list[ContainerInfo] = []
     if ok_dk:
@@ -600,8 +601,9 @@ async def docker_start_annotation(body: DockerStartRequest) -> DockerStartRespon
 @router.get("/docker/start-annotation/stream")
 async def docker_start_annotation_stream(profile: str = "annotation"):
     """SSE stream of docker compose up output. Connect via EventSource."""
-    from fastapi.responses import StreamingResponse as _SR
     import asyncio as _aio
+
+    from fastapi.responses import StreamingResponse as _SR
 
     ok_dk, _ = await _aio.to_thread(_run, ["docker", "info"])
     if not ok_dk:
@@ -843,7 +845,7 @@ async def create_label_studio_project(body: LabelStudioProjectRequest) -> LabelS
 
 @router.get("/verification", response_model=VerificationResponse)
 async def run_verification() -> VerificationResponse:
-    from datetime import datetime, timezone
+    from datetime import datetime
     env = _read_env_file(ENV_FILE)
     endpoints = [
         ("Backend API",   "http://localhost:8000/api/v1/setup/status"),
@@ -861,4 +863,4 @@ async def run_verification() -> VerificationResponse:
         items.append(VerificationItem(name=name, url=url, ok=ok, status_code=code,
                                       latency_ms=round(lat, 1), detail=detail))
     return VerificationResponse(items=items, all_ok=all(i.ok for i in items),
-                                timestamp=datetime.now(timezone.utc).isoformat())
+                                timestamp=datetime.now(UTC).isoformat())

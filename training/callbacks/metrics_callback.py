@@ -15,10 +15,12 @@ All I/O is best-effort — training continues even if logging fails.
 from __future__ import annotations
 
 import logging
-import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
+
+from shared.async_utils import submit_from_thread
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +223,6 @@ class MetricsCallback:
     def _broadcast_websocket(self, epoch: int, metrics: dict[str, float]) -> None:
         """Broadcast training metrics to frontend via WebSocket."""
         try:
-            import asyncio
 
             from backend.websocket.manager import ws_manager
 
@@ -235,11 +236,8 @@ class MetricsCallback:
             }
 
             # Run async broadcast in sync context
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(ws_manager.broadcast_to_topic("training", payload))
-            else:
-                loop.run_until_complete(ws_manager.broadcast_to_topic("training", payload))
+            # the callback runs in the training worker thread - hand the broadcast to the app loop
+            submit_from_thread(ws_manager.broadcast_to_topic("training", payload))
 
         except Exception as e:
             logger.debug("WebSocket broadcast failed: %s", e)
