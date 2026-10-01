@@ -19,10 +19,20 @@ For development: create_all_tables() is sufficient.
 from __future__ import annotations
 
 from collections.abc import Generator
+from pathlib import Path
 
 from sqlmodel import Session, SQLModel, create_engine
 
 from backend.config import get_settings
+
+
+def sqlite_dir(url: str) -> None:
+    """Create the folder of a file-based SQLite database (a fresh volume has no db/ folder yet)."""
+    from sqlalchemy.engine import make_url
+
+    database = make_url(url).database
+    if database and database != ":memory:":
+        Path(database).expanduser().parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_engine():
@@ -33,6 +43,7 @@ def get_engine():
     if settings.database_url.startswith("sqlite"):
         # SQLite requires check_same_thread=False for FastAPI multi-thread usage
         connect_args["check_same_thread"] = False
+        sqlite_dir(settings.database_url)
 
     return create_engine(
         settings.database_url,

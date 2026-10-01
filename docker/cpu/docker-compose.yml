@@ -1,0 +1,39 @@
+# CTIP on a server without a GPU: backend (CPU inference), web UI, MLflow, Label Studio.
+#   cd docker/cpu && cp ctip.env.example ctip.env   # set API_TOKEN at least
+#   docker compose up -d --build                    # UI on http://localhost:3000
+# Put a reverse proxy (TLS) in front for remote access: / -> frontend, /api/* and /ws/* -> backend.
+name: ctip
+services:
+  backend:
+    build: { context: ../.., dockerfile: docker/cpu/Dockerfile.backend }
+    image: ctip-backend:cpu
+    restart: unless-stopped
+    env_file: ctip.env
+    volumes:
+      - ./ctip.env:/app/.env
+      - ctip-data:/data
+    ports: ["${DIRECT_BIND:-127.0.0.1}:8000:8000"]
+  frontend:
+    build: { context: ../.., dockerfile: docker/cpu/Dockerfile.frontend }
+    image: ctip-frontend:cpu
+    restart: unless-stopped
+    depends_on: [backend]
+    ports: ["${DIRECT_BIND:-127.0.0.1}:3000:3000"]
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.1
+    restart: unless-stopped
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+    volumes: [ctip-mlflow:/mlflow]
+    ports: ["${DIRECT_BIND:-127.0.0.1}:5000:5000"]
+  label-studio:
+    image: heartexlabs/label-studio:1.13.1
+    restart: unless-stopped
+    environment:
+      LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED: "true"
+      LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT: /data
+    volumes: [ctip-label-studio:/label-studio/data, ctip-data:/data:ro]
+    ports: ["${DIRECT_BIND:-127.0.0.1}:8080:8080"]
+volumes:
+  ctip-data:
+  ctip-mlflow:
+  ctip-label-studio:

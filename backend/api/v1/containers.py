@@ -26,6 +26,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from backend.config import get_settings
 from shared.async_utils import spawn
 
 router = APIRouter(prefix="/containers", tags=["containers"])
@@ -122,8 +123,8 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 COMPOSE_FILE = REPO_ROOT / "docker" / "docker-compose.yml"
 COMPOSE_DIR = REPO_ROOT / "docker"
 
-# Resolve task DB path now that REPO_ROOT is set
-_TASK_DB = REPO_ROOT / "data" / "tasks.db"
+# Background-task history lives in the configured data root (a container mounts it as a volume)
+_TASK_DB = Path(get_settings().data_root).resolve() / "tasks.db"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

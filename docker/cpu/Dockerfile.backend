@@ -1,0 +1,26 @@
+# CTIP backend for servers without a GPU (inference on the CPU, PyTorch CPU wheels).
+# Versions come from uv.lock; only torch/torchvision are swapped for their +cpu builds.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_LINK_MODE=copy \
+    COMPUTE_BACKEND=cpu CUDA_DEVICE=cpu
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 curl \
+    && rm -rf /var/lib/apt/lists/* && pip install --no-cache-dir uv==0.9.*
+
+WORKDIR /app
+COPY pyproject.toml uv.lock README.md ./
+RUN set -e; \
+    uv export --frozen --no-hashes --no-emit-project | grep -vE '^(torch|torchvision|triton|nvidia-)' > /tmp/constraints.txt; \
+    TORCH=$(uv export --frozen --no-hashes --no-emit-project | grep -E '^torch==' | cut -d= -f3 | cut -d' ' -f1); \
+    VISION=$(uv export --frozen --no-hashes --no-emit-project | grep -E '^torchvision==' | cut -d= -f3 | cut -d' ' -f1); \
+    uv pip install --system --no-cache "torch==${TORCH}+cpu" "torchvision==${VISION}+cpu" \
+      --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match
+
+COPY . .
+RUN uv pip install --system --no-cache -e . -c /tmp/constraints.txt \
+    && useradd -m -u 1000 ctip && mkdir -p /data /app/logs && chown -R ctip /data /app/logs
+
+USER ctip
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s CMD curl -fsS http://localhost:8000/api/v1/system/health || exit 1
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]

@@ -1,0 +1,17 @@
+.git
+.venv
+**/node_modules
+**/.next
+**/__pycache__
+data/
+mlruns/
+mlartifacts/
+logs/
+runs/
+*.pt
+*.engine
+*.onnx
+*.db
+.env
+docker/cpu/ctip.env
+notebooks/.ipynb_checkpoints

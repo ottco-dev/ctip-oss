@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- `docker/cpu/`: CPU-only server stack (backend, production web UI, MLflow, Label Studio), images built from `uv.lock`
+
 ### Fixed
+- A fresh install could not start: the SQLite folder (`db/`) was not created
+- Background-task history was written to a hard-coded `./data` instead of `DATA_ROOT`
 - Training: the configured gradient accumulation (`batch_size × gradient_accumulation_steps`) was never passed to
   Ultralytics, which always used a nominal batch of 64 — small datasets made one optimizer step every few dozen
   epochs. Now passed as `nbs`.

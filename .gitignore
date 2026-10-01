@@ -118,3 +118,4 @@ reports/generated/
 
 # Build caches
 *.tsbuildinfo
+docker/cpu/ctip.env
