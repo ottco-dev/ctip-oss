@@ -28,9 +28,15 @@ jobs:
       - name: Install from uv.lock (CPU PyTorch wheels keep the runner small)
         run: |
           uv lock --check
-          uv export --frozen --extra dev --no-hashes --no-emit-project > constraints.txt
+          # everything pinned from the lock except the CUDA build of torch: CI uses the CPU wheels
+          uv export --frozen --extra dev --no-hashes --no-emit-project \
+            | grep -vE '^(torch|torchvision|triton|nvidia-)' > constraints.txt
           uv venv .venv --python 3.12
-          uv pip install --python .venv/bin/python torch torchvision -c constraints.txt --index-url https://download.pytorch.org/whl/cpu
+          TORCH=$(uv export --frozen --no-hashes --no-emit-project | grep -E '^torch==' | cut -d= -f3 | cut -d' ' -f1)
+          VISION=$(uv export --frozen --no-hashes --no-emit-project | grep -E '^torchvision==' | cut -d= -f3 | cut -d' ' -f1)
+          uv pip install --python .venv/bin/python "torch==${TORCH}+cpu" "torchvision==${VISION}+cpu" \
+            --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple \
+            --index-strategy unsafe-best-match
           uv pip install --python .venv/bin/python -e ".[dev]" -c constraints.txt
       - name: Lint
         run: .venv/bin/ruff check .
