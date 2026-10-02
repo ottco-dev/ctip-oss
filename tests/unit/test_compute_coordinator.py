@@ -253,3 +253,20 @@ class TestApi:
         assert dl.content == data and dl.headers["X-Content-SHA256"] == hashlib.sha256(data).hexdigest()
         workers = c.get("/api/v1/compute/workers", headers=admin).json()
         assert workers[0]["online"] and workers[0]["capabilities"]["device"] == "RTX 4060"
+
+
+def test_installers_are_public_and_carry_the_server(monkeypatch):
+    from backend.compute import api
+    from backend.middleware.auth import APITokenMiddleware
+
+    app = FastAPI()
+    app.add_middleware(APITokenMiddleware, api_token="admin-secret")
+    app.include_router(api.install_router, prefix="/api/v1")
+    c = TestClient(app)
+    r = c.get("/api/v1/compute/install/install-worker.sh", headers={"x-forwarded-proto": "https", "x-forwarded-host": "ctip.example.org"})
+    assert r.status_code == 200 and 'SERVER="${CTIP_SERVER:-https://ctip.example.org}"' in r.text
+    assert "@SERVER@" not in r.text and "ctipe_" in r.text                      # token placeholder only, no secret
+    ps = c.get("/api/v1/compute/install/install-worker.ps1", headers={"x-forwarded-proto": "https", "x-forwarded-host": "ctip.example.org"})
+    assert ps.status_code == 200 and '"https://ctip.example.org"' in ps.text
+    assert c.get("/api/v1/compute/install/../../etc/passwd").status_code in (401, 404)   # never served
+    assert c.get("/api/v1/compute/install/other.sh").status_code == 404

@@ -33,6 +33,10 @@ from backend.compute.api import router as compute_router
 
 router.include_router(compute_router)
 router.include_router(compute_agent_router)
+
+from backend.compute.api import install_router as compute_install_router
+
+router.include_router(compute_install_router)
 router.include_router(setup.router)
 router.include_router(containers.router)
 router.include_router(system.router)

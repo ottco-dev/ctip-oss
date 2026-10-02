@@ -93,47 +93,100 @@ function Stat({ icon: Icon, label, value, hint }: { icon: React.ElementType; lab
   );
 }
 
+type Os = 'linux' | 'macos' | 'windows';
+type Hw = 'auto' | 'cuda' | 'rocm' | 'mps' | 'cpu';
+
+const OS_LABEL: Record<Os, string> = { linux: 'Linux', macos: 'macOS', windows: 'Windows' };
+const HW_LABEL: Record<Hw, string> = { auto: 'Detect automatically', cuda: 'NVIDIA (CUDA)', rocm: 'AMD (ROCm)', mps: 'Apple Silicon (MPS)', cpu: 'CPU only' };
+const HW_FOR: Record<Os, Hw[]> = { linux: ['auto', 'cuda', 'rocm', 'cpu'], macos: ['auto', 'mps', 'cpu'], windows: ['auto', 'cuda', 'cpu'] };
+const HW_NOTE: Partial<Record<`${Os}-${Hw}`, string>> = {
+  'linux-cuda': 'Needs a current NVIDIA driver (nvidia-smi works).',
+  'linux-rocm': 'Needs ROCm 6 and a supported AMD GPU (RX 6000/7000, Instinct).',
+  'macos-mps': 'Apple M1 or newer. Intel Macs: choose CPU only.',
+  'windows-cuda': 'Needs a current NVIDIA driver. AMD GPUs on Windows: PyTorch has no ROCm build there - use CPU only or Linux.',
+  'windows-auto': 'Uses CUDA when an NVIDIA GPU is found, otherwise the CPU. Requires git (winget install Git.Git).',
+};
+
+function installCommand(os: Os, hw: Hw, origin: string, token: string, name: string): string {
+  const n = name.replace(/["`$\\]/g, '') || 'my-pc';
+  if (os === 'windows') {
+    return `$env:CTIP_TOKEN="${token}"; $env:CTIP_NAME="${n}"; $env:CTIP_BACKEND="${hw}"; irm ${origin}/install-worker.ps1 | iex`;
+  }
+  return `curl -fsSL ${origin}/install-worker.sh | bash -s -- --token ${token} --name "${n}" --backend ${hw}`;
+}
+
 function ConnectPanel({ onClose }: { onClose: () => void }) {
   const [note, setNote] = useState('');
+  const [os, setOs] = useState<Os>('linux');
+  const [hw, setHw] = useState<Hw>('auto');
   const [token, setToken] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
   const create = useMutation({
     mutationFn: async () => (await api.post('/compute/enrollments', { note, ttl_hours: 24 })).data as { token: string },
     onSuccess: (d) => setToken(d.token),
   });
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://your-ctip';
-  const cmd = token ? `ctip-worker enroll --server ${origin} --token ${token} --name "${note || 'my-pc'}"` : '';
+  const choose = (o: Os) => { setOs(o); if (!HW_FOR[o].includes(hw)) setHw('auto'); };
+  const install = token ? installCommand(os, hw, origin, token, note) : '';
+  const manual = token ? `ctip-worker enroll --server ${origin} --token ${token} --name "${note || 'my-pc'}"` : '';
+  const copy = (text: string, key: string) =>
+    navigator.clipboard?.writeText(text).then(() => setCopied(key)).catch(() => setCopied(null));
+  const seg = (active: boolean) => cn('px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
+    active ? 'bg-accent text-white border-accent' : 'border-border text-text-secondary hover:border-accent');
   return (
-    <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+    <div className="rounded-xl border p-4 space-y-4" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text-primary">Connect a worker</h3>
         <button onClick={onClose} className="text-xs" style={{ color: 'var(--text-muted)' }}>Close</button>
       </div>
-      {!token ? (
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-xs flex-1 min-w-[200px]" style={{ color: 'var(--text-secondary)' }}>
-            Who is it for? (shown in the list)
-            <input id="enroll-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. ottco RTX 4060"
-              className="px-3 py-2 rounded-lg border text-sm text-text-primary" style={{ borderColor: 'var(--border)', background: 'var(--background)' }} />
-          </label>
-          <button onClick={() => create.mutate()} disabled={create.isPending}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white disabled:opacity-50">
-            {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />} Create one-time token
-          </button>
+      <div className="grid gap-3 md:grid-cols-3">
+        <label className="flex flex-col gap-1 text-xs min-w-0" style={{ color: 'var(--text-secondary)' }}>
+          Name in the dashboard
+          <input id="enroll-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Lisa RTX 3080"
+            className="px-3 py-2 rounded-lg border text-sm text-text-primary" style={{ borderColor: 'var(--border)', background: 'var(--background)' }} />
+        </label>
+        <div className="flex flex-col gap-1 text-xs min-w-0" style={{ color: 'var(--text-secondary)' }}>
+          Operating system
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Operating system">
+            {(Object.keys(OS_LABEL) as Os[]).map((o) => <button key={o} onClick={() => choose(o)} className={seg(os === o)}>{OS_LABEL[o]}</button>)}
+          </div>
         </div>
+        <div className="flex flex-col gap-1 text-xs min-w-0" style={{ color: 'var(--text-secondary)' }}>
+          Hardware
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Hardware">
+            {HW_FOR[os].map((h) => <button key={h} onClick={() => setHw(h)} className={seg(hw === h)}>{HW_LABEL[h]}</button>)}
+          </div>
+        </div>
+      </div>
+      {HW_NOTE[`${os}-${hw}`] && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{HW_NOTE[`${os}-${hw}`]}</p>}
+      {!token ? (
+        <button onClick={() => create.mutate()} disabled={create.isPending}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white disabled:opacity-50">
+          {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plug className="w-4 h-4" />} Create one-time token
+        </button>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-            Valid for 24 hours, usable once. It is shown only now. On the worker machine (CTIP installed with <code>uv pip install -e .</code>), run:
+            Send this to the person whose machine it is - valid 24 hours, usable once, shown only now. It installs the worker
+            ({OS_LABEL[os]}, {HW_LABEL[hw]}) into the user&apos;s home folder without admin rights, connects it and starts it in the background.
+            {os === 'windows' ? ' Run it in PowerShell.' : ' Run it in a terminal.'}
           </p>
           <div className="flex items-start gap-2">
-            <pre className="flex-1 min-w-0 overflow-x-auto text-xs font-mono p-3 rounded-lg text-text-primary" style={{ background: 'var(--background)', border: '1px solid var(--border)' }}>{cmd}</pre>
-            <button onClick={() => navigator.clipboard?.writeText(cmd).then(() => setCopied(true)).catch(() => setCopied(false))}
-              className="flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs border" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-              <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied' : 'Copy'}
+            <pre className="flex-1 min-w-0 overflow-x-auto text-xs font-mono p-3 rounded-lg text-text-primary" style={{ background: 'var(--background)', border: '1px solid var(--border)' }}>{install}</pre>
+            <button onClick={() => copy(install, 'install')} className="flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs border" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+              <Copy className="w-3.5 h-3.5" /> {copied === 'install' ? 'Copied' : 'Copy'}
             </button>
           </div>
-          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Then <code>ctip-worker run</code> — the machine appears below within seconds.</p>
+          <details className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            <summary className="cursor-pointer">CTIP already installed? Connect with this instead</summary>
+            <div className="flex items-start gap-2 mt-2">
+              <pre className="flex-1 min-w-0 overflow-x-auto font-mono p-3 rounded-lg text-text-primary" style={{ background: 'var(--background)', border: '1px solid var(--border)' }}>{manual}</pre>
+              <button onClick={() => copy(manual, 'manual')} className="flex items-center gap-1 px-2.5 py-2 rounded-lg border" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                <Copy className="w-3.5 h-3.5" /> {copied === 'manual' ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </details>
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>The machine appears below within seconds after the install finishes.</p>
         </div>
       )}
       {create.isError && <p className="text-xs text-red-400">Could not create a token: {(create.error as Error).message}</p>}

@@ -49,6 +49,7 @@ _AUTH_EXCLUDED_PREFIXES: tuple[str, ...] = (
     "/api/v1/system/health",
     "/api/v1/auth/",            # status + session login (checks the token itself)
     "/api/v1/compute/agent/",   # compute agents: own worker tokens (backend.compute.api)
+    "/api/v1/compute/install/", # public worker installers (no secrets)
     "/docs",
     "/redoc",
     "/openapi.json",

@@ -45,6 +45,9 @@ from shared.compute.schemas import (
 
 router = APIRouter(prefix="/compute", tags=["compute"])
 agent_router = APIRouter(prefix="/compute/agent", tags=["compute-agent"])
+install_router = APIRouter(prefix="/compute/install", tags=["compute-install"])
+_SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
+_INSTALLERS = {"install-worker.sh": "text/x-shellscript", "install-worker.ps1": "text/plain"}
 _spec = TypeAdapter(JobSpec)
 
 
@@ -229,3 +232,16 @@ def agent_cancelled(job_id: str, w: ComputeWorker = Depends(_worker), db: Sessio
     except service.ComputeError as e:
         _raise(e)
     return {"ok": True}
+
+
+# ── public installers (no secrets inside; the one-time token is passed by the user) ──
+
+@install_router.get("/{name}")
+def installer(name: str, request: Request) -> Response:
+    """Worker installer with this server's address filled in: curl -fsSL https://<server>/install-worker.sh | bash"""
+    if name not in _INSTALLERS:
+        raise HTTPException(404, "unknown installer")
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme).split(",")[0].strip()
+    host = request.headers.get("x-forwarded-host", request.headers.get("host", request.url.netloc)).split(",")[0].strip()
+    script = (_SCRIPTS / name).read_text().replace("@SERVER@", f"{proto}://{host}")
+    return Response(script, media_type=_INSTALLERS[name], headers={"Cache-Control": "no-store"})
