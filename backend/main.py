@@ -65,23 +65,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Initialize database
     from backend.database import create_all_tables
     create_all_tables()
-
-    # accounts mode: create the configured first admin (only when no admin exists yet)
-    try:
-        from backend.middleware.auth import resolve_mode
-        if resolve_mode(settings.auth_mode, settings.api_token) == "accounts":
-            from sqlmodel import Session as _S
-
-            from backend.accounts.service import admins, ensure_admin
-            from backend.database import engine as _e
-            with _S(_e) as _db:
-                made = ensure_admin(_db, settings.admin_username, settings.admin_password)
-                if made:
-                    logger.info("First admin created", username=made.username)
-                elif not admins(_db):
-                    logger.warning("Accounts mode without an admin - set ADMIN_USERNAME and ADMIN_PASSWORD")
-    except Exception as exc:
-        logger.warning("Admin bootstrap failed", error=str(exc))
     logger.info("Database tables initialized")
 
     # Restore GPU task history from DB (marks any in-flight jobs as failed)
@@ -239,7 +222,7 @@ def create_app() -> FastAPI:
     # Auth middleware — registered first so it runs outermost
     try:
         from backend.middleware.auth import APITokenMiddleware
-        app.add_middleware(APITokenMiddleware, api_token=settings.api_token, mode=settings.auth_mode)
+        app.add_middleware(APITokenMiddleware, api_token=settings.api_token)
     except Exception:
         pass
 

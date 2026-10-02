@@ -28,10 +28,6 @@ router = APIRouter()
 
 router.include_router(auth.router)
 
-from backend.accounts.api import router as accounts_router
-
-router.include_router(accounts_router)
-
 from backend.compute.api import agent_router as compute_agent_router
 from backend.compute.api import router as compute_router
 

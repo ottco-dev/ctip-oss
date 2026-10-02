@@ -19,7 +19,7 @@ export function QueryClientProvider({ children }: { children: React.ReactNode })
       }),
   );
 
-  // token mode: ask for API_TOKEN once per browser; accounts mode: ensureSession sends to /login
+  // API_TOKEN set on the backend: ask for it once per browser (stored as an HttpOnly cookie)
   useEffect(() => {
     void ensureSession();
   }, []);

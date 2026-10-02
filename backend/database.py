@@ -64,7 +64,6 @@ def create_all_tables() -> None:
     For production, use Alembic migrations instead.
     """
     # Import all models to register with SQLModel metadata
-    from backend.accounts import models as account_models  # noqa: F401 — users, sessions, invites
     from backend.api.v1 import model_tests  # noqa: F401 — registers ModelTest table
     from backend.compute import models as compute_models  # noqa: F401 — compute coordinator tables
     from backend.models import dataset, experiment, job, model_registry, session  # noqa: F401

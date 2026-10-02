@@ -42,8 +42,7 @@ def app(monkeypatch):
 def test_status_and_login_flow(app):
     c = TestClient(app)
     assert c.get("/api/v1/protected").status_code == 401
-    st = c.get("/api/v1/auth/status").json()
-    assert st["enabled"] is True and st["authenticated"] is False and st["mode"] == "token"
+    assert c.get("/api/v1/auth/status").json() == {"enabled": True, "authenticated": False}
     assert c.post("/api/v1/auth/session", json={"token": "wrong"}).status_code == 403
     r = c.post("/api/v1/auth/session", json={"token": TOKEN})
     assert r.status_code == 200

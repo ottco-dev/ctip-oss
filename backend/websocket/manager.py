@@ -60,8 +60,7 @@ class WebSocketManager:
         from backend.config import get_settings
         from backend.middleware.auth import websocket_authorized
 
-        st = get_settings()
-        if not await asyncio.to_thread(websocket_authorized, websocket, st.api_token, st.auth_mode):
+        if not websocket_authorized(websocket, get_settings().api_token):
             await websocket.close(code=1008)        # policy violation
             return False
         await websocket.accept()

@@ -3,10 +3,6 @@
 ## [Unreleased]
 
 ### Added
-- User accounts for shared instances (`AUTH_MODE=accounts`, `backend/accounts`): login with username and password,
-  scrypt hashes, server-side sessions (HttpOnly cookie, 14 days sliding), lockout after 5 failures per user or IP,
-  roles admin/member enforced in the middleware, temporary passwords, single-use invitation links, Users and
-  Account pages, user menu. The API token keeps working for scripts. docs/deployment/user-accounts.md
 - Compute network (`backend/compute`, `apps/worker`, `shared/compute`): `ctip-worker` agent for CUDA/ROCm/MPS/CPU,
   coordinator with job queue, leases, heartbeats, checkpoint resume, artifacts with SHA-256, one-time enrolment and
   worker tokens, resource limits, yield-when-busy, OOM back-off; Compute dashboard; docs/compute-network.md

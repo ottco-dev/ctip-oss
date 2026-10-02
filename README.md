@@ -74,9 +74,7 @@ maturity features, µm scale and the leakage-safe split on synthetic images.
 
 On first start the UI opens the **setup wizard** (hardware, storage, services, security) and writes `.env`.
 **Server without a GPU:** `docker/cpu/` builds the backend (CPU inference), web UI, MLflow and Label Studio:
-`cd docker/cpu && cp ctip.env.example ctip.env` (set `ADMIN_PASSWORD` and `API_TOKEN`), then `docker compose up -d --build`.
-Shared instances use **user accounts** (`AUTH_MODE=accounts`: login, admin/member roles, invitation links) — see
-[docs/deployment/user-accounts.md](docs/deployment/user-accounts.md).
+`cd docker/cpu && cp ctip.env.example ctip.env` (set `API_TOKEN`), then `docker compose up -d --build`.
 
 Docker Compose deployment, TensorRT, Label Studio/CVAT and remote access are covered in the
 [manual](docs/manual/en.md#10-docker-deployment) and [docs/deployment](docs/deployment/).

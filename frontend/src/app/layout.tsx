@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { QueryClientProvider } from './providers';
-import { AppShell, AuthProvider } from '@/components/layout/AuthProvider';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { TopBar } from '@/components/layout/TopBar';
 import { SetupGuard } from '@/components/layout/SetupGuard';
 import { ThemeProvider, themeScript } from '@/components/layout/ThemeProvider';
 import '@/styles/globals.css';
@@ -25,11 +26,17 @@ export default function RootLayout({
       <body className="bg-background text-text-primary">
         <QueryClientProvider>
           <ThemeProvider>
-            <AuthProvider>
-              <SetupGuard>
-                <AppShell>{children}</AppShell>
-              </SetupGuard>
-            </AuthProvider>
+            <SetupGuard>
+              <div className="flex h-screen overflow-hidden">
+                <Sidebar />
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <TopBar />
+                  <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+                    {children}
+                  </main>
+                </div>
+              </div>
+            </SetupGuard>
           </ThemeProvider>
         </QueryClientProvider>
       </body>
