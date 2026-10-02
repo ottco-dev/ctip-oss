@@ -27,7 +27,7 @@ CTIP is **alpha research software**. Read this before you use it:
 - **What is measured:** runtime on an RTX 4060 — the full detection pipeline (1280 px, FP16: 95 ms, < 350 MB VRAM;
   4K tiled: 0.8 s) and the classical modules (focus, colour/texture features) — see
   [benchmark history](docs/progress/benchmark_history.md).
-- **Tested:** 1680 unit tests, lint and the quickstart notebook run on every push (CPU, no GPU or external services).
+- **Tested:** 1694 unit tests, lint and the quickstart notebook run on every push (CPU, no GPU or external services).
 
 ## What it does
 
@@ -40,7 +40,7 @@ CTIP is **alpha research software**. Read this before you use it:
 | Optical maturity | Clear → cloudy → amber from HSV/LAB colour and LBP/GLCM/Gabor texture, calibrated confidence |
 | Measurement | Pixel → µm via a calibration scale (stage micrometer) |
 | Video | Frame quality ranking, temporal de-duplication, SORT tracking |
-| Labelling | Label Studio / CVAT integration, VLM pre-labelling (Florence-2, Moondream, Qwen2-VL) behind a mandatory human review gate |
+| Labelling | Label Studio / CVAT integration, VLM pre-labelling (Florence-2, Moondream, Qwen2-VL) and agent labelling with Claude Code + SAM2 (MCP), behind a mandatory human review gate |
 | Active learning | Uncertainty and model-disagreement sampling for the next labelling batch |
 | Inference | PyTorch, ONNX Runtime, TensorRT FP16; one GPU job at a time for 8 GB cards |
 | Platform | FastAPI backend, Next.js 14 frontend, MLflow tracking, Docker Compose, setup wizard |
@@ -61,7 +61,7 @@ AMD ROCm, Apple MPS and CPU-only setups are covered in the [manual](docs/manual/
 git clone https://github.com/ottco-dev/ctip-oss.git && cd ctip-oss
 
 python3.12 -m venv .venv && source .venv/bin/activate
-pip install uv && uv pip install -e ".[dev]"     # extras: [onnx] [vlm] [sam] [annotation] [remote_vlm] [wandb] [all]
+pip install uv && uv pip install -e ".[dev]"     # extras: [onnx] [agent] [vlm] [sam] [annotation] [remote_vlm] [wandb] [all]
 # exact versions from uv.lock instead:  uv sync --extra dev
 
 uvicorn backend.main:app --reload --port 8000     # API + docs at http://localhost:8000/docs
@@ -88,6 +88,14 @@ Docker Compose deployment, TensorRT, Label Studio/CVAT and remote access are cov
 5. **Train** (YOLO11 detection, morphology CNN) with fixed seeds; runs are tracked in MLflow.
 6. **Evaluate**: mAP, IoU, calibration (ECE, reliability diagrams), failure cases.
 7. **Improve**: active learning picks the next images to label.
+
+### Labelling with Claude Code
+
+CTIP includes an MCP server that lets Claude Code label images like a careful annotator: it reads coordinates off a
+grid, zooms, clicks each glandular head, SAM2 cuts the mask and a shape check trims stalks. Labels are saved as
+*pending review* or pushed to Label Studio as predictions — a person approves every one.
+Open the repo in Claude Code (`.mcp.json` registers the server) and run `/label-trichomes <folder>`.
+See [docs/agent-labeling.md](docs/agent-labeling.md).
 
 ## Architecture
 
@@ -117,7 +125,7 @@ Shared types live in `shared/`. The FastAPI app is in `backend/`, the UI in `fro
 ## Testing
 
 ```bash
-pytest -m "not gpu and not integration"   # 1680 unit tests, CPU only (~1 min)
+pytest -m "not gpu and not integration"   # 1694 unit tests, CPU only (~1 min)
 ruff check .                              # lint (enforced in CI)
 pytest -m gpu                             # needs a CUDA GPU (and TensorRT for engine tests)
 cd frontend && npx tsc --noEmit && npm run build

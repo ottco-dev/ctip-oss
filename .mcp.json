@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ctip-label": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "apps.mcp.label_server"],
+      "env": {}
+    }
+  }
+}

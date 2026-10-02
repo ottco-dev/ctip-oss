@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- Agent labelling over MCP (`apps/mcp/label_server.py`, `vlm_labeling/agent/`): Claude Code views images with a
+  coordinate grid, zooms, places one point per head; SAM2 masks with a shape check; labels saved as pending review
+  or pushed to Label Studio as predictions. `.mcp.json` and the `/label-trichomes` command; extra `[agent]`
 - `docker/cpu/`: CPU-only server stack (backend, production web UI, MLflow, Label Studio), images built from `uv.lock`
 
 ### Fixed

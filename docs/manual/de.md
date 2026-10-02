@@ -189,7 +189,7 @@ Erneut starten jederzeit über die Seitenleiste: **Ersteinrichtung**.
 
 ```bash
 pytest tests/ -v --tb=short
-# Erwartet: 1680 passed, 4 skipped
+# Erwartet: 1694 passed, 4 skipped
 
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 curl http://localhost:8000/api/v1/system/health | python -m json.tool
@@ -876,7 +876,7 @@ pytest tests/ --cov=. --cov-report=html
 pytest tests/ -m gpu -v
 ```
 
-**Aktueller Stand: 1680 passed, 4 skipped (GPU-only + reportlab-Guard)**
+**Aktueller Stand: 1694 passed, 4 skipped (GPU-only + reportlab-Guard)**
 
 | Modul | Tests |
 |---|---|

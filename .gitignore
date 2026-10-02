@@ -99,7 +99,8 @@ nginx-local/nginx.pid
 frontend/.env.local
 
 # Claude Code local settings (contains personal paths and permissions)
-.claude/
+.claude/*
+!.claude/commands/
 
 # Temp / cache
 tmp/

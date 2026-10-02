@@ -92,6 +92,10 @@ onnx = [
 wandb = [
     "wandb>=0.17.0",
 ]
+# labelling by an AI agent over MCP (Claude Code): python -m apps.mcp.label_server
+agent = [
+    "mcp>=2.2",
+]
 vlm = [
     "transformers>=4.41.0",
     "accelerate>=0.30.0",
@@ -141,7 +145,7 @@ dev = [
     "nbconvert>=7.16.0",
 ]
 all = [
-    "trichome-analysis[onnx,wandb,vlm,sam,grounding_dino,annotation,remote_vlm,dev]",
+    "trichome-analysis[agent,onnx,wandb,vlm,sam,grounding_dino,annotation,remote_vlm,dev]",
 ]
 
 [project.scripts]
