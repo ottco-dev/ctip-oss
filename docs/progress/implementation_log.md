@@ -2,6 +2,37 @@
 
 ---
 
+## 2026-10-02 — Compute network (volunteer workers) and agent labelling
+
+### WHAT WAS IMPLEMENTED
+- `shared/compute/` — protocol: job specs per kind (yolo_train, yolo_eval, detection_benchmark), capabilities,
+  heartbeats, leases, matching, tokens
+- `backend/compute/` — coordinator: tables compute_workers / enrollments / jobs / artifacts, service (enrol,
+  authenticate, lease by capability, heartbeat, expire → requeue with checkpoint, finish/yield/cancel, artifacts with
+  SHA-256 and per-job read rights), API (`/api/v1/compute`, agent routes with worker tokens), maintenance loop
+- `apps/worker/` — `ctip-worker` CLI (doctor, enroll, run, limits), hardware detection (CUDA/ROCm/MPS/CPU,
+  others' GPU use via nvidia-smi pmon), HTTPS client with retries, safe dataset unpacking, job runner subprocess,
+  checkpoint upload, yield when busy, free-RAM guard, OOM back-off
+- `frontend/src/app/compute` — Compute dashboard (workers, queue, one-time token, benchmark, cancel, revoke)
+- `apps/mcp/label_server.py`, `vlm_labeling/agent/` — Claude Code labelling over MCP (previous entry)
+
+### WHY
+- Volunteers with different hardware can contribute training/evaluation time; parallel jobs scale over the
+  internet, DDP across machines does not (bandwidth, NCCL), so DDP stays inside one multi-GPU worker.
+
+### VERIFIED
+- End to end on the RTX 4060 against a local coordinator: enrolment, benchmark job (82 FPS YOLO11s 1280 FP16)
+- Found during the E2E: a machine short of RAM stalled for minutes; the agent now refuses jobs below a RAM reserve,
+  stops jobs that push the machine below it, halves the batch after OOM, and survives lost leases (409) instead of
+  crashing
+
+### WHAT STILL REMAINS
+- Training resume across machines verified in unit tests and on the VPS (see next entry), not on the RTX 4060 PC
+  (not enough free RAM there during the test)
+- Job kinds for morphology CNN training and VLM batch labelling
+
+---
+
 ## 2026-10-01 (2) — Hardening after the release check
 
 ### WHAT WAS IMPLEMENTED

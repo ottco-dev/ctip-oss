@@ -157,6 +157,7 @@ trichome-train = "apps.cli.commands.train:app"
 trichome-benchmark = "apps.cli.commands.benchmark:app"
 trichome-annotate = "apps.cli.commands.annotate:app"
 trichome-export = "apps.cli.commands.export:app"
+ctip-worker = "apps.worker.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = [

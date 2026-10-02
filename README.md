@@ -27,7 +27,7 @@ CTIP is **alpha research software**. Read this before you use it:
 - **What is measured:** runtime on an RTX 4060 — the full detection pipeline (1280 px, FP16: 95 ms, < 350 MB VRAM;
   4K tiled: 0.8 s) and the classical modules (focus, colour/texture features) — see
   [benchmark history](docs/progress/benchmark_history.md).
-- **Tested:** 1694 unit tests, lint and the quickstart notebook run on every push (CPU, no GPU or external services).
+- **Tested:** 1715 unit tests, lint and the quickstart notebook run on every push (CPU, no GPU or external services).
 
 ## What it does
 
@@ -43,7 +43,7 @@ CTIP is **alpha research software**. Read this before you use it:
 | Labelling | Label Studio / CVAT integration, VLM pre-labelling (Florence-2, Moondream, Qwen2-VL) and agent labelling with Claude Code + SAM2 (MCP), behind a mandatory human review gate |
 | Active learning | Uncertainty and model-disagreement sampling for the next labelling batch |
 | Inference | PyTorch, ONNX Runtime, TensorRT FP16; one GPU job at a time for 8 GB cards |
-| Platform | FastAPI backend, Next.js 14 frontend, MLflow tracking, Docker Compose, setup wizard |
+| Platform | FastAPI backend, Next.js 14 frontend, MLflow tracking, Docker Compose, setup wizard, compute network of volunteer workers |
 
 ### What it is not
 
@@ -97,6 +97,15 @@ grid, zooms, clicks each glandular head, SAM2 cuts the mask and a shape check tr
 Open the repo in Claude Code (`.mcp.json` registers the server) and run `/label-trichomes <folder>`.
 See [docs/agent-labeling.md](docs/agent-labeling.md).
 
+### Compute network: lend a GPU
+
+Volunteers connect their machines with `ctip-worker` (NVIDIA CUDA, AMD ROCm, Apple MPS or CPU) to a CTIP
+coordinator, e.g. a hosted instance. Jobs (training runs, evaluation, benchmarks) run one per machine over HTTPS with
+one-time enrolment tokens, heartbeats, resource limits, automatic batch sizing and resume from checkpoints when a
+machine drops out or its owner needs the GPU back. The **Compute** page shows every connected worker and the queue.
+Distributed (DDP) training runs only inside one multi-GPU machine — see [docs/compute-network.md](docs/compute-network.md),
+including a step-by-step guide.
+
 ## Architecture
 
 ```
@@ -125,7 +134,7 @@ Shared types live in `shared/`. The FastAPI app is in `backend/`, the UI in `fro
 ## Testing
 
 ```bash
-pytest -m "not gpu and not integration"   # 1694 unit tests, CPU only (~1 min)
+pytest -m "not gpu and not integration"   # 1715 unit tests, CPU only (~1 min)
 ruff check .                              # lint (enforced in CI)
 pytest -m gpu                             # needs a CUDA GPU (and TensorRT for engine tests)
 cd frontend && npx tsc --noEmit && npm run build

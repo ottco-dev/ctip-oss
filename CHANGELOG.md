@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- Compute network (`backend/compute`, `apps/worker`, `shared/compute`): `ctip-worker` agent for CUDA/ROCm/MPS/CPU,
+  coordinator with job queue, leases, heartbeats, checkpoint resume, artifacts with SHA-256, one-time enrolment and
+  worker tokens, resource limits, yield-when-busy, OOM back-off; Compute dashboard; docs/compute-network.md
 - Agent labelling over MCP (`apps/mcp/label_server.py`, `vlm_labeling/agent/`): Claude Code views images with a
   coordinate grid, zooms, places one point per head; SAM2 masks with a shape check; labels saved as pending review
   or pushed to Label Studio as predictions. `.mcp.json` and the `/label-trichomes` command; extra `[agent]`

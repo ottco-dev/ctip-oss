@@ -191,7 +191,7 @@ Volver a ejecutar en cualquier momento desde la barra lateral: **Configuración 
 
 ```bash
 pytest tests/ -v --tb=short
-# Esperado: 1694 passed, 4 skipped
+# Esperado: 1715 passed, 4 skipped
 
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 curl http://localhost:8000/api/v1/system/health | python -m json.tool
@@ -895,7 +895,7 @@ pytest tests/ --cov=. --cov-report=html
 pytest tests/ -m gpu -v
 ```
 
-**Estado actual: 1694 passed, 4 skipped (GPU-only + guard de reportlab)**
+**Estado actual: 1715 passed, 4 skipped (GPU-only + guard de reportlab)**
 
 | Módulo | Pruebas |
 |---|---|

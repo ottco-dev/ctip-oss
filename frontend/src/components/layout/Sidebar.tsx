@@ -19,6 +19,7 @@ import {
   BookOpen,
   MapPin,
   Microscope,
+  Server,
   Sun,
   Moon,
 } from 'lucide-react';
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/',           label: 'Dashboard',  icon: LayoutDashboard },
   { href: '/datasets',   label: 'Datasets',   icon: Database },
   { href: '/training',   label: 'Training',   icon: Cpu },
+  { href: '/compute',    label: 'Compute',    icon: Server },
   { href: '/annotation', label: 'Annotation', icon: Tag },
   { href: '/inference',  label: 'Detection',  icon: Zap },
   { href: '/morphology', label: 'Morphology', icon: Microscope },

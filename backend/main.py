@@ -140,6 +140,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     heartbeat_task = asyncio.create_task(log_heartbeat_loop())
     app.state.heartbeat_task = heartbeat_task
 
+    # Compute coordinator: requeue jobs of agents that went silent (resume from their last checkpoint)
+    async def compute_maintenance_loop() -> None:
+        from sqlmodel import Session as _Session
+
+        from backend.compute.service import HEARTBEAT_S, expire
+        from backend.database import engine as _engine
+
+        def _pass() -> list[str]:
+            with _Session(_engine) as db:
+                return expire(db)
+
+        while True:
+            await asyncio.sleep(HEARTBEAT_S)
+            try:
+                lost = await asyncio.to_thread(_pass)
+                if lost:
+                    logger.warning("Compute jobs requeued after lost workers", jobs=lost)
+            except Exception as exc:
+                logger.warning("Compute maintenance failed", error=str(exc))
+
+    app.state.compute_task = asyncio.create_task(compute_maintenance_loop())
+
     # Wire GPU semaphore: unify the dependency semaphore with task_router's
     # so REST inference endpoints and background training jobs share one slot.
     try:
@@ -167,6 +189,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.gpu_task.cancel()
     if hasattr(app.state, "heartbeat_task"):
         app.state.heartbeat_task.cancel()
+    if hasattr(app.state, "compute_task"):
+        app.state.compute_task.cancel()
     logger.info("Application shutting down")
 
 

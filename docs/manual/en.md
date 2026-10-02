@@ -211,7 +211,7 @@ Re-run the wizard anytime from the sidebar: **First-Time Setup**.
 ```bash
 source .venv/bin/activate
 pytest tests/ -v --tb=short
-# Expected: 1694 passed, 4 skipped (GPU-only + reportlab guard)
+# Expected: 1715 passed, 4 skipped (GPU-only + reportlab guard)
 
 python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 curl http://localhost:8000/api/v1/system/health | python -m json.tool
@@ -1005,7 +1005,7 @@ pytest tests/ --cov=. --cov-report=html
 pytest tests/ -m gpu -v
 ```
 
-**Current status: 1694 passed, 4 skipped (GPU-only + reportlab guard)**
+**Current status: 1715 passed, 4 skipped (GPU-only + reportlab guard)**
 
 | Module | Tests |
 |---|---|
