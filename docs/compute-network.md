@@ -94,6 +94,34 @@ After an out-of-memory failure the next attempt on that machine uses half the ba
 
 ---
 
+## One-line install for volunteers
+
+The Compute page builds the command (**Connect a worker** → name, operating system, hardware → one-time token).
+It installs into the user's home folder without admin rights, picks the right PyTorch build, connects with the token
+and starts the worker in the background (systemd user service, launchd agent or a scheduled task at logon).
+
+**Linux / macOS** (terminal):
+```bash
+curl -fsSL https://ctip.178-18-251-107.sslip.io/install-worker.sh | bash -s -- --token ctipe_… --name "Lisa RTX 3080" --backend auto
+```
+
+**Windows** (PowerShell):
+```powershell
+$env:CTIP_TOKEN="ctipe_…"; $env:CTIP_NAME="Lisa RTX 3080"; $env:CTIP_BACKEND="auto"; irm https://ctip.178-18-251-107.sslip.io/install-worker.ps1 | iex
+```
+
+| `--backend` / `CTIP_BACKEND` | Linux | macOS | Windows |
+|---|---|---|---|
+| `auto` | NVIDIA → CUDA, AMD → ROCm, else CPU | Apple Silicon → MPS | NVIDIA → CUDA, else CPU |
+| `cuda` | ✓ (current NVIDIA driver) | – | ✓ |
+| `rocm` | ✓ (ROCm 6, RX 6000/7000, Instinct) | – | – (no PyTorch ROCm build for Windows) |
+| `mps` | – | ✓ (M1 or newer) | – |
+| `cpu` | ✓ | ✓ | ✓ |
+
+Needs `git` (Windows: `winget install Git.Git`). Rerunning the command updates an existing install;
+`… | bash -s -- --uninstall` (Windows: `$env:CTIP_UNINSTALL="1"; irm …/install-worker.ps1 | iex`) removes it.
+Tested in a fresh Ubuntu 24.04 container: install, connect, update, benchmark job, uninstall.
+
 ## Step by step: your RTX 4060 PC as the first worker
 
 The coordinator is the hosted instance `https://ctip.178-18-251-107.sslip.io` (any CTIP backend works the same).
