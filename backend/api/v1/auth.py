@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from backend.config import get_settings
-from backend.middleware.auth import AUTH_COOKIE, _constant_time_equal, _extract_token
+from backend.middleware.auth import AUTH_COOKIE, _constant_time_equal
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -23,19 +23,47 @@ class SessionRequest(BaseModel):
     token: str = Field(min_length=1, max_length=512)
 
 
+class AuthUser(BaseModel):
+    username: str
+    role: str
+    display_name: str = ""
+    must_change_password: bool = False
+
+
 class AuthStatus(BaseModel):
     enabled: bool
     authenticated: bool
+    mode: str = "off"                 # off | token | accounts
+    user: AuthUser | None = None
 
 
 @router.get("/status", response_model=AuthStatus)
 async def auth_status(request: Request) -> AuthStatus:
-    """Is token auth on, and does this browser/client already carry a valid token?"""
-    expected = get_settings().api_token.strip()
-    if not expected:
-        return AuthStatus(enabled=False, authenticated=True)
-    token = _extract_token(request)
-    return AuthStatus(enabled=True, authenticated=bool(token) and _constant_time_equal(token, expected))
+    """Which login this instance wants, and who the caller is."""
+    from backend.middleware.auth import principal_from, resolve_mode
+
+    st = get_settings()
+    mode = resolve_mode(st.auth_mode, st.api_token)
+    if mode == "off":
+        return AuthStatus(enabled=False, authenticated=True, mode=mode)
+    p = getattr(request.state, "principal", None) or principal_from(request, st.api_token, mode)
+    if p is None:
+        return AuthStatus(enabled=True, authenticated=False, mode=mode)
+    user = None
+    if p.kind == "user":
+        from sqlmodel import Session
+
+        from backend.accounts.models import User
+        from backend.database import engine
+
+        with Session(engine) as db:
+            u = db.get(User, p.user_id)
+            if u is not None:
+                user = AuthUser(username=u.username, role=u.role, display_name=u.display_name,
+                                must_change_password=u.must_change_password)
+    else:
+        user = AuthUser(username=p.name, role=p.role)
+    return AuthStatus(enabled=True, authenticated=True, mode=mode, user=user)
 
 
 @router.post("/session", response_model=AuthStatus)

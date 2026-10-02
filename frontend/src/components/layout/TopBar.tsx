@@ -4,6 +4,7 @@ import { Wifi, WifiOff, Thermometer, Zap } from 'lucide-react';
 import { cn, formatVram } from '@/lib/utils';
 import { useGpuStatus } from '@/hooks/useGpuStatus';
 import { useUiStore } from '@/store/uiStore';
+import { UserMenu } from '@/components/layout/UserMenu';
 
 interface TopBarProps {
   title?: string;
@@ -107,6 +108,7 @@ export function TopBar({ title }: TopBarProps) {
             {wsConnected ? 'Live' : 'Offline'}
           </span>
         </div>
+        <UserMenu />
       </div>
     </header>
   );

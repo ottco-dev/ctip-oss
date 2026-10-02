@@ -141,3 +141,8 @@ Last updated: 2026-05-29 (Full sprint: DDP trainer, Ollama LLM, temporal trackin
   - Graceful degradation without ultralytics/TRT/onnxruntime
   - `trichome convert onnx|tensorrt|validate` CLI — 31 tests
 - [ ] TensorRT E2E engine build (requires YOLO11s .pt weights — hardware gated)
+
+## User accounts (added 2026-10-02)
+- Per-user ownership of datasets and runs (members share one workspace today)
+- Audit log of admin actions
+- Automated frontend test for the login flow

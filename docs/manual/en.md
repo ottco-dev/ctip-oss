@@ -880,6 +880,12 @@ GPU_INFERENCE_QUEUE_DEPTH=0        # 0 = fail-fast, no queue
 # Database
 DATABASE_URL=sqlite:///./trichome.db
 
+# Access (docs/deployment/user-accounts.md)
+AUTH_MODE=auto                     # auto | off | token | accounts
+API_TOKEN=                         # scripts; the only login in token mode
+ADMIN_USERNAME=                    # accounts mode: first admin
+ADMIN_PASSWORD=
+
 # Annotation
 LABEL_STUDIO_URL=http://localhost:3005
 LABEL_STUDIO_API_KEY=your_key

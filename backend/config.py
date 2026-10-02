@@ -170,6 +170,14 @@ class Settings(BaseSettings):
     secret_key: str = "dev-secret-key-change-in-production"
     """Used for session tokens. Change for production."""
 
+    auth_mode: str = "auto"
+    """auto: API token when API_TOKEN is set, else open (local use) · token · accounts (users + roles, hosted)"""
+
+    admin_username: str = ""
+    """accounts mode: created as the first admin on startup when no admin exists (never overwrites)"""
+
+    admin_password: str = ""
+
     api_token: str = ""
     """
     Single-user API token. Set to enable authentication.

@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-10-02 — User accounts for hosted instances
+
+### WHAT WAS IMPLEMENTED
+- `backend/accounts/` — models (users, user_sessions, user_invites), scrypt password hashing, service (login with
+  lockout, sessions, roles, invitations, last-admin protection), API under `/api/v1/auth` (login, logout, me,
+  password, users, invites, register)
+- `backend/middleware/auth.py` — `AUTH_MODE` (auto/off/token/accounts), principal resolution (API token = admin,
+  session cookie), `ADMIN_RULES`, WebSocket handshake check per mode; `backend/config.py` auth_mode/admin_* settings;
+  first-admin bootstrap in `backend/main.py`
+- Frontend: `AuthProvider`/`AppShell`, pages `/login`, `/register`, `/account`, `/users`, `UserMenu`, admin-only
+  Users entry in the sidebar
+- Tests: `tests/unit/test_accounts.py`; docs: `docs/deployment/user-accounts.md`
+
+### WHY
+- The hosted instance was protected by one shared API token: no per-person access, no revocation, no roles.
+
+### WHAT STILL REMAINS
+- Per-user ownership of datasets/runs (all members currently see the same workspace)
+- Audit log of admin actions
+- Frontend tests for the login flow (verified manually with Playwright on the hosted instance)
+
+---
+
 ## 2026-10-02 — Compute network (volunteer workers) and agent labelling
 
 ### WHAT WAS IMPLEMENTED

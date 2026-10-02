@@ -22,7 +22,9 @@ import {
   Server,
   Sun,
   Moon,
+  Users,
 } from 'lucide-react';
+import { useAuth } from '@/components/layout/AuthProvider';
 import { cn } from '@/lib/utils';
 import { useUiStore } from '@/store/uiStore';
 
@@ -31,6 +33,7 @@ interface NavItem {
   label: string;
   icon: React.ElementType;
   badge?: string;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -47,6 +50,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/reports',    label: 'Reports',    icon: FileText },
   { href: '/system',     label: 'System',     icon: Settings },
   { href: '/settings',   label: 'Settings',   icon: SlidersHorizontal },
+  { href: '/users',      label: 'Users',      icon: Users, adminOnly: true },
   { href: '/guide',      label: 'Guide',      icon: MapPin },
   { href: '/wiki',       label: 'Wiki',       icon: BookOpen },
 ];
@@ -102,6 +106,8 @@ function CtipLogo({ size = 28, className }: { size?: number; className?: string 
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar, theme, toggleTheme } = useUiStore();
+  const { status, isAdmin } = useAuth();
+  const showUsers = status?.mode === 'accounts' && isAdmin;
 
   return (
     <aside
@@ -137,7 +143,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2 px-2 no-scrollbar">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => !item.adminOnly || showUsers).map((item) => {
           const isActive =
             item.href === '/'
               ? pathname === '/'
