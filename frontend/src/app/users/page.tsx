@@ -7,9 +7,9 @@ import { useAuth } from '@/components/layout/AuthProvider';
 
 interface UserRow {
   id: string; username: string; display_name: string; email: string; role: 'admin' | 'member';
-  active: boolean; must_change_password: boolean; created_at: string; last_login: string | null;
+  active: boolean; must_change_password: boolean; created_at: number; last_login: number | null;
 }
-interface InviteRow { id: string; role: string; note: string; created_by: string; created_at: string; expires_at: string; used_at: string | null }
+interface InviteRow { id: string; role: string; note: string; created_by: string; created_at: number; expires_at: number; used_at: number | null }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`/api/v1/auth${path}`, {
@@ -20,7 +20,8 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return d as T;
 }
 
-const fmt = (iso: string | null) => (iso ? new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`).toLocaleString() : '—');
+/** The accounts API returns Unix timestamps in seconds. */
+const fmt = (ts: number | null) => (ts ? new Date(ts * 1000).toLocaleString() : '—');
 
 /** A secret that is shown exactly once, with a copy button. */
 function OneTimeSecret({ label, value, onClose }: { label: string; value: string; onClose: () => void }) {
@@ -192,7 +193,7 @@ export default function UsersPage() {
             <thead><tr className="text-left" style={{ color: 'var(--text-muted)' }}><th className="py-1 pr-3">Note</th><th className="pr-3">Role</th><th className="pr-3">By</th><th className="pr-3">Expires</th><th>State</th></tr></thead>
             <tbody>
               {invites.data.map((i) => {
-                const expired = !i.used_at && new Date(i.expires_at.endsWith('Z') ? i.expires_at : `${i.expires_at}Z`) < new Date();
+                const expired = !i.used_at && i.expires_at * 1000 < Date.now();
                 return (
                   <tr key={i.id} className="border-t" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
                     <td className="py-1.5 pr-3">{i.note || '—'}</td><td className="pr-3">{i.role}</td><td className="pr-3">{i.created_by}</td>
