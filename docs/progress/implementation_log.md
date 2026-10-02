@@ -27,8 +27,11 @@
   crashing
 
 ### WHAT STILL REMAINS
-- Training resume across machines verified in unit tests and on the VPS (see next entry), not on the RTX 4060 PC
-  (not enough free RAM there during the test)
+- Verified on the VPS coordinator: CPU worker A killed at epoch 11 → job requeued after 82 s "resumes from
+  checkpoint" → CPU worker B "Resuming training … from epoch 13 to 60" → completed, best.pt + results uploaded.
+  RTX 4060 PC enrolled over HTTPS: benchmark 11.5 ms p50, 85 FPS, 137 MB VRAM.
+- Found on the VPS: the job process wrote base weights into the (read-only) program directory - jobs now run in
+  their own folder with a weights cache
 - Job kinds for morphology CNN training and VLM batch labelling
 
 ---

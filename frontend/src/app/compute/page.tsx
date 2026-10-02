@@ -145,6 +145,7 @@ export default function ComputePage() {
   const qc = useQueryClient();
   const [connect, setConnect] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+  const [showRevoked, setShowRevoked] = useState(false);
   const workers = useQuery({ queryKey: ['compute', 'workers'], queryFn: async () => (await api.get('/compute/workers')).data as Worker[], refetchInterval: 5000 });
   const jobs = useQuery({ queryKey: ['compute', 'jobs'], queryFn: async () => (await api.get('/compute/jobs?limit=100')).data as Job[], refetchInterval: 5000 });
   const refresh = () => qc.invalidateQueries({ queryKey: ['compute'] });
@@ -159,6 +160,9 @@ export default function ComputePage() {
   const js = jobs.data ?? [];
   const byWorker = useMemo(() => Object.fromEntries(ws.map((w) => [w.id, w])), [ws]);
   const online = ws.filter((w) => w.online);
+  const revokedCount = ws.filter((w) => w.revoked).length;
+  const shown = [...ws].filter((w) => showRevoked || !w.revoked)
+    .sort((a, b) => Number(b.online) - Number(a.online) || Number(a.revoked) - Number(b.revoked) || b.last_seen - a.last_seen);
   const gpus = online.reduce((n, w) => n + (w.capabilities.backend && w.capabilities.backend !== 'cpu' ? w.capabilities.gpus ?? 0 : 0), 0);
   const vram = online.reduce((n, w) => n + (w.capabilities.vram_gb ?? 0) * Math.max(1, w.capabilities.gpus ?? 1), 0);
   const running = js.filter((j) => j.status === 'running' || j.status === 'leased');
@@ -195,16 +199,23 @@ export default function ComputePage() {
       </div>
 
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Workers</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Workers</h2>
+          {revokedCount > 0 && (
+            <button onClick={() => setShowRevoked((v) => !v)} className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {showRevoked ? 'Hide' : 'Show'} revoked ({revokedCount})
+            </button>
+          )}
+        </div>
         {workers.isLoading ? (
           <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
-        ) : ws.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="rounded-xl border p-6 text-sm" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--surface)' }}>
             No machine connected yet. Use <b>Connect a worker</b> to create a one-time token, then run <code>ctip-worker enroll</code> and <code>ctip-worker run</code> on the machine.
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {ws.map((w) => {
+            {shown.map((w) => {
               const c = w.capabilities;
               const job = js.find((j) => j.worker_id === w.id && (j.status === 'running' || j.status === 'leased'));
               const state = w.revoked ? 'revoked' : !w.online ? 'offline' : w.free.busy_by_others ? 'owner busy' : job ? 'working' : 'idle';
