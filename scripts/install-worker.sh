@@ -75,13 +75,16 @@ say "installing CTIP worker into $HOME_DIR (a few minutes, ~2-5 GB with PyTorch)
 mkdir -p "$HOME_DIR"
 if [ -d "$HOME_DIR/src/.git" ]; then git -C "$HOME_DIR/src" fetch -q origin "$REF" && git -C "$HOME_DIR/src" reset -q --hard "origin/$REF"
 else git clone -q --depth 1 --branch "$REF" "$REPO" "$HOME_DIR/src"; fi
-"$UV" venv -q --python 3.12 "$HOME_DIR/venv"
+"$UV" venv -q --allow-existing --python 3.12 "$HOME_DIR/venv"
 PY="$HOME_DIR/venv/bin/python"
 if [ -n "$TORCH_INDEX" ]; then
   "$UV" pip install -q --python "$PY" torch torchvision --index-url "$TORCH_INDEX" --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match
 fi
 (cd "$HOME_DIR/src" && "$UV" export -q --frozen --no-hashes --no-emit-project 2>/dev/null | grep -vE '^(torch|torchvision|triton|nvidia-)' > "$HOME_DIR/constraints.txt") || : > "$HOME_DIR/constraints.txt"
 "$UV" pip install -q --python "$PY" -e "$HOME_DIR/src" -c "$HOME_DIR/constraints.txt"
+# a worker needs no GUI: the headless OpenCV avoids libGL, which servers and containers often lack
+"$UV" pip uninstall -q --python "$PY" opencv-python 2>/dev/null || true
+"$UV" pip install -q --python "$PY" --reinstall-package opencv-python-headless opencv-python-headless -c "$HOME_DIR/constraints.txt"
 mkdir -p "$HOME/.local/bin"
 ln -sf "$HOME_DIR/venv/bin/ctip-worker" "$HOME/.local/bin/ctip-worker"
 CW="$HOME_DIR/venv/bin/ctip-worker"

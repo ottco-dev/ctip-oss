@@ -50,7 +50,7 @@ New-Item -ItemType Directory -Force $Home_ | Out-Null
 $Src = Join-Path $Home_ "src"
 if (Test-Path (Join-Path $Src ".git")) { git -C $Src fetch -q origin main; git -C $Src reset -q --hard origin/main }
 else { git clone -q --depth 1 https://github.com/ottco-dev/ctip-oss.git $Src }
-& $Uv venv -q --python 3.12 (Join-Path $Home_ "venv")
+& $Uv venv -q --allow-existing --python 3.12 (Join-Path $Home_ "venv")
 $Py = Join-Path $Home_ "venv\Scripts\python.exe"
 & $Uv pip install -q --python $Py torch torchvision --index-url $Index --extra-index-url https://pypi.org/simple --index-strategy unsafe-best-match
 Push-Location $Src
