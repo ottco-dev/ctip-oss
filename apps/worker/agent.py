@@ -154,7 +154,8 @@ class Agent:
         (wd / "job.json").write_text(json.dumps({"job_id": job.job_id, "spec": job.spec, "inputs": self._inputs(job, wd),
                                                  "device": device_for(self.caps, bool(job.spec.get("distributed"))),
                                                  "batch": self._batch(job, wd), "threads": threads,
-                                                 "loader_workers": 0 if self._oom_count(wd) else min(threads, 2)}))
+                                                 "loader_workers": 0 if self._oom_count(wd) else min(threads, 2),
+                                                 "weights_dir": str(self.cfg.workdir / "weights")}))
         env = dict(os.environ, OMP_NUM_THREADS=str(threads), MKL_NUM_THREADS=str(threads), PYTHONUNBUFFERED="1",
                    YOLO_OFFLINE="false", CTIP_JOB_ID=job.job_id)
         logf = (wd / "job.log").open("ab")
@@ -164,7 +165,9 @@ class Agent:
         else:
             kw["preexec_fn"] = lambda: os.nice(10)        # the owner's programs come first
         root = Path(__file__).resolve().parents[2]
-        return subprocess.Popen([sys.executable, "-m", "apps.worker.run_job", str(wd)], cwd=root, env=env,
+        env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(root), env.get("PYTHONPATH", "")]))
+        # the job runs in its own folder: the program directory may be read-only (containers, system installs)
+        return subprocess.Popen([sys.executable, "-m", "apps.worker.run_job", str(wd)], cwd=wd, env=env,
                                 stdout=logf, stderr=subprocess.STDOUT, **kw)
 
     def _terminate(self) -> None:

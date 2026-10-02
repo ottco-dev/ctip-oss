@@ -148,8 +148,11 @@ def benchmark(run: Run, spec: BenchmarkSpec) -> None:
 
 
 def main() -> int:
-    workdir = Path(sys.argv[1])
+    workdir = Path(sys.argv[1]).resolve()
     run = Run(workdir)
+    weights = Path(run.job.get("weights_dir") or workdir / "weights")
+    weights.mkdir(parents=True, exist_ok=True)
+    os.chdir(weights)                      # Ultralytics downloads base weights (yolo11s.pt …) into the cwd: cache them here
     threads = int(run.job.get("threads", 2))
     try:
         import torch
